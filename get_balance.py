@@ -5,13 +5,14 @@ from pprint import pprint
 def get_hyperliquid_balance():
     """
     Fetch account balance from Hyperliquid exchange.
+    Fetches both perp (swap) and spot account balances.
     
     Requires environment variables:
         HL_API: Hyperliquid API key (wallet address)
         HL_SECRET: Hyperliquid secret key
     
     Returns:
-        Dictionary containing account balance information
+        Dictionary containing both perp and spot account balance information
     """
     # Get API credentials from environment variables
     api_key = os.getenv('HL_API')
@@ -29,62 +30,136 @@ def get_hyperliquid_balance():
     })
     
     try:
-        # Fetch account balance with user parameter
-        balance = exchange.fetch_balance({'user': api_key})
+        # Fetch perp (swap) account balance - includes marginSummary
+        perp_balance = exchange.fetch_balance({'user': api_key, 'type': 'swap'})
         
-        return balance
+        # Fetch spot account balance
+        spot_balance = exchange.fetch_balance({'user': api_key, 'type': 'spot'})
+        
+        return {
+            'perp': perp_balance,
+            'spot': spot_balance
+        }
         
     except Exception as e:
         print(f"Error fetching balance: {str(e)}")
         raise
 
-def print_balance_summary(balance):
+def print_balance_summary(balances):
     """
     Print a formatted summary of the account balance.
     
     Args:
-        balance: Balance dictionary returned from fetch_balance()
+        balances: Dictionary with 'perp' and 'spot' balance data
     """
-    print("\n" + "=" * 60)
+    print("\n" + "=" * 80)
     print("HYPERLIQUID ACCOUNT BALANCE")
-    print("=" * 60)
+    print("=" * 80)
     
-    # Print total balances
-    if 'total' in balance:
-        print("\nTotal Balances:")
-        for currency, amount in balance['total'].items():
-            if amount > 0:
-                print(f"  {currency}: {amount}")
+    # Print perp account balance
+    perp_balance = balances.get('perp', {})
+    print("\n" + "-" * 80)
+    print("PERP ACCOUNT (Perpetuals Trading)")
+    print("-" * 80)
     
-    # Print free (available) balances
-    if 'free' in balance:
-        print("\nAvailable Balances:")
-        for currency, amount in balance['free'].items():
-            if amount > 0:
-                print(f"  {currency}: {amount}")
+    # Extract margin summary from perp info
+    perp_info = perp_balance.get('info', {})
+    margin_summary = perp_info.get('marginSummary', {})
+    cross_margin_summary = perp_info.get('crossMarginSummary', {})
+    withdrawable = perp_info.get('withdrawable', 0)
     
-    # Print used (locked) balances
-    if 'used' in balance:
-        print("\nLocked Balances:")
-        for currency, amount in balance['used'].items():
-            if amount > 0:
-                print(f"  {currency}: {amount}")
+    if margin_summary:
+        print("\nMargin Summary:")
+        print(f"  Account Value:      ${float(margin_summary.get('accountValue', 0)):,.2f}")
+        print(f"  Total Margin Used:  ${float(margin_summary.get('totalMarginUsed', 0)):,.2f}")
+        print(f"  Total Raw USD:      ${float(margin_summary.get('totalRawUsd', 0)):,.2f}")
+        print(f"  Total Position:     ${float(margin_summary.get('totalNtlPos', 0)):,.2f}")
+        print(f"  Withdrawable:       ${float(withdrawable):,.2f}")
     
-    print("\n" + "=" * 60)
+    if cross_margin_summary and cross_margin_summary != margin_summary:
+        print("\nCross Margin Summary:")
+        print(f"  Account Value:      ${float(cross_margin_summary.get('accountValue', 0)):,.2f}")
+        print(f"  Total Margin Used:  ${float(cross_margin_summary.get('totalMarginUsed', 0)):,.2f}")
+    
+    # Print perp asset positions if any
+    asset_positions = perp_info.get('assetPositions', [])
+    if asset_positions:
+        print("\nActive Positions:")
+        for asset_pos in asset_positions:
+            position = asset_pos.get('position', {})
+            coin = position.get('coin', 'Unknown')
+            szi = position.get('szi', 0)
+            entry_px = position.get('entryPx', 0)
+            position_value = position.get('positionValue', 0)
+            unrealized_pnl = position.get('unrealizedPnl', 0)
+            leverage_info = position.get('leverage', {})
+            leverage_val = leverage_info.get('value', 0) if isinstance(leverage_info, dict) else leverage_info
+            
+            print(f"  {coin}:")
+            print(f"    Size: {szi}")
+            print(f"    Entry Price: ${entry_px}")
+            print(f"    Position Value: ${float(position_value):,.2f}")
+            print(f"    Unrealized PnL: ${float(unrealized_pnl):,.2f}")
+            print(f"    Leverage: {leverage_val}x")
+    
+    # Standard CCXT balance fields for perp
+    if 'total' in perp_balance:
+        print("\nPerp Balances (CCXT Format):")
+        for currency, amount in perp_balance['total'].items():
+            if amount and amount > 0:
+                used = perp_balance.get('used', {}).get(currency, 0)
+                free = perp_balance.get('free', {}).get(currency, 0)
+                print(f"  {currency}:")
+                print(f"    Total: ${amount:,.2f}")
+                if used:
+                    print(f"    Used:  ${used:,.2f}")
+                if free:
+                    print(f"    Free:  ${free:,.2f}")
+    
+    # Print spot account balance
+    spot_balance = balances.get('spot', {})
+    print("\n" + "-" * 80)
+    print("SPOT ACCOUNT (Spot Trading)")
+    print("-" * 80)
+    
+    # Print spot balances
+    has_spot_balance = False
+    if 'total' in spot_balance:
+        for currency, amount in spot_balance['total'].items():
+            if amount and amount > 0:
+                if not has_spot_balance:
+                    print("\nSpot Balances:")
+                    has_spot_balance = True
+                used = spot_balance.get('used', {}).get(currency, 0)
+                free = spot_balance.get('free', {}).get(currency, 0)
+                print(f"  {currency}:")
+                print(f"    Total: {amount:,.6f}")
+                if used:
+                    print(f"    Used:  {used:,.6f}")
+                if free:
+                    print(f"    Free:  {free:,.6f}")
+    
+    if not has_spot_balance:
+        print("\nNo spot balances found.")
+    
+    print("\n" + "=" * 80)
 
 if __name__ == "__main__":
     try:
-        print("Fetching Hyperliquid account balance...")
+        print("Fetching Hyperliquid account balance (Perp + Spot)...")
         
         # Fetch balance
-        balance = get_hyperliquid_balance()
+        balances = get_hyperliquid_balance()
         
         # Print formatted summary
-        print_balance_summary(balance)
+        print_balance_summary(balances)
         
         # Optionally print full balance details
         print("\nFull Balance Details:")
-        pprint(balance)
+        print("\n--- PERP BALANCE ---")
+        pprint(balances['perp'])
+        print("\n--- SPOT BALANCE ---")
+        pprint(balances['spot'])
         
     except ValueError as e:
         print(f"\nConfiguration Error: {e}")
