@@ -7,7 +7,7 @@ def get_hyperliquid_balance():
     Fetch account balance from Hyperliquid exchange.
     
     Requires environment variables:
-        HL_API: Hyperliquid API key
+        HL_API: Hyperliquid API key (wallet address)
         HL_SECRET: Hyperliquid secret key
     
     Returns:
@@ -25,11 +25,12 @@ def get_hyperliquid_balance():
         'apiKey': api_key,
         'secret': secret_key,
         'enableRateLimit': True,
+        'walletAddress': api_key,  # Use the API key as wallet address
     })
     
     try:
-        # Fetch account balance
-        balance = exchange.fetch_balance()
+        # Fetch account balance with user parameter
+        balance = exchange.fetch_balance({'user': api_key})
         
         return balance
         
