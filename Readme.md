@@ -23,7 +23,7 @@ pip install -r requirements.txt
 The script fetches daily OHLCV (Open, High, Low, Close, Volume) data from Hyperliquid for BTC, ETH, and SOL.
 
 ```bash
-python api_test.py
+python get_data.py
 ```
 
 This will fetch and display the last 5 days of trading data for:
