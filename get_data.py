@@ -1,6 +1,36 @@
 import ccxt
 from datetime import datetime, timedelta
 import pandas as pd
+import os
+
+def get_positions():
+    """
+    Fetch account positions from Hyperliquid using API credentials.
+    
+    Returns:
+        List of position dictionaries containing position details
+    """
+    # Get API credentials from environment variables
+    api_key = os.getenv('HL_API')
+    api_secret = os.getenv('HL_SECRET')
+    
+    if not api_key or not api_secret:
+        raise ValueError("HL_API and HL_SECRET environment variables must be set")
+    
+    # Initialize Hyperliquid exchange with authentication
+    exchange = ccxt.hyperliquid({
+        'apiKey': api_key,
+        'secret': api_secret,
+        'enableRateLimit': True,
+    })
+    
+    try:
+        # Fetch account positions
+        positions = exchange.fetch_positions()
+        return positions
+    except Exception as e:
+        print(f"Error fetching positions: {str(e)}")
+        raise
 
 def fetch_hyperliquid_daily_data(symbols=['BTC/USDC:USDC', 'ETH/USDC:USDC', 'SOL/USDC:USDC'], days=5):
     """
