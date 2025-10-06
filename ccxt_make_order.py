@@ -3,7 +3,7 @@ import os
 import argparse
 from pprint import pprint
 
-def make_order(symbol, notional_amount, side, order_type, price=None):
+def ccxt_make_order(symbol, notional_amount, side, order_type, price=None):
     """
     Place a market or limit order on Hyperliquid exchange.
     
@@ -126,7 +126,7 @@ def make_order(symbol, notional_amount, side, order_type, price=None):
         print(f"\n✗ Error placing order: {str(e)}")
         raise
 
-def main():
+def ccxt_main():
     """
     Command-line interface for placing orders.
     """
@@ -167,7 +167,7 @@ Environment Variables Required:
     
     try:
         # Place the order
-        order = make_order(
+        order = ccxt_make_order(
             symbol=args.symbol,
             notional_amount=args.notional,
             side=args.side,
@@ -193,4 +193,4 @@ Environment Variables Required:
         exit(1)
 
 if __name__ == "__main__":
-    main()
+    ccxt_main()

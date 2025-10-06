@@ -2,7 +2,7 @@ import ccxt
 from datetime import datetime, timedelta
 import pandas as pd
 
-def fetch_hyperliquid_daily_data(symbols=['BTC/USDC:USDC', 'ETH/USDC:USDC', 'SOL/USDC:USDC'], days=5):
+def ccxt_fetch_hyperliquid_daily_data(symbols=['BTC/USDC:USDC', 'ETH/USDC:USDC', 'SOL/USDC:USDC'], days=5):
     """
     Fetch daily OHLCV data from Hyperliquid for specified symbols.
     
@@ -64,7 +64,7 @@ if __name__ == "__main__":
     print("=" * 60)
     
     # Fetch data for BTC, ETH, and SOL
-    data = fetch_hyperliquid_daily_data(
+    data = ccxt_fetch_hyperliquid_daily_data(
         symbols=['BTC/USDC:USDC', 'ETH/USDC:USDC', 'SOL/USDC:USDC'],
         days=5
     )
