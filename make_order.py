@@ -45,10 +45,9 @@ def make_order(symbol, notional_amount, side, order_type, price=None):
     
     # Initialize Hyperliquid exchange with authentication
     exchange = ccxt.hyperliquid({
-        'apiKey': api_key,
-        'secret': secret_key,
+        'privateKey': secret_key,
+        'walletAddress': api_key,
         'enableRateLimit': True,
-        'walletAddress': api_key,  # Use the API key as wallet address
     })
     
     try:
@@ -81,10 +80,14 @@ def make_order(symbol, notional_amount, side, order_type, price=None):
         
         # Place the order
         if order_type == 'market':
-            order = exchange.create_market_order(
+            # Hyperliquid requires price for market orders (for slippage calculation)
+            # Use create_order with type='market' and pass the price
+            order = exchange.create_order(
                 symbol=symbol,
+                type='market',
                 side=side,
-                amount=amount
+                amount=amount,
+                price=current_price
             )
         else:  # limit order
             order = exchange.create_limit_order(
@@ -100,11 +103,11 @@ def make_order(symbol, notional_amount, side, order_type, price=None):
         print(f"{'='*60}")
         print(f"Order ID: {order.get('id', 'N/A')}")
         print(f"Symbol: {order.get('symbol', 'N/A')}")
-        print(f"Type: {order.get('type', 'N/A').upper()}")
-        print(f"Side: {order.get('side', 'N/A').upper()}")
+        print(f"Type: {(order.get('type') or 'N/A').upper()}")
+        print(f"Side: {(order.get('side') or 'N/A').upper()}")
         print(f"Amount: {order.get('amount', 0):.6f}")
         print(f"Price: ${order.get('price', 0):,.2f}" if order.get('price') else "Price: MARKET")
-        print(f"Status: {order.get('status', 'N/A').upper()}")
+        print(f"Status: {(order.get('status') or 'N/A').upper()}")
         
         if order.get('filled'):
             print(f"Filled: {order.get('filled', 0):.6f}")
