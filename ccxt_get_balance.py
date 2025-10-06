@@ -2,7 +2,7 @@ import ccxt
 import os
 from pprint import pprint
 
-def get_hyperliquid_balance():
+def ccxt_get_hyperliquid_balance():
     """
     Fetch account balance from Hyperliquid exchange.
     Fetches both perp (swap) and spot account balances.
@@ -45,7 +45,7 @@ def get_hyperliquid_balance():
         print(f"Error fetching balance: {str(e)}")
         raise
 
-def print_balance_summary(balances):
+def ccxt_print_balance_summary(balances):
     """
     Print a formatted summary of the account balance.
     
@@ -149,10 +149,10 @@ if __name__ == "__main__":
         print("Fetching Hyperliquid account balance (Perp + Spot)...")
         
         # Fetch balance
-        balances = get_hyperliquid_balance()
+        balances = ccxt_get_hyperliquid_balance()
         
         # Print formatted summary
-        print_balance_summary(balances)
+        ccxt_print_balance_summary(balances)
         
         # Optionally print full balance details
         print("\nFull Balance Details:")

@@ -1,7 +1,7 @@
 import ccxt
 import os
 
-def get_positions():
+def ccxt_get_positions():
     """
     Fetch account positions from Hyperliquid using API credentials.
     
@@ -35,7 +35,7 @@ if __name__ == "__main__":
     print("=" * 60)
     
     try:
-        positions = get_positions()
+        positions = ccxt_get_positions()
         print(f"\nFound {len(positions)} positions:")
         for pos in positions:
             if pos.get('contracts', 0) != 0:  # Only show non-zero positions
