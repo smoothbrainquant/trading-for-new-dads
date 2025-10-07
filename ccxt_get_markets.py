@@ -92,6 +92,12 @@ if __name__ == "__main__":
     # Get all perpetual futures
     markets_df = ccxt_get_hyperliquid_perpetual_futures()
     
+    # Select top 10 instruments
+    if markets_df is not None and not markets_df.empty:
+        print(f"\nTotal markets found: {len(markets_df)}")
+        print("Selecting top 10 instruments (sorted alphabetically)...")
+        markets_df = markets_df.head(10)
+    
     # Display results
     display_markets(markets_df)
     
