@@ -3,6 +3,8 @@ Automated Trading Strategy Execution
 Main script for executing trading strategy based on 200d high and volatility.
 """
 
+from ccxt_get_markets_by_volume import ccxt_get_markets_by_volume
+
 
 def request_markets_by_volume():
     """
@@ -14,7 +16,13 @@ def request_markets_by_volume():
     Returns:
         list: List of market symbols sorted by volume
     """
-    pass
+    df = ccxt_get_markets_by_volume()
+    
+    if df is not None and not df.empty:
+        # Return list of symbols sorted by volume
+        return df['symbol'].tolist()
+    
+    return []
 
 
 def get_200d_daily_data(symbols):
