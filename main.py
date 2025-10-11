@@ -4,6 +4,7 @@ Main script for executing trading strategy based on 200d high and volatility.
 """
 
 from ccxt_get_markets_by_volume import ccxt_get_markets_by_volume
+from ccxt_get_data import ccxt_fetch_hyperliquid_daily_data
 
 
 def request_markets_by_volume():
@@ -38,7 +39,17 @@ def get_200d_daily_data(symbols):
     Returns:
         dict: Dictionary mapping symbols to their historical data
     """
-    pass
+    df = ccxt_fetch_hyperliquid_daily_data(symbols=symbols, days=200)
+    
+    if df is not None and not df.empty:
+        # Group by symbol and return as dictionary
+        result = {}
+        for symbol in df['symbol'].unique():
+            symbol_data = df[df['symbol'] == symbol].copy()
+            result[symbol] = symbol_data
+        return result
+    
+    return {}
 
 
 def calculate_days_from_200d_high(data):
