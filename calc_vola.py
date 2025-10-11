@@ -2,19 +2,26 @@ import pandas as pd
 import numpy as np
 
 
-def calculate_rolling_30d_volatility(csv_file_path):
+def calculate_rolling_30d_volatility(data):
     """
-    Calculate rolling 30-day volatility for instruments from daily data CSV.
+    Calculate rolling 30-day volatility for instruments from daily data.
     
     Args:
-        csv_file_path (str): Path to the CSV file containing daily data
-                            Expected columns: date, symbol, open, high, low, close, volume
+        data (str or pd.DataFrame): Either a path to CSV file or a pandas DataFrame
+                                   Expected columns: date, symbol, open, high, low, close, volume
     
     Returns:
         pd.DataFrame: DataFrame with date, symbol, close, daily_return, and volatility_30d columns
     """
-    # Read the CSV file
-    df = pd.read_csv(csv_file_path)
+    # Handle both CSV file path and DataFrame input
+    if isinstance(data, str):
+        # Read the CSV file
+        df = pd.read_csv(data)
+    elif isinstance(data, pd.DataFrame):
+        # Use the DataFrame directly (make a copy to avoid modifying original)
+        df = data.copy()
+    else:
+        raise TypeError("Input must be either a file path (str) or a pandas DataFrame")
     
     # Convert date to datetime
     df['date'] = pd.to_datetime(df['date'])
@@ -39,19 +46,26 @@ def calculate_rolling_30d_volatility(csv_file_path):
     return result
 
 
-def calculate_rolling_30d_volatility_simple(csv_file_path):
+def calculate_rolling_30d_volatility_simple(data):
     """
-    Calculate rolling 30-day volatility (non-annualized) for instruments from daily data CSV.
+    Calculate rolling 30-day volatility (non-annualized) for instruments from daily data.
     
     Args:
-        csv_file_path (str): Path to the CSV file containing daily data
-                            Expected columns: date, symbol, open, high, low, close, volume
+        data (str or pd.DataFrame): Either a path to CSV file or a pandas DataFrame
+                                   Expected columns: date, symbol, open, high, low, close, volume
     
     Returns:
         pd.DataFrame: DataFrame with date, symbol, close, daily_return, and volatility_30d columns
     """
-    # Read the CSV file
-    df = pd.read_csv(csv_file_path)
+    # Handle both CSV file path and DataFrame input
+    if isinstance(data, str):
+        # Read the CSV file
+        df = pd.read_csv(data)
+    elif isinstance(data, pd.DataFrame):
+        # Use the DataFrame directly (make a copy to avoid modifying original)
+        df = data.copy()
+    else:
+        raise TypeError("Input must be either a file path (str) or a pandas DataFrame")
     
     # Convert date to datetime
     df['date'] = pd.to_datetime(df['date'])
@@ -76,10 +90,14 @@ def calculate_rolling_30d_volatility_simple(csv_file_path):
 
 
 if __name__ == "__main__":
-    # Example usage
+    # Example usage with CSV file path
     csv_file = "top10_markets_100d_daily_data.csv"
     
-    # Calculate annualized volatility
+    print("=" * 60)
+    print("Example 1: Using CSV file path")
+    print("=" * 60)
+    
+    # Calculate annualized volatility from CSV file
     result = calculate_rolling_30d_volatility(csv_file)
     print("\nRolling 30-day Volatility (Annualized):")
     print(result.head(40))
@@ -90,3 +108,21 @@ if __name__ == "__main__":
     output_file = "rolling_30d_volatility.csv"
     result.to_csv(output_file, index=False)
     print(f"\nResults saved to {output_file}")
+    
+    # Example usage with DataFrame
+    print("\n" + "=" * 60)
+    print("Example 2: Using pandas DataFrame")
+    print("=" * 60)
+    
+    # Load data into DataFrame
+    df = pd.read_csv(csv_file)
+    print(f"\nLoaded DataFrame with {len(df)} rows")
+    
+    # Filter to only BTC data for demonstration
+    btc_df = df[df['symbol'] == 'BTC/USDC:USDC'].copy()
+    
+    # Calculate volatility from DataFrame
+    btc_result = calculate_rolling_30d_volatility(btc_df)
+    print("\nBTC Rolling 30-day Volatility:")
+    print(btc_result[btc_result['volatility_30d'].notna()].head(10))
+    print(f"\nBTC Average 30d Volatility: {btc_result['volatility_30d'].mean():.4f}")
