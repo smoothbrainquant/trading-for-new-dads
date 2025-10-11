@@ -7,6 +7,7 @@ from ccxt_get_markets_by_volume import ccxt_get_markets_by_volume
 from ccxt_get_data import ccxt_fetch_hyperliquid_daily_data
 from ccxt_get_balance import ccxt_get_hyperliquid_balance
 from ccxt_get_positions import ccxt_get_positions
+from select_insts import select_instruments_near_200d_high
 
 
 def request_markets_by_volume():
@@ -85,7 +86,7 @@ def calculate_200d_ma(data):
     pass
 
 
-def select_instruments_by_days_from_high(days_from_high, threshold):
+def select_instruments_by_days_from_high(data_source, threshold):
     """
     Select instruments based on days from 200d high.
     
@@ -93,13 +94,14 @@ def select_instruments_by_days_from_high(days_from_high, threshold):
     their 200-day high, using a specified threshold.
     
     Args:
-        days_from_high (dict): Dictionary of symbols and days from high
+        data_source (str or pd.DataFrame): Either a path to a CSV file or a pandas DataFrame
         threshold (int): Maximum number of days from high to include
         
     Returns:
-        list: List of selected instrument symbols
+        pd.DataFrame: DataFrame of selected instruments with their days since 200d high
     """
-    pass
+    # Use the imported function from select_insts.py
+    return select_instruments_near_200d_high(data_source, max_days=threshold)
 
 
 def calculate_rolling_30d_volatility(data, selected_symbols):
