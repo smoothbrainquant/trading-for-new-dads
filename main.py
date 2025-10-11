@@ -5,6 +5,8 @@ Main script for executing trading strategy based on 200d high and volatility.
 
 from ccxt_get_markets_by_volume import ccxt_get_markets_by_volume
 from ccxt_get_data import ccxt_fetch_hyperliquid_daily_data
+from ccxt_get_balance import ccxt_get_hyperliquid_balance
+from ccxt_get_positions import ccxt_get_positions
 
 
 def request_markets_by_volume():
@@ -173,7 +175,7 @@ def get_current_positions():
     Returns:
         dict: Dictionary mapping symbols to position information
     """
-    pass
+    return ccxt_get_positions()
 
 
 def get_balance():
@@ -185,7 +187,7 @@ def get_balance():
     Returns:
         dict: Account balance information
     """
-    pass
+    return ccxt_get_hyperliquid_balance()
 
 
 def calculate_difference_weights_positions(target_weights, current_positions):
