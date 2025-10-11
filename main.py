@@ -3,8 +3,7 @@ Automated Trading Strategy Execution
 Main script for executing trading strategy based on 200d high and volatility.
 """
 
-import ccxt
-import pandas as pd
+from ccxt_get_markets_by_volume import ccxt_get_markets_by_volume
 
 
 def request_markets_by_volume():
@@ -17,71 +16,13 @@ def request_markets_by_volume():
     Returns:
         list: List of market symbols sorted by volume
     """
-    # Initialize Hyperliquid exchange
-    exchange = ccxt.hyperliquid({
-        'enableRateLimit': True,
-    })
+    df = ccxt_get_markets_by_volume()
     
-    try:
-        print("Loading Hyperliquid markets...")
-        
-        # Fetch all markets
-        markets = exchange.load_markets()
-        
-        print(f"Found {len(markets)} markets. Fetching tickers with volume data...")
-        
-        # Fetch all tickers (contains volume information)
-        tickers = exchange.fetch_tickers()
-        
-        # Prepare market data with volume
-        market_data = []
-        
-        for symbol, ticker in tickers.items():
-            if symbol in markets:
-                market = markets[symbol]
-                
-                # Calculate notional volume (volume * last price)
-                volume = ticker.get('quoteVolume', 0) or 0  # This is already notional volume
-                base_volume = ticker.get('baseVolume', 0) or 0
-                last_price = ticker.get('last', 0) or 0
-                
-                # If quoteVolume is not available, calculate from baseVolume
-                if volume == 0 and base_volume > 0 and last_price > 0:
-                    volume = base_volume * last_price
-                
-                market_data.append({
-                    'symbol': symbol,
-                    'type': market.get('type'),
-                    'base': market.get('base'),
-                    'quote': market.get('quote'),
-                    'last_price': last_price,
-                    'base_volume_24h': base_volume,
-                    'notional_volume_24h': volume,
-                    'bid': ticker.get('bid', 0),
-                    'ask': ticker.get('ask', 0),
-                    'high_24h': ticker.get('high', 0),
-                    'low_24h': ticker.get('low', 0),
-                    'change_24h': ticker.get('change', 0),
-                    'percentage_24h': ticker.get('percentage', 0),
-                    'active': market.get('active'),
-                })
-        
-        # Create DataFrame
-        df = pd.DataFrame(market_data)
-        
-        # Sort by notional volume (highest first)
-        if not df.empty:
-            df = df.sort_values('notional_volume_24h', ascending=False).reset_index(drop=True)
-            # Return list of symbols sorted by volume
-            return df['symbol'].tolist()
-        
-        return []
-        
-    except Exception as e:
-        print(f"Error fetching markets: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        return []
+    if df is not None and not df.empty:
+        # Return list of symbols sorted by volume
+        return df['symbol'].tolist()
+    
+    return []
 
 
 def get_200d_daily_data(symbols):
