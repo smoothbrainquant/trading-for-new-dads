@@ -3,22 +3,28 @@ import numpy as np
 from datetime import datetime
 
 
-def calculate_days_since_200d_high(csv_file_path):
+def calculate_days_since_200d_high(data_source):
     """
     Calculate days since last 200-day high for each symbol in the dataset.
     
     Parameters:
     -----------
-    csv_file_path : str
-        Path to the CSV file with columns: date, symbol, open, high, low, close, volume
+    data_source : str or pd.DataFrame
+        Either a path to a CSV file or a pandas DataFrame
+        Expected columns: date, symbol, open, high, low, close, volume
     
     Returns:
     --------
     pd.DataFrame
         DataFrame with columns: date, symbol, high, rolling_200d_high, days_since_200d_high
     """
-    # Read the CSV file
-    df = pd.read_csv(csv_file_path)
+    # Read the data - handle both CSV path and DataFrame
+    if isinstance(data_source, str):
+        df = pd.read_csv(data_source)
+    elif isinstance(data_source, pd.DataFrame):
+        df = data_source.copy()
+    else:
+        raise TypeError("data_source must be either a file path (str) or a pandas DataFrame")
     
     # Convert date to datetime
     df['date'] = pd.to_datetime(df['date'])
@@ -61,21 +67,22 @@ def calculate_days_since_200d_high(csv_file_path):
     return output_df
 
 
-def get_current_days_since_high(csv_file_path):
+def get_current_days_since_high(data_source):
     """
     Get the most recent days_since_200d_high value for each symbol.
     
     Parameters:
     -----------
-    csv_file_path : str
-        Path to the CSV file with columns: date, symbol, open, high, low, close, volume
+    data_source : str or pd.DataFrame
+        Either a path to a CSV file or a pandas DataFrame
+        Expected columns: date, symbol, open, high, low, close, volume
     
     Returns:
     --------
     pd.DataFrame
         DataFrame with the latest date's data for each symbol
     """
-    full_results = calculate_days_since_200d_high(csv_file_path)
+    full_results = calculate_days_since_200d_high(data_source)
     
     # Get the most recent date for each symbol
     latest_data = full_results.sort_values('date').groupby('symbol').tail(1).reset_index(drop=True)
@@ -84,9 +91,11 @@ def get_current_days_since_high(csv_file_path):
 
 
 if __name__ == "__main__":
-    # Example usage
+    # Example usage with CSV file
     csv_file = "top10_markets_100d_daily_data.csv"
     
+    print("Example 1: Reading from CSV file")
+    print("="*80)
     # Calculate days since 200d high for all dates
     print("Calculating days since 200-day high for all data...")
     full_results = calculate_days_since_200d_high(csv_file)
@@ -106,3 +115,20 @@ if __name__ == "__main__":
     output_file = "days_since_200d_high_results.csv"
     full_results.to_csv(output_file, index=False)
     print(f"\nFull results saved to: {output_file}")
+    
+    # Example usage with DataFrame
+    print("\n" + "="*80)
+    print("Example 2: Reading from DataFrame")
+    print("="*80)
+    df = pd.read_csv(csv_file)
+    # Filter to just one or two symbols for demonstration
+    sample_df = df[df['symbol'].isin(['BTC/USDC:USDC', 'ETH/USDC:USDC'])].copy()
+    
+    print(f"Processing {len(sample_df)} rows for demonstration...")
+    sample_results = calculate_days_since_200d_high(sample_df)
+    print("\nSample results from DataFrame input:")
+    print(sample_results.tail(10))
+    
+    print("\nCurrent status from DataFrame input:")
+    sample_current = get_current_days_since_high(sample_df)
+    print(sample_current.to_string(index=False))
