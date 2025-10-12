@@ -103,7 +103,7 @@ def select_instruments_by_days_from_high(days_from_high, threshold):
     pass
 
 
-def calculate_rolling_30d_volatility(data, selected_symbols):
+def calculate_rolling_30d_volatility(data):
     """
     Calculate rolling 30d volatility.
     
@@ -112,7 +112,6 @@ def calculate_rolling_30d_volatility(data, selected_symbols):
     
     Args:
         data (dict): Historical price data for each symbol
-        selected_symbols (list): List of selected instrument symbols
         
     Returns:
         dict: Dictionary mapping symbols to their 30d volatility
