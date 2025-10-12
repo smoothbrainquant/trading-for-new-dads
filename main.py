@@ -8,6 +8,7 @@ from ccxt_get_data import ccxt_fetch_hyperliquid_daily_data
 from ccxt_get_balance import ccxt_get_hyperliquid_balance
 from ccxt_get_positions import ccxt_get_positions
 from select_insts import select_instruments_near_200d_high
+from calc_vola import calculate_rolling_30d_volatility as calc_vola_func
 
 
 def request_markets_by_volume():
@@ -104,7 +105,7 @@ def select_instruments_by_days_from_high(data_source, threshold):
     return select_instruments_near_200d_high(data_source, max_days=threshold)
 
 
-def calculate_rolling_30d_volatility(data, selected_symbols):
+def calculate_rolling_30d_volatility(data):
     """
     Calculate rolling 30d volatility.
     
@@ -113,12 +114,11 @@ def calculate_rolling_30d_volatility(data, selected_symbols):
     
     Args:
         data (dict): Historical price data for each symbol
-        selected_symbols (list): List of selected instrument symbols
         
     Returns:
         dict: Dictionary mapping symbols to their 30d volatility
     """
-    pass
+    return calc_vola_func(data)
 
 
 def calc_weights(volatilities):
