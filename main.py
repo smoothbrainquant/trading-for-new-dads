@@ -9,6 +9,7 @@ from ccxt_get_balance import ccxt_get_hyperliquid_balance
 from ccxt_get_positions import ccxt_get_positions
 from select_insts import select_instruments_near_200d_high
 from calc_vola import calculate_rolling_30d_volatility as calc_vola_func
+from calc_weights import calculate_weights
 import pandas as pd
 
 
@@ -195,7 +196,8 @@ def calc_weights(volatilities):
         - This is a simple equal risk contribution approach; more sophisticated
           implementations might consider correlations between assets
     """
-    pass
+    # Use the imported calculate_weights function from calc_weights module
+    return calculate_weights(volatilities)
 
 
 def get_current_positions():
