@@ -10,6 +10,7 @@ from ccxt_get_positions import ccxt_get_positions
 from select_insts import select_instruments_near_200d_high
 from calc_vola import calculate_rolling_30d_volatility as calc_vola_func
 from calc_weights import calculate_weights
+from check_positions import check_positions, get_position_weights
 import pandas as pd
 
 
@@ -209,7 +210,7 @@ def get_current_positions():
     Returns:
         dict: Dictionary mapping symbols to position information
     """
-    return ccxt_get_positions()
+    return check_positions()
 
 
 def get_balance():
@@ -238,7 +239,21 @@ def calculate_difference_weights_positions(target_weights, current_positions):
     Returns:
         dict: Dictionary mapping symbols to weight differences
     """
-    pass
+    # Get current position weights
+    current_weights = get_position_weights(current_positions)
+    
+    # Calculate differences
+    differences = {}
+    
+    # Check all target symbols
+    all_symbols = set(target_weights.keys()) | set(current_weights.keys())
+    
+    for symbol in all_symbols:
+        target_weight = target_weights.get(symbol, 0)
+        current_weight = current_weights.get(symbol, 0)
+        differences[symbol] = target_weight - current_weight
+    
+    return differences
 
 
 def send_orders_if_difference_exceeds_threshold(differences, threshold=0.05):
