@@ -8,6 +8,8 @@ from ccxt_get_data import ccxt_fetch_hyperliquid_daily_data
 from ccxt_get_balance import ccxt_get_hyperliquid_balance
 from ccxt_get_positions import ccxt_get_positions
 from select_insts import select_instruments_near_200d_high
+from calc_vola import calculate_rolling_30d_volatility as calc_vola_func
+import pandas as pd
 
 
 def request_markets_by_volume():
@@ -118,7 +120,35 @@ def calculate_rolling_30d_volatility(data, selected_symbols):
     Returns:
         dict: Dictionary mapping symbols to their 30d volatility
     """
-    pass
+    # Combine data for selected symbols into a single DataFrame
+    combined_data = []
+    for symbol in selected_symbols:
+        if symbol in data:
+            symbol_df = data[symbol].copy()
+            if 'symbol' not in symbol_df.columns:
+                symbol_df['symbol'] = symbol
+            combined_data.append(symbol_df)
+    
+    if not combined_data:
+        return {}
+    
+    # Concatenate all data into one DataFrame
+    df = pd.concat(combined_data, ignore_index=True)
+    
+    # Calculate rolling volatility using the imported function
+    volatility_df = calc_vola_func(df)
+    
+    # Extract the most recent volatility for each symbol
+    result = {}
+    for symbol in selected_symbols:
+        symbol_data = volatility_df[volatility_df['symbol'] == symbol]
+        if not symbol_data.empty:
+            # Get the most recent non-null volatility value
+            latest_volatility = symbol_data['volatility_30d'].dropna().iloc[-1] if not symbol_data['volatility_30d'].dropna().empty else None
+            if latest_volatility is not None:
+                result[symbol] = latest_volatility
+    
+    return result
 
 
 def calc_weights(volatilities):
