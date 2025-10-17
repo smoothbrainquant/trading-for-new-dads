@@ -460,9 +460,9 @@ def main():
     print("AUTOMATED TRADING STRATEGY EXECUTION")
     print("="*80)
     
-    # Step 1: Request markets by volume, select markets over $100k volume/day
-    print("\n[1/11] Requesting markets by volume (>$100k/day)...")
-    symbols = request_markets_by_volume(min_volume=100000)
+    # Step 1: Request markets by volume, select markets over $10m volume/day
+    print("\n[1/11] Requesting markets by volume (>$10m/day)...")
+    symbols = request_markets_by_volume(min_volume=10000000)
     print(f"Selected {len(symbols)} markets")
     
     if not symbols:
