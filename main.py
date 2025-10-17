@@ -14,21 +14,28 @@ from check_positions import check_positions, get_position_weights
 import pandas as pd
 
 
-def request_markets_by_volume():
+def request_markets_by_volume(min_volume=100000):
     """
-    Request markets by volume.
+    Request markets by volume, filtered by minimum daily volume.
     
     Fetches a list of markets sorted by trading volume to identify
     the most liquid trading instruments.
     
+    Args:
+        min_volume (float): Minimum 24h notional volume in USD (default: $100,000)
+    
     Returns:
-        list: List of market symbols sorted by volume
+        list: List of market symbols sorted by volume (filtered by min_volume)
     """
     df = ccxt_get_markets_by_volume()
     
     if df is not None and not df.empty:
+        # Filter by minimum volume
+        df_filtered = df[df['notional_volume_24h'] >= min_volume]
+        print(f"\nFiltered to {len(df_filtered)} markets with volume >= ${min_volume:,.0f}")
+        
         # Return list of symbols sorted by volume
-        return df['symbol'].tolist()
+        return df_filtered['symbol'].tolist()
     
     return []
 
@@ -72,7 +79,30 @@ def calculate_days_from_200d_high(data):
     Returns:
         dict: Dictionary mapping symbols to days since 200d high
     """
-    pass
+    from calc_days_from_high import get_current_days_since_high
+    
+    # Combine all data into a single DataFrame
+    combined_data = []
+    for symbol, symbol_df in data.items():
+        df_copy = symbol_df.copy()
+        if 'symbol' not in df_copy.columns:
+            df_copy['symbol'] = symbol
+        combined_data.append(df_copy)
+    
+    if not combined_data:
+        return {}
+    
+    df = pd.concat(combined_data, ignore_index=True)
+    
+    # Calculate days since 200d high
+    result_df = get_current_days_since_high(df)
+    
+    # Convert to dictionary
+    result = {}
+    for _, row in result_df.iterrows():
+        result[row['symbol']] = int(row['days_since_200d_high'])
+    
+    return result
 
 
 def calculate_200d_ma(data):
@@ -256,21 +286,157 @@ def calculate_difference_weights_positions(target_weights, current_positions):
     return differences
 
 
-def send_orders_if_difference_exceeds_threshold(differences, threshold=0.05):
+def get_account_notional_value():
     """
-    Send orders to adjust where difference between weights and positions is more than 5%.
+    Get account notional value from balance + positions.
     
-    Places buy/sell orders to rebalance the portfolio when the difference
-    between target and actual weights exceeds the specified threshold (default 5%).
+    Calculates total account value including both free balance and
+    the notional value of all open positions.
+    
+    Returns:
+        float: Total account notional value in USD
+    """
+    # Get balance
+    balance = get_balance()
+    
+    # Get positions
+    positions_data = get_current_positions()
+    
+    # Extract account value from balance (perp account)
+    perp_balance = balance.get('perp', {})
+    perp_info = perp_balance.get('info', {})
+    margin_summary = perp_info.get('marginSummary', {})
+    account_value = float(margin_summary.get('accountValue', 0))
+    
+    print(f"\nAccount notional value: ${account_value:,.2f}")
+    
+    return account_value
+
+
+def calculate_target_positions(weights, notional_value):
+    """
+    Calculate target positions based on weights and notional value.
     
     Args:
-        differences (dict): Dictionary of symbols to weight differences
-        threshold (float): Minimum difference threshold to trigger rebalancing (default 0.05 = 5%)
+        weights (dict): Dictionary of symbols to portfolio weights
+        notional_value (float): Total account notional value
         
     Returns:
-        list: List of order results
+        dict: Dictionary of symbols to target notional position sizes
     """
-    pass
+    target_positions = {}
+    
+    for symbol, weight in weights.items():
+        target_notional = weight * notional_value
+        target_positions[symbol] = target_notional
+        print(f"  {symbol}: weight={weight:.4f}, target=${target_notional:,.2f}")
+    
+    return target_positions
+
+
+def calculate_trade_amounts(target_positions, current_positions, notional_value, threshold=0.05):
+    """
+    Calculate trade amounts where target positions are > threshold difference from current.
+    
+    Args:
+        target_positions (dict): Dictionary of symbols to target notional values
+        current_positions (dict): Dictionary of current position information
+        notional_value (float): Total account notional value
+        threshold (float): Minimum difference as fraction of notional to trigger trade (default 0.05)
+        
+    Returns:
+        dict: Dictionary of symbols to trade amounts (positive = buy, negative = sell)
+    """
+    from ccxt_make_order import ccxt_make_order
+    
+    trades = {}
+    
+    # Get current position notional values
+    current_notional = {}
+    for pos in current_positions.get('positions', []):
+        symbol = pos.get('symbol')
+        contracts = pos.get('contracts', 0)
+        mark_price = pos.get('markPrice', 0)
+        notional = abs(contracts * mark_price)
+        current_notional[symbol] = notional
+    
+    # Calculate all symbols to consider
+    all_symbols = set(target_positions.keys()) | set(current_notional.keys())
+    
+    print(f"\nCalculating trade amounts (threshold: {threshold*100:.0f}% of notional = ${notional_value * threshold:,.2f})")
+    print("=" * 80)
+    
+    for symbol in all_symbols:
+        target = target_positions.get(symbol, 0)
+        current = current_notional.get(symbol, 0)
+        difference = target - current
+        
+        # Calculate percentage difference relative to total notional value
+        pct_difference = abs(difference) / notional_value if notional_value > 0 else 0
+        
+        print(f"\n{symbol}:")
+        print(f"  Current: ${current:,.2f}")
+        print(f"  Target:  ${target:,.2f}")
+        print(f"  Diff:    ${difference:,.2f} ({pct_difference*100:.2f}% of notional)")
+        
+        # Only trade if difference exceeds threshold
+        if pct_difference > threshold:
+            trades[symbol] = difference
+            print(f"  ✓ Trade needed: ${abs(difference):,.2f} ({'BUY' if difference > 0 else 'SELL'})")
+        else:
+            print(f"  ✗ No trade needed (below {threshold*100:.0f}% threshold)")
+    
+    return trades
+
+
+def send_orders_if_difference_exceeds_threshold(trades, dry_run=True):
+    """
+    Send orders to adjust positions based on calculated trade amounts.
+    
+    Places buy/sell orders to rebalance the portfolio when the difference
+    between target and actual positions exceeds the specified threshold.
+    
+    Args:
+        trades (dict): Dictionary of symbols to trade amounts (positive = buy, negative = sell)
+        dry_run (bool): If True, only prints orders without executing (default: True)
+        
+    Returns:
+        list: List of order results (empty if dry_run=True)
+    """
+    from ccxt_make_order import ccxt_make_order
+    
+    if not trades:
+        print("\nNo trades to execute.")
+        return []
+    
+    print(f"\n{'='*80}")
+    print(f"ORDER EXECUTION {'(DRY RUN)' if dry_run else '(LIVE)'}")
+    print(f"{'='*80}")
+    
+    orders = []
+    
+    for symbol, amount in trades.items():
+        side = 'buy' if amount > 0 else 'sell'
+        notional = abs(amount)
+        
+        print(f"\n{symbol}: {side.upper()} ${notional:,.2f}")
+        
+        if dry_run:
+            print(f"  [DRY RUN] Would place {side} order for ${notional:,.2f}")
+        else:
+            try:
+                order = ccxt_make_order(
+                    symbol=symbol,
+                    notional_amount=notional,
+                    side=side,
+                    order_type='market'
+                )
+                orders.append(order)
+                print(f"  ✓ Order placed successfully")
+            except Exception as e:
+                print(f"  ✗ Error placing order: {str(e)}")
+    
+    return orders
 
 
 def main():
@@ -278,18 +444,126 @@ def main():
     Main execution function.
     
     Orchestrates the entire trading strategy workflow:
-    1. Request markets by volume
+    1. Request markets by volume (>$100k/day)
     2. Get 200d daily data
     3. Calculate days from 200d high
-    4. Calculate 200d MA
-    5. Select instruments based on days from 200d high
-    6. Calculate rolling 30d volatility
-    7. Get current positions
-    8. Get balance
-    9. Calculate difference between weights and current positions
-    10. Send orders to adjust where difference exceeds 5%
+    4. Select instruments <= 20d from high
+    5. Calculate rolling 30d volatility
+    6. Calculate weights based on inverse volatility
+    7. Get account notional value from balance + positions
+    8. Calculate target positions with weights * notional
+    9. Get current positions
+    10. Calculate difference between target and current positions
+    11. Calculate trade amounts where target positions are > 5% difference from notional
     """
-    pass
+    print("="*80)
+    print("AUTOMATED TRADING STRATEGY EXECUTION")
+    print("="*80)
+    
+    # Step 1: Request markets by volume, select markets over $100k volume/day
+    print("\n[1/11] Requesting markets by volume (>$100k/day)...")
+    symbols = request_markets_by_volume(min_volume=100000)
+    print(f"Selected {len(symbols)} markets")
+    
+    if not symbols:
+        print("No markets found. Exiting.")
+        return
+    
+    # Step 2: Get 200d daily data
+    print("\n[2/11] Fetching 200 days of daily data...")
+    historical_data = get_200d_daily_data(symbols)
+    print(f"Retrieved data for {len(historical_data)} symbols")
+    
+    if not historical_data:
+        print("No historical data available. Exiting.")
+        return
+    
+    # Step 3: Calculate days from 200d high
+    print("\n[3/11] Calculating days from 200d high...")
+    days_from_high = calculate_days_from_200d_high(historical_data)
+    print(f"Calculated days from high for {len(days_from_high)} symbols")
+    
+    # Step 4: Select instruments <= 20d from high
+    print("\n[4/11] Selecting instruments <= 20 days from high...")
+    # Create a DataFrame for filtering
+    selected_symbols = [symbol for symbol, days in days_from_high.items() if days <= 20]
+    print(f"Selected {len(selected_symbols)} instruments near their 200d high:")
+    for symbol in selected_symbols:
+        print(f"  {symbol}: {days_from_high[symbol]} days from high")
+    
+    if not selected_symbols:
+        print("No instruments near their 200d high. Exiting.")
+        return
+    
+    # Step 5: Calculate rolling 30d volatility
+    print("\n[5/11] Calculating rolling 30d volatility...")
+    volatilities = calculate_rolling_30d_volatility(historical_data, selected_symbols)
+    print(f"Calculated volatility for {len(volatilities)} symbols:")
+    for symbol, vol in volatilities.items():
+        print(f"  {symbol}: {vol:.6f}")
+    
+    if not volatilities:
+        print("No volatility data available. Exiting.")
+        return
+    
+    # Step 6: Calculate weights based on inverse volatility
+    print("\n[6/11] Calculating weights based on inverse volatility...")
+    weights = calc_weights(volatilities)
+    print(f"Calculated weights for {len(weights)} symbols:")
+    for symbol, weight in weights.items():
+        print(f"  {symbol}: {weight:.4f} ({weight*100:.2f}%)")
+    
+    # Step 7: Get account notional value from balance + positions
+    print("\n[7/11] Getting account notional value...")
+    notional_value = get_account_notional_value()
+    
+    # Step 8: Calculate target positions with weights * notional
+    print("\n[8/11] Calculating target positions...")
+    target_positions = calculate_target_positions(weights, notional_value)
+    
+    # Step 9: Get current positions
+    print("\n[9/11] Getting current positions...")
+    current_positions = get_current_positions()
+    print(f"Currently holding {current_positions['total_positions']} positions")
+    print(f"Total unrealized PnL: ${current_positions['total_unrealized_pnl']:,.2f}")
+    
+    # Step 10: Calculate difference between target and current positions
+    print("\n[10/11] Calculating differences between target and current positions...")
+    # This is handled within calculate_trade_amounts
+    
+    # Step 11: Calculate trade amounts where target positions are > 5% difference from notional
+    print("\n[11/11] Calculating trade amounts (>5% threshold)...")
+    trades = calculate_trade_amounts(
+        target_positions, 
+        current_positions, 
+        notional_value, 
+        threshold=0.05
+    )
+    
+    # Execute orders (dry run by default)
+    print("\n" + "="*80)
+    print("TRADE EXECUTION")
+    print("="*80)
+    
+    if trades:
+        print(f"\n{len(trades)} trade(s) to execute:")
+        for symbol, amount in trades.items():
+            side = 'BUY' if amount > 0 else 'SELL'
+            print(f"  {symbol}: {side} ${abs(amount):,.2f}")
+        
+        # Execute orders (set dry_run=False to execute live)
+        send_orders_if_difference_exceeds_threshold(trades, dry_run=True)
+        
+        print("\n" + "="*80)
+        print("NOTE: Orders are in DRY RUN mode by default.")
+        print("To execute live orders, set dry_run=False in send_orders_if_difference_exceeds_threshold()")
+        print("="*80)
+    else:
+        print("\nNo trades needed. Portfolio is within rebalancing threshold.")
+    
+    print("\n" + "="*80)
+    print("STRATEGY EXECUTION COMPLETE")
+    print("="*80)
 
 
 if __name__ == "__main__":
