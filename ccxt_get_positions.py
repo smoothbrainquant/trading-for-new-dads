@@ -17,14 +17,15 @@ def ccxt_get_positions():
     
     # Initialize Hyperliquid exchange with authentication
     exchange = ccxt.hyperliquid({
-        'apiKey': api_key,
-        'secret': api_secret,
+        'privateKey': api_secret,
+        'walletAddress': api_key,
         'enableRateLimit': True,
     })
     
     try:
-        # Fetch account positions
-        positions = exchange.fetch_positions()
+        # Fetch account positions (for perp/swap markets)
+        # Pass None for symbols to get all positions
+        positions = exchange.fetch_positions(symbols=None, params={'user': api_key, 'type': 'swap'})
         return positions
     except Exception as e:
         print(f"Error fetching positions: {str(e)}")

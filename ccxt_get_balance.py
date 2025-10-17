@@ -23,10 +23,9 @@ def ccxt_get_hyperliquid_balance():
     
     # Initialize Hyperliquid exchange with authentication
     exchange = ccxt.hyperliquid({
-        'apiKey': api_key,
-        'secret': secret_key,
+        'privateKey': secret_key,
+        'walletAddress': api_key,
         'enableRateLimit': True,
-        'walletAddress': api_key,  # Use the API key as wallet address
     })
     
     try:
