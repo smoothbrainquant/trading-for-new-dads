@@ -549,6 +549,12 @@ def main():
         default=False,
         help='Run in dry-run mode (no actual orders placed)'
     )
+    parser.add_argument(
+        '--leverage',
+        type=float,
+        default=1.0,
+        help='Leverage multiplier for notional value (e.g., 2.0 for 2x leverage)'
+    )
     args = parser.parse_args()
     
     print("="*80)
@@ -557,6 +563,7 @@ def main():
     print(f"\nParameters:")
     print(f"  Days since high: {args.days_since_high}")
     print(f"  Rebalance threshold: {args.rebalance_threshold*100:.1f}%")
+    print(f"  Leverage: {args.leverage}x")
     print(f"  Dry run: {args.dry_run}")
     print("="*80)
     
@@ -615,7 +622,12 @@ def main():
     
     # Step 7: Get account notional value from balance + positions
     print("\n[7/11] Getting account notional value...")
-    notional_value = get_account_notional_value()
+    base_notional_value = get_account_notional_value()
+    
+    # Apply leverage multiplier
+    notional_value = base_notional_value * args.leverage
+    if args.leverage != 1.0:
+        print(f"Applying {args.leverage}x leverage: ${base_notional_value:,.2f} → ${notional_value:,.2f}")
     
     # Step 8: Calculate target positions with weights * notional
     print("\n[8/11] Calculating target positions...")
