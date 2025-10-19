@@ -3768,7 +3768,7 @@ class hyperliquid(Exchange, ImplicitAPI):
         return [order, globalParams]
 
     def create_twap_order_request(self, symbol: str, side: OrderSide, amount: float, minutes: int, params={}) -> dict:
-        \"\"\"
+        """
         Build a TWAP order request for Hyperliquid's Exchange endpoint.
 
         Docs: https://docs.chainstack.com/docs/hyperliquid-twap-orders
@@ -3782,10 +3782,10 @@ class hyperliquid(Exchange, ImplicitAPI):
             - bool [randomize]: randomize slices ('random' vs 'na') (default False)
             - str  [vaultAddress] | [subAccountAddress]: optional vault/subaccount to trade on behalf of
         :returns dict: signed request body for privatePostExchange
-        \"\"\"
+        """
         self.load_markets()
         market = self.market(symbol)
-        isBuy = (self.safe_string_upper(side) == 'BUY')
+        isBuy = (side.upper() == 'BUY')
         sz = self.amount_to_precision(symbol, amount)
         reduceOnly = self.safe_bool(params, 'reduceOnly', False)
         randomize = self.safe_bool(params, 'randomize', False)
@@ -3824,12 +3824,12 @@ class hyperliquid(Exchange, ImplicitAPI):
         return request
 
     def create_twap_order(self, symbol: str, side: OrderSide, amount: float, minutes: int, params={}):
-        \"\"\"
+        """
         Place a TWAP order via the Exchange endpoint.
 
         This wraps `create_twap_order_request` and executes `privatePostExchange`.
         Returns the raw exchange response (Hyperliquid replies with `{status, response}`).
-        \"\"\"
+        """
         self.check_required_credentials()
         request = self.create_twap_order_request(symbol, side, amount, minutes, params)
         response = self.privatePostExchange(request)
