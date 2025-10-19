@@ -25,7 +25,7 @@ def ccxt_get_positions():
     try:
         # Fetch account positions (for perp/swap markets)
         # Pass None for symbols to get all positions
-        positions = exchange.fetch_positions(symbols=None, params={'user': api_key, 'type': 'swap'})
+        positions = exchange.fetch_positions(symbols=None)
         return positions
     except Exception as e:
         print(f"Error fetching positions: {str(e)}")
