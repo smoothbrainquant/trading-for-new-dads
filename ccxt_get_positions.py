@@ -39,11 +39,16 @@ if __name__ == "__main__":
         print(f"\nFound {len(positions)} positions:")
         for pos in positions:
             if pos.get('contracts', 0) != 0:  # Only show non-zero positions
+                # Hyperliquid stores mark price in info['markPx']
+                mark_price = pos.get('markPrice')
+                if mark_price is None:
+                    mark_price = pos.get('info', {}).get('markPx')
+                
                 print(f"\nSymbol: {pos.get('symbol')}")
                 print(f"  Side: {pos.get('side')}")
                 print(f"  Contracts: {pos.get('contracts')}")
                 print(f"  Entry Price: {pos.get('entryPrice')}")
-                print(f"  Mark Price: {pos.get('markPrice')}")
+                print(f"  Mark Price: {mark_price}")
                 print(f"  Unrealized PnL: {pos.get('unrealizedPnl')}")
     except Exception as e:
         print(f"Failed to fetch positions: {str(e)}")

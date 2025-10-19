@@ -373,8 +373,13 @@ def calculate_trade_amounts(target_positions, current_positions, notional_value,
         if contracts == 0:
             continue
             
-        # Get price - try markPrice, then entryPrice, then fetch current price
+        # Get price - try markPrice, then info['markPx'] (Hyperliquid-specific), then entryPrice, then fetch current price
         mark_price = pos.get('markPrice')
+        if mark_price is None or mark_price == 0:
+            # Hyperliquid stores mark price in info['markPx']
+            mark_price = pos.get('info', {}).get('markPx')
+            if mark_price:
+                mark_price = float(mark_price)
         if mark_price is None or mark_price == 0:
             mark_price = pos.get('entryPrice')
             if mark_price is None or mark_price == 0:
