@@ -343,9 +343,16 @@ def calculate_trade_amounts(target_positions, current_positions, notional_value,
     neutralized (closed) regardless of the threshold. This ensures that off-target 
     positions are removed from the portfolio.
     
+    This function correctly handles SHORT positions by:
+    - Tracking position side (long vs short) based on contract sign
+    - Using signed notional values (negative for short, positive for long)
+    - Calculating correct trade amounts: target - current
+      * Short position (current=-1000, target=0): diff = +1000 (BUY to close)
+      * Long position (current=+1000, target=0): diff = -1000 (SELL to close)
+    
     Args:
-        target_positions (dict): Dictionary of symbols to target notional values
-        current_positions (dict): Dictionary of current position information
+        target_positions (dict): Dictionary of symbols to target notional values (always positive/long)
+        current_positions (dict): Dictionary of current position information from exchange
         notional_value (float): Total account notional value
         threshold (float): Minimum difference as fraction of notional to trigger trade (default 0.05)
         
@@ -368,8 +375,13 @@ def calculate_trade_amounts(target_positions, current_positions, notional_value,
             'enableRateLimit': True,
         })
     
-    # Get current position notional values
+    # Get current position notional values with proper sign handling
+    # For SHORT positions: notional should be negative
+    # For LONG positions: notional should be positive
+    # This allows correct trade amount calculation
     current_notional = {}
+    position_sides = {}  # Track if position is long (positive) or short (negative)
+    
     for pos in current_positions.get('positions', []):
         symbol = pos.get('symbol')
         contracts = pos.get('contracts', 0)
@@ -394,8 +406,13 @@ def calculate_trade_amounts(target_positions, current_positions, notional_value,
                 else:
                     mark_price = 0
         
-        notional = abs(contracts * mark_price)
+        # Store the signed notional value (negative for short, positive for long)
+        # This ensures correct trade calculation: target - current
+        notional = contracts * mark_price
         current_notional[symbol] = notional
+        
+        # Store the side: 'short' if contracts < 0, 'long' if contracts > 0
+        position_sides[symbol] = 'short' if contracts < 0 else 'long'
     
     # Calculate all symbols to consider
     all_symbols = set(target_positions.keys()) | set(current_notional.keys())
@@ -405,21 +422,33 @@ def calculate_trade_amounts(target_positions, current_positions, notional_value,
     
     for symbol in all_symbols:
         target = target_positions.get(symbol, 0)
-        current = current_notional.get(symbol, 0)
+        current = current_notional.get(symbol, 0)  # Now signed: negative for short, positive for long
+        side = position_sides.get(symbol, 'long')  # Default to 'long' if not tracked
+        
+        # Calculate difference: positive means BUY, negative means SELL
+        # This works correctly now because current is signed:
+        # - Short position (current=-1000, target=0): diff = 0-(-1000) = +1000 (BUY to close)
+        # - Long position (current=+1000, target=0): diff = 0-(+1000) = -1000 (SELL to close)
         difference = target - current
         
         # Calculate percentage difference relative to total notional value
         pct_difference = abs(difference) / notional_value if notional_value > 0 else 0
         
         print(f"\n{symbol}:")
-        print(f"  Current: ${current:,.2f}")
-        print(f"  Target:  ${target:,.2f}")
+        print(f"  Current: ${abs(current):,.2f} ({side.upper()})")
+        print(f"  Target:  ${target:,.2f} (LONG)")
         print(f"  Diff:    ${difference:,.2f} ({pct_difference*100:.2f}% of notional)")
         
         # If position exists but is NOT in target weights, always neutralize it
-        if symbol not in target_positions and current > 0:
+        if symbol not in target_positions and abs(current) > 0:
+            # The difference calculation now handles both short and long correctly:
+            # - Short: difference will be positive (need to BUY)
+            # - Long: difference will be negative (need to SELL)
             trades[symbol] = difference
-            print(f"  ✓ NEUTRALIZE: Position not in target weights (SELL ${abs(difference):,.2f})")
+            if side == 'short':
+                print(f"  ✓ NEUTRALIZE SHORT: Position not in target weights (BUY ${abs(difference):,.2f} to close short)")
+            else:
+                print(f"  ✓ NEUTRALIZE LONG: Position not in target weights (SELL ${abs(difference):,.2f})")
         # Only trade if difference exceeds threshold
         elif pct_difference > threshold:
             trades[symbol] = difference
