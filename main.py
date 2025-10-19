@@ -347,16 +347,48 @@ def calculate_trade_amounts(target_positions, current_positions, notional_value,
     Returns:
         dict: Dictionary of symbols to trade amounts (positive = buy, negative = sell)
     """
-    from ccxt_make_order import ccxt_make_order
+    import ccxt
+    import os
     
     trades = {}
+    
+    # Initialize exchange to fetch current prices if needed
+    api_key = os.getenv('HL_API')
+    api_secret = os.getenv('HL_SECRET')
+    exchange = None
+    if api_key and api_secret:
+        exchange = ccxt.hyperliquid({
+            'privateKey': api_secret,
+            'walletAddress': api_key,
+            'enableRateLimit': True,
+        })
     
     # Get current position notional values
     current_notional = {}
     for pos in current_positions.get('positions', []):
         symbol = pos.get('symbol')
         contracts = pos.get('contracts', 0)
-        mark_price = pos.get('markPrice', 0)
+        
+        # Skip if no contracts
+        if contracts == 0:
+            continue
+            
+        # Get price - try markPrice, then entryPrice, then fetch current price
+        mark_price = pos.get('markPrice')
+        if mark_price is None or mark_price == 0:
+            mark_price = pos.get('entryPrice')
+            if mark_price is None or mark_price == 0:
+                # Fetch current price from exchange
+                if exchange:
+                    try:
+                        ticker = exchange.fetch_ticker(symbol)
+                        mark_price = ticker['last']
+                        print(f"  Fetched current price for {symbol}: ${mark_price:,.2f}")
+                    except:
+                        mark_price = 0
+                else:
+                    mark_price = 0
+        
         notional = abs(contracts * mark_price)
         current_notional[symbol] = notional
     
@@ -552,7 +584,7 @@ def main():
             print(f"  {symbol}: {side} ${abs(amount):,.2f}")
         
         # Execute orders (set dry_run=False to execute live)
-        send_orders_if_difference_exceeds_threshold(trades, dry_run=True)
+        send_orders_if_difference_exceeds_threshold(trades, dry_run=False)
         
         print("\n" + "="*80)
         print("NOTE: Orders are in DRY RUN mode by default.")
