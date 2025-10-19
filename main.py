@@ -515,10 +515,10 @@ def main():
     days_from_high = calculate_days_from_200d_high(historical_data)
     print(f"Calculated days from high for {len(days_from_high)} symbols")
     
-    # Step 4: Select instruments <= 20d from high
-    print("\n[4/11] Selecting instruments <= 20 days from high...")
+    # Step 4: Select instruments <= 30d from high
+    print("\n[4/11] Selecting instruments <= 30 days from high...")
     # Create a DataFrame for filtering
-    selected_symbols = [symbol for symbol, days in days_from_high.items() if days <= 20]
+    selected_symbols = [symbol for symbol, days in days_from_high.items() if days <= 30]
     print(f"Selected {len(selected_symbols)} instruments near their 200d high:")
     for symbol in selected_symbols:
         print(f"  {symbol}: {days_from_high[symbol]} days from high")
@@ -559,17 +559,70 @@ def main():
     print(f"Currently holding {current_positions['total_positions']} positions")
     print(f"Total unrealized PnL: ${current_positions['total_unrealized_pnl']:,.2f}")
     
+    # Print detailed current positions
+    print("\n" + "="*80)
+    print("CURRENT POSITIONS (BEFORE TRADES)")
+    print("="*80)
+    if current_positions['positions']:
+        for pos in current_positions['positions']:
+            print(f"\n{pos['symbol']}:")
+            print(f"  Contracts: {pos['contracts']}")
+            print(f"  Side: {pos['side']}")
+            print(f"  Entry Price: ${pos['entryPrice']:,.2f}")
+            mark_price = pos.get('markPrice')
+            if mark_price is not None:
+                print(f"  Mark Price: ${mark_price:,.2f}")
+            else:
+                print(f"  Mark Price: N/A")
+            print(f"  Notional: ${pos['notional']:,.2f}")
+            print(f"  Unrealized PnL: ${pos['unrealizedPnl']:,.2f}")
+            print(f"  PnL %: {pos['percentage']:.2f}%")
+    else:
+        print("No open positions.")
+    
+    # Print detailed balance
+    print("\n" + "="*80)
+    print("CURRENT BALANCE")
+    print("="*80)
+    balance = get_balance()
+    if 'perp' in balance:
+        perp = balance['perp']
+        print(f"\nPerpetual Account:")
+        total_val = perp.get('total', 0)
+        if isinstance(total_val, (int, float)):
+            print(f"  Total: ${total_val:,.2f}")
+        else:
+            print(f"  Total: {total_val}")
+        
+        free_val = perp.get('free', 0)
+        if isinstance(free_val, (int, float)):
+            print(f"  Free: ${free_val:,.2f}")
+        else:
+            print(f"  Free: {free_val}")
+        
+        used_val = perp.get('used', 0)
+        if isinstance(used_val, (int, float)):
+            print(f"  Used: ${used_val:,.2f}")
+        else:
+            print(f"  Used: {used_val}")
+        
+        if 'info' in perp and 'marginSummary' in perp['info']:
+            margin = perp['info']['marginSummary']
+            print(f"  Account Value: ${float(margin.get('accountValue', 0)):,.2f}")
+            print(f"  Total Margin Used: ${float(margin.get('totalMarginUsed', 0)):,.2f}")
+    print("="*80)
+    
     # Step 10: Calculate difference between target and current positions
     print("\n[10/11] Calculating differences between target and current positions...")
     # This is handled within calculate_trade_amounts
     
-    # Step 11: Calculate trade amounts where target positions are > 5% difference from notional
-    print("\n[11/11] Calculating trade amounts (>5% threshold)...")
+    # Step 11: Calculate trade amounts where target positions are > 2% difference from notional
+    print("\n[11/11] Calculating trade amounts (>2% threshold)...")
     trades = calculate_trade_amounts(
         target_positions, 
         current_positions, 
         notional_value, 
-        threshold=0.05
+        threshold=0.02
     )
     
     # Execute orders (dry run by default)
@@ -592,6 +645,63 @@ def main():
         print("="*80)
     else:
         print("\nNo trades needed. Portfolio is within rebalancing threshold.")
+    
+    # Print resulting positions after trades
+    print("\n" + "="*80)
+    print("RESULTING POSITIONS (AFTER TRADES)")
+    print("="*80)
+    print("\nFetching updated positions...")
+    final_positions = get_current_positions()
+    print(f"Currently holding {final_positions['total_positions']} positions")
+    print(f"Total unrealized PnL: ${final_positions['total_unrealized_pnl']:,.2f}")
+    
+    if final_positions['positions']:
+        for pos in final_positions['positions']:
+            print(f"\n{pos['symbol']}:")
+            print(f"  Contracts: {pos['contracts']}")
+            print(f"  Side: {pos['side']}")
+            print(f"  Entry Price: ${pos['entryPrice']:,.2f}")
+            mark_price = pos.get('markPrice')
+            if mark_price is not None:
+                print(f"  Mark Price: ${mark_price:,.2f}")
+            else:
+                print(f"  Mark Price: N/A")
+            print(f"  Notional: ${pos['notional']:,.2f}")
+            print(f"  Unrealized PnL: ${pos['unrealizedPnl']:,.2f}")
+            print(f"  PnL %: {pos['percentage']:.2f}%")
+    else:
+        print("No open positions.")
+    
+    # Print final balance
+    print("\n" + "="*80)
+    print("FINAL BALANCE")
+    print("="*80)
+    final_balance = get_balance()
+    if 'perp' in final_balance:
+        perp = final_balance['perp']
+        print(f"\nPerpetual Account:")
+        total_val = perp.get('total', 0)
+        if isinstance(total_val, (int, float)):
+            print(f"  Total: ${total_val:,.2f}")
+        else:
+            print(f"  Total: {total_val}")
+        
+        free_val = perp.get('free', 0)
+        if isinstance(free_val, (int, float)):
+            print(f"  Free: ${free_val:,.2f}")
+        else:
+            print(f"  Free: {free_val}")
+        
+        used_val = perp.get('used', 0)
+        if isinstance(used_val, (int, float)):
+            print(f"  Used: ${used_val:,.2f}")
+        else:
+            print(f"  Used: {used_val}")
+        
+        if 'info' in perp and 'marginSummary' in perp['info']:
+            margin = perp['info']['marginSummary']
+            print(f"  Account Value: ${float(margin.get('accountValue', 0)):,.2f}")
+            print(f"  Total Margin Used: ${float(margin.get('totalMarginUsed', 0)):,.2f}")
     
     print("\n" + "="*80)
     print("STRATEGY EXECUTION COMPLETE")
