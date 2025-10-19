@@ -406,13 +406,18 @@ def calculate_trade_amounts(target_positions, current_positions, notional_value,
                 else:
                     mark_price = 0
         
+        # IMPORTANT: Hyperliquid returns POSITIVE contracts for BOTH long and short
+        # The 'side' field indicates whether it's long or short, not the sign of contracts
+        side = pos.get('side', 'long')
+        position_sides[symbol] = side
+        
         # Store the signed notional value (negative for short, positive for long)
         # This ensures correct trade calculation: target - current
-        notional = contracts * mark_price
+        if side == 'short':
+            notional = -1 * abs(contracts) * mark_price
+        else:
+            notional = abs(contracts) * mark_price
         current_notional[symbol] = notional
-        
-        # Store the side: 'short' if contracts < 0, 'long' if contracts > 0
-        position_sides[symbol] = 'short' if contracts < 0 else 'long'
     
     # Calculate all symbols to consider
     all_symbols = set(target_positions.keys()) | set(current_notional.keys())
