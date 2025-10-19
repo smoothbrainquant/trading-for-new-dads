@@ -3,6 +3,7 @@ Automated Trading Strategy Execution
 Main script for executing trading strategy based on 200d high and volatility.
 """
 
+import argparse
 from ccxt_get_markets_by_volume import ccxt_get_markets_by_volume
 from ccxt_get_data import ccxt_fetch_hyperliquid_daily_data
 from ccxt_get_balance import ccxt_get_hyperliquid_balance
@@ -488,8 +489,38 @@ def main():
     10. Calculate difference between target and current positions
     11. Calculate trade amounts where target positions are > 5% difference from notional
     """
+    # Parse command line arguments
+    parser = argparse.ArgumentParser(
+        description='Automated Trading Strategy Execution',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        '--days-since-high',
+        type=int,
+        default=20,
+        help='Maximum days since 200d high for instrument selection'
+    )
+    parser.add_argument(
+        '--rebalance-threshold',
+        type=float,
+        default=0.05,
+        help='Rebalance threshold as decimal (e.g., 0.05 for 5%%)'
+    )
+    parser.add_argument(
+        '--dry-run',
+        action='store_true',
+        default=False,
+        help='Run in dry-run mode (no actual orders placed)'
+    )
+    args = parser.parse_args()
+    
     print("="*80)
     print("AUTOMATED TRADING STRATEGY EXECUTION")
+    print("="*80)
+    print(f"\nParameters:")
+    print(f"  Days since high: {args.days_since_high}")
+    print(f"  Rebalance threshold: {args.rebalance_threshold*100:.1f}%")
+    print(f"  Dry run: {args.dry_run}")
     print("="*80)
     
     # Step 1: Request markets by volume, select markets over $100k volume/day
@@ -515,10 +546,10 @@ def main():
     days_from_high = calculate_days_from_200d_high(historical_data)
     print(f"Calculated days from high for {len(days_from_high)} symbols")
     
-    # Step 4: Select instruments <= 20d from high
-    print("\n[4/11] Selecting instruments <= 20 days from high...")
+    # Step 4: Select instruments <= days_since_high from high
+    print(f"\n[4/11] Selecting instruments <= {args.days_since_high} days from high...")
     # Create a DataFrame for filtering
-    selected_symbols = [symbol for symbol, days in days_from_high.items() if days <= 20]
+    selected_symbols = [symbol for symbol, days in days_from_high.items() if days <= args.days_since_high]
     print(f"Selected {len(selected_symbols)} instruments near their 200d high:")
     for symbol in selected_symbols:
         print(f"  {symbol}: {days_from_high[symbol]} days from high")
@@ -563,13 +594,13 @@ def main():
     print("\n[10/11] Calculating differences between target and current positions...")
     # This is handled within calculate_trade_amounts
     
-    # Step 11: Calculate trade amounts where target positions are > 5% difference from notional
-    print("\n[11/11] Calculating trade amounts (>5% threshold)...")
+    # Step 11: Calculate trade amounts where target positions are > threshold difference from notional
+    print(f"\n[11/11] Calculating trade amounts (>{args.rebalance_threshold*100:.0f}% threshold)...")
     trades = calculate_trade_amounts(
         target_positions, 
         current_positions, 
         notional_value, 
-        threshold=0.05
+        threshold=args.rebalance_threshold
     )
     
     # Execute orders (dry run by default)
@@ -583,13 +614,14 @@ def main():
             side = 'BUY' if amount > 0 else 'SELL'
             print(f"  {symbol}: {side} ${abs(amount):,.2f}")
         
-        # Execute orders (set dry_run=False to execute live)
-        send_orders_if_difference_exceeds_threshold(trades, dry_run=False)
+        # Execute orders
+        send_orders_if_difference_exceeds_threshold(trades, dry_run=args.dry_run)
         
-        print("\n" + "="*80)
-        print("NOTE: Orders are in DRY RUN mode by default.")
-        print("To execute live orders, set dry_run=False in send_orders_if_difference_exceeds_threshold()")
-        print("="*80)
+        if args.dry_run:
+            print("\n" + "="*80)
+            print("NOTE: Running in DRY RUN mode. No actual orders were placed.")
+            print("To execute live orders, run without --dry-run flag")
+            print("="*80)
     else:
         print("\nNo trades needed. Portfolio is within rebalancing threshold.")
     
