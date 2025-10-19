@@ -4,10 +4,19 @@ import pandas as pd
 def ccxt_get_markets_by_volume():
     """
     Fetch all markets from Hyperliquid exchange with 24h notional volume.
+    Filters out stablecoins from the results.
     
     Returns:
         DataFrame containing markets sorted by 24h notional volume (highest first)
     """
+    # List of stablecoins to filter out
+    STABLECOINS = {
+        'USDT', 'USDC', 'DAI', 'BUSD', 'USDD', 'TUSD', 'FRAX', 'LUSD',
+        'UST', 'GUSD', 'USDP', 'PYUSD', 'FDUSD', 'USDE', 'CUSD', 'SUSD',
+        'MIM', 'USDN', 'FEI', 'TRIBE', 'RAI', 'OUSD', 'USDX', 'USDJ',
+        'USTC', 'HUSD', 'EURS', 'EURT', 'EUROC', 'AGEUR', 'CEUR', 'JEUR'
+    }
+    
     # Initialize Hyperliquid exchange
     exchange = ccxt.hyperliquid({
         'enableRateLimit': True,
@@ -59,6 +68,14 @@ def ccxt_get_markets_by_volume():
         
         # Create DataFrame
         df = pd.DataFrame(market_data)
+        
+        # Filter out stablecoins
+        if not df.empty:
+            initial_count = len(df)
+            df = df[~df['base'].isin(STABLECOINS)].copy()
+            filtered_count = initial_count - len(df)
+            if filtered_count > 0:
+                print(f"Filtered out {filtered_count} stablecoin markets")
         
         # Sort by notional volume (highest first)
         if not df.empty:
