@@ -1,0 +1,9 @@
+# Python Execution Rules
+
+## Dependency Management
+- Always run `pip install -r requirements.txt` first before executing any Python scripts
+- Ensure all dependencies are installed before running the application
+
+## Python Version
+- Always use `python3` command instead of `python`
+- Explicitly use Python 3 for all script executions
