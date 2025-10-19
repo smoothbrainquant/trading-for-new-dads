@@ -53,7 +53,12 @@ def get_position_weights(positions_data):
     for pos in positions:
         symbol = pos.get('symbol')
         contracts = abs(pos.get('contracts', 0))
-        mark_price = pos.get('markPrice', 0)
+        # Hyperliquid stores mark price in info['markPx']
+        mark_price = pos.get('markPrice')
+        if mark_price is None:
+            mark_price = pos.get('info', {}).get('markPx', 0)
+            if mark_price:
+                mark_price = float(mark_price)
         
         notional = contracts * mark_price
         notional_values[symbol] = notional
@@ -81,11 +86,20 @@ if __name__ == "__main__":
         if positions_data['positions']:
             print("\nPosition details:")
             for pos in positions_data['positions']:
+                # Hyperliquid stores mark price in info['markPx']
+                mark_price = pos.get('markPrice')
+                if mark_price is None:
+                    mark_price = pos.get('info', {}).get('markPx', 0)
+                    if mark_price:
+                        mark_price = float(mark_price)
+                    else:
+                        mark_price = 0
+                
                 print(f"\n  {pos.get('symbol')}:")
                 print(f"    Side: {pos.get('side')}")
                 print(f"    Contracts: {pos.get('contracts')}")
                 print(f"    Entry Price: ${pos.get('entryPrice', 0):.2f}")
-                print(f"    Mark Price: ${pos.get('markPrice', 0):.2f}")
+                print(f"    Mark Price: ${mark_price:.2f}")
                 print(f"    Unrealized PnL: ${pos.get('unrealizedPnl', 0):.2f}")
             
             print("\nPosition weights:")
