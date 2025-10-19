@@ -339,6 +339,10 @@ def calculate_trade_amounts(target_positions, current_positions, notional_value,
     """
     Calculate trade amounts where target positions are > threshold difference from current.
     
+    Important: If a position exists but is NOT in target_positions, it will ALWAYS be 
+    neutralized (closed) regardless of the threshold. This ensures that off-target 
+    positions are removed from the portfolio.
+    
     Args:
         target_positions (dict): Dictionary of symbols to target notional values
         current_positions (dict): Dictionary of current position information
@@ -412,8 +416,12 @@ def calculate_trade_amounts(target_positions, current_positions, notional_value,
         print(f"  Target:  ${target:,.2f}")
         print(f"  Diff:    ${difference:,.2f} ({pct_difference*100:.2f}% of notional)")
         
+        # If position exists but is NOT in target weights, always neutralize it
+        if symbol not in target_positions and current > 0:
+            trades[symbol] = difference
+            print(f"  ✓ NEUTRALIZE: Position not in target weights (SELL ${abs(difference):,.2f})")
         # Only trade if difference exceeds threshold
-        if pct_difference > threshold:
+        elif pct_difference > threshold:
             trades[symbol] = difference
             print(f"  ✓ Trade needed: ${abs(difference):,.2f} ({'BUY' if difference > 0 else 'SELL'})")
         else:
