@@ -356,7 +356,7 @@ def calculate_trade_amounts(target_positions, current_positions, notional_value,
     for pos in current_positions.get('positions', []):
         symbol = pos.get('symbol')
         contracts = pos.get('contracts', 0)
-        mark_price = pos.get('markPrice', 0)
+        mark_price = pos.get('markPrice') or 0
         notional = abs(contracts * mark_price)
         current_notional[symbol] = notional
     
@@ -552,7 +552,7 @@ def main():
             print(f"  {symbol}: {side} ${abs(amount):,.2f}")
         
         # Execute orders (set dry_run=False to execute live)
-        send_orders_if_difference_exceeds_threshold(trades, dry_run=True)
+        send_orders_if_difference_exceeds_threshold(trades, dry_run=False)
         
         print("\n" + "="*80)
         print("NOTE: Orders are in DRY RUN mode by default.")
