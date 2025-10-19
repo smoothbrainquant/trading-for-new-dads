@@ -4,7 +4,7 @@ import pandas as pd
 def ccxt_get_markets_by_volume():
     """
     Fetch all markets from Hyperliquid exchange with 24h notional volume.
-    Filters out stablecoins from the results.
+    Filters out stablecoins and spot markets from the results.
     
     Returns:
         DataFrame containing markets sorted by 24h notional volume (highest first)
@@ -76,6 +76,14 @@ def ccxt_get_markets_by_volume():
             filtered_count = initial_count - len(df)
             if filtered_count > 0:
                 print(f"Filtered out {filtered_count} stablecoin markets")
+        
+        # Filter out spot markets
+        if not df.empty:
+            initial_count = len(df)
+            df = df[df['type'] != 'spot'].copy()
+            filtered_count = initial_count - len(df)
+            if filtered_count > 0:
+                print(f"Filtered out {filtered_count} spot markets")
         
         # Sort by notional volume (highest first)
         if not df.empty:
