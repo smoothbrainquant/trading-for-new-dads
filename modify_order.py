@@ -117,9 +117,26 @@ def modify_order(order_id, symbol, new_price=None, new_amount=None):
         print(f"Symbol: {modified_order.get('symbol', 'N/A')}")
         print(f"Type: {(modified_order.get('type') or 'N/A').upper()}")
         print(f"Side: {(modified_order.get('side') or 'N/A').upper()}")
-        print(f"Amount: {modified_order.get('amount', 0):.6f}")
-        print(f"Price: ${modified_order.get('price', 0):,.2f}")
-        print(f"Status: {(modified_order.get('status') or 'N/A').upper()}")
+        
+        # Handle potentially None values
+        amount = modified_order.get('amount')
+        price = modified_order.get('price')
+        status = modified_order.get('status')
+        
+        if amount is not None:
+            print(f"Amount: {amount:.6f}")
+        else:
+            print(f"Amount: N/A")
+        
+        if price is not None:
+            print(f"Price: ${price:,.2f}")
+        else:
+            print(f"Price: N/A")
+        
+        if status is not None:
+            print(f"Status: {status.upper()}")
+        else:
+            print(f"Status: N/A")
         
         if modified_order.get('filled'):
             print(f"Filled: {modified_order.get('filled', 0):.6f}")

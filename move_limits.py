@@ -135,7 +135,7 @@ def move_orders_to_best_prices(dry_run: bool = True, verbose: bool = False):
         
         print(f"\n{symbol} (Order ID: {order_id}):")
         print(f"  Side:          {side.upper()}")
-        print(f"  Current Price: ${current_price:,.2f}")
+        print(f"  Current Price: ${current_price:,.8f}")
         print(f"  Amount:        {amount:.6f}")
         
         # Check if we have bid/ask data for this symbol
@@ -149,9 +149,9 @@ def move_orders_to_best_prices(dry_run: bool = True, verbose: bool = False):
         spread = bid_ask_dict[symbol]['spread']
         spread_pct = bid_ask_dict[symbol]['spread_pct']
         
-        print(f"  Current Bid:   ${bid:,.2f}")
-        print(f"  Current Ask:   ${ask:,.2f}")
-        print(f"  Spread:        ${spread:.4f} ({spread_pct:.4f}%)")
+        print(f"  Current Bid:   ${bid:,.8f}")
+        print(f"  Current Ask:   ${ask:,.8f}")
+        print(f"  Spread:        ${spread:.8f} ({spread_pct:.4f}%)")
         
         # Determine target price based on side
         if side == 'buy':
@@ -165,11 +165,12 @@ def move_orders_to_best_prices(dry_run: bool = True, verbose: bool = False):
             skipped_count += 1
             continue
         
-        print(f"  Target Price:  ${target_price:,.2f} ({price_type})")
+        print(f"  Target Price:  ${target_price:,.8f} ({price_type})")
         
-        # Check if price needs to be modified
-        if abs(current_price - target_price) < 0.01:  # Allow small tolerance
-            print(f"  Status:        → SKIP - Already at {price_type} price")
+        # Check if price needs to be modified (use 0.1% tolerance)
+        price_diff_pct = abs((current_price - target_price) / target_price * 100) if target_price > 0 else 0
+        if price_diff_pct < 0.1:  # 0.1% tolerance
+            print(f"  Status:        → SKIP - Already at {price_type} price (within 0.1%)")
             skipped_count += 1
             continue
         
