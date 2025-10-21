@@ -557,7 +557,7 @@ def main():
     parser.add_argument(
         '--leverage',
         type=float,
-        default=1.0,
+        default=1.5,
         help='Leverage multiplier for notional value (e.g., 2.0 for 2x leverage)'
     )
     args = parser.parse_args()
