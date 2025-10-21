@@ -54,7 +54,7 @@ def get_bid_ask(symbols=None):
                     'timestamp': datetime.fromtimestamp(ticker['timestamp'] / 1000) if ticker.get('timestamp') else datetime.now()
                 })
                 
-                print(f"{symbol:20s} | Bid: ${bid:>12,.2f} | Ask: ${ask:>12,.2f} | Spread: ${spread:>8.4f} ({spread_pct:.4f}%)")
+                print(f"{symbol:20s} | Bid: ${bid:>12,.8f} | Ask: ${ask:>12,.8f} | Spread: ${spread:>8.8f} ({spread_pct:.4f}%)")
             else:
                 print(f"{symbol:20s} | No bid/ask data available")
                 
