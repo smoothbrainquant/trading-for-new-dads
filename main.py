@@ -12,6 +12,7 @@ from select_insts import select_instruments_near_200d_high
 from calc_vola import calculate_rolling_30d_volatility as calc_vola_func
 from calc_weights import calculate_weights
 from check_positions import check_positions, get_position_weights
+from aggressive_order_execution import aggressive_execute_orders
 import pandas as pd
 
 
@@ -560,6 +561,30 @@ def main():
         default=1.5,
         help='Leverage multiplier for notional value (e.g., 2.0 for 2x leverage)'
     )
+    parser.add_argument(
+        '--aggressive-orders',
+        action='store_true',
+        default=False,
+        help='Use aggressive order execution strategy (limit orders that progressively move towards market)'
+    )
+    parser.add_argument(
+        '--aggressive-wait',
+        type=int,
+        default=10,
+        help='Seconds to wait after initial orders in aggressive mode (default: 10)'
+    )
+    parser.add_argument(
+        '--aggressive-iterations',
+        type=int,
+        default=3,
+        help='Maximum iterations to move orders in aggressive mode (default: 3)'
+    )
+    parser.add_argument(
+        '--aggressive-increment',
+        type=float,
+        default=0.5,
+        help='Percentage of spread to move each iteration in aggressive mode (default: 0.5)'
+    )
     args = parser.parse_args()
     
     print("="*80)
@@ -570,6 +595,11 @@ def main():
     print(f"  Rebalance threshold: {args.rebalance_threshold*100:.1f}%")
     print(f"  Leverage: {args.leverage}x")
     print(f"  Dry run: {args.dry_run}")
+    print(f"  Aggressive orders: {args.aggressive_orders}")
+    if args.aggressive_orders:
+        print(f"  - Wait time: {args.aggressive_wait}s")
+        print(f"  - Max iterations: {args.aggressive_iterations}")
+        print(f"  - Increment: {args.aggressive_increment}%")
     print("="*80)
     
     # Step 1: Request markets by volume, select markets over $100k volume/day
@@ -668,8 +698,19 @@ def main():
             side = 'BUY' if amount > 0 else 'SELL'
             print(f"  {symbol}: {side} ${abs(amount):,.2f}")
         
-        # Execute orders
-        send_orders_if_difference_exceeds_threshold(trades, dry_run=args.dry_run)
+        # Execute orders - use aggressive or standard execution
+        if args.aggressive_orders:
+            print(f"\nUsing AGGRESSIVE order execution strategy")
+            aggressive_execute_orders(
+                trades=trades,
+                wait_time=args.aggressive_wait,
+                max_iterations=args.aggressive_iterations,
+                increment_pct=args.aggressive_increment,
+                dry_run=args.dry_run
+            )
+        else:
+            print(f"\nUsing STANDARD order execution")
+            send_orders_if_difference_exceeds_threshold(trades, dry_run=args.dry_run)
         
         if args.dry_run:
             print("\n" + "="*80)
