@@ -12,6 +12,7 @@ from select_insts import select_instruments_near_200d_high
 from calc_vola import calculate_rolling_30d_volatility as calc_vola_func
 from calc_weights import calculate_weights
 from check_positions import check_positions, get_position_weights
+from aggressive_order_execution import aggressive_execute_orders
 import pandas as pd
 
 
@@ -464,7 +465,7 @@ def calculate_trade_amounts(target_positions, current_positions, notional_value,
     return trades
 
 
-def send_orders_if_difference_exceeds_threshold(trades, dry_run=True):
+def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive=False):
     """
     Send orders to adjust positions based on calculated trade amounts.
     
@@ -474,9 +475,10 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True):
     Args:
         trades (dict): Dictionary of symbols to trade amounts (positive = buy, negative = sell)
         dry_run (bool): If True, only prints orders without executing (default: True)
+        aggressive (bool): If True, uses aggressive execution strategy (default: False)
         
     Returns:
-        list: List of order results (empty if dry_run=True)
+        list: List of order results (empty if dry_run=True) or dict for aggressive execution
     """
     from ccxt_make_order import ccxt_make_order
     
@@ -484,6 +486,19 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True):
         print("\nNo trades to execute.")
         return []
     
+    # Use aggressive execution if enabled
+    if aggressive:
+        print("\nUsing AGGRESSIVE ORDER EXECUTION strategy...")
+        result = aggressive_execute_orders(
+            trades=trades,
+            wait_time=10,
+            max_iterations=3,
+            increment_pct=0.5,
+            dry_run=dry_run
+        )
+        return result
+    
+    # Default execution (simple market orders)
     print(f"\n{'='*80}")
     print(f"ORDER EXECUTION {'(DRY RUN)' if dry_run else '(LIVE)'}")
     print(f"{'='*80}")
@@ -560,6 +575,12 @@ def main():
         default=1.5,
         help='Leverage multiplier for notional value (e.g., 2.0 for 2x leverage)'
     )
+    parser.add_argument(
+        '--aggressive',
+        action='store_true',
+        default=False,
+        help='Use aggressive order execution strategy (limit orders first, then incrementally move towards market)'
+    )
     args = parser.parse_args()
     
     print("="*80)
@@ -569,6 +590,7 @@ def main():
     print(f"  Days since high: {args.days_since_high}")
     print(f"  Rebalance threshold: {args.rebalance_threshold*100:.1f}%")
     print(f"  Leverage: {args.leverage}x")
+    print(f"  Aggressive execution: {args.aggressive}")
     print(f"  Dry run: {args.dry_run}")
     print("="*80)
     
@@ -669,7 +691,7 @@ def main():
             print(f"  {symbol}: {side} ${abs(amount):,.2f}")
         
         # Execute orders
-        send_orders_if_difference_exceeds_threshold(trades, dry_run=args.dry_run)
+        send_orders_if_difference_exceeds_threshold(trades, dry_run=args.dry_run, aggressive=args.aggressive)
         
         if args.dry_run:
             print("\n" + "="*80)
