@@ -102,11 +102,14 @@ def ccxt_make_order(symbol, notional_amount, side, order_type, price=None):
         print("ORDER SUMMARY")
         print(f"{'='*60}")
         print(f"Order ID: {order.get('id', 'N/A')}")
-        print(f"Symbol: {order.get('symbol', 'N/A')}")
-        print(f"Type: {(order.get('type') or 'N/A').upper()}")
-        print(f"Side: {(order.get('side') or 'N/A').upper()}")
+        print(f"Symbol: {order.get('symbol') or symbol or 'N/A'}")
+        print(f"Type: {(order.get('type') or order_type or 'N/A').upper()}")
+        print(f"Side: {(order.get('side') or side or 'N/A').upper()}")
         print(f"Amount: {order.get('amount', 0):.6f}")
-        print(f"Price: ${order.get('price', 0):,.2f}" if order.get('price') else "Price: MARKET")
+        if order.get('price'):
+            print(f"Price: ${order.get('price'):,.2f}")
+        else:
+            print(f"Price: MARKET")
         print(f"Status: {(order.get('status') or 'N/A').upper()}")
         
         if order.get('filled'):
