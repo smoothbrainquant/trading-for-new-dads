@@ -493,7 +493,7 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive
             trades=trades,
             wait_time=10,
             max_iterations=3,
-            increment_pct=0.5,
+            increment_ticks=5,
             dry_run=dry_run
         )
         return result

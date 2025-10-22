@@ -82,7 +82,7 @@ def check_order_fills(exchange, order_ids: Dict[str, str]) -> Dict[str, dict]:
 
 
 def move_order_incrementally(exchange, symbol: str, order_info: dict, 
-                             bid_ask_dict: dict, increment_pct: float = 0.5) -> Optional[dict]:
+                             bid_ask_dict: dict, increment_ticks: int = 5) -> Optional[dict]:
     """
     Move an order incrementally closer to crossing the spread.
     
@@ -94,7 +94,7 @@ def move_order_incrementally(exchange, symbol: str, order_info: dict,
         symbol: Trading symbol
         order_info: Current order information
         bid_ask_dict: Dictionary with current bid/ask prices
-        increment_pct: Percentage of spread to move (default 0.5 = 50%)
+        increment_ticks: Number of ticks to move (default 5 ticks)
         
     Returns:
         Modified order info or None if error
@@ -106,25 +106,45 @@ def move_order_incrementally(exchange, symbol: str, order_info: dict,
         ask = bid_ask_dict[symbol]['ask']
         spread = ask - bid
         
+        # Get market info to determine tick size
+        markets = exchange.load_markets()
+        market = markets.get(symbol)
+        
+        if not market:
+            print(f"  {symbol}: Could not find market info, falling back to spread percentage")
+            # Fallback: use 10% of spread
+            tick_size = spread * 0.1
+        else:
+            # Get tick size (price precision)
+            price_precision = market.get('precision', {}).get('price')
+            if price_precision is not None:
+                # Calculate tick size from precision
+                tick_size = 10 ** (-price_precision)
+            else:
+                # Fallback: estimate tick size from current prices
+                # Use 0.01% of current price as minimum tick
+                tick_size = max(current_price * 0.0001, 0.01)
+        
+        # Calculate increment based on number of ticks
+        increment = tick_size * increment_ticks
+        
         # Calculate new price
         if side == 'buy':
             # Move buy order up (towards ask)
-            increment = spread * (increment_pct / 100)
             new_price = min(current_price + increment, ask)
             target = 'ASK'
         else:  # sell
             # Move sell order down (towards bid)
-            increment = spread * (increment_pct / 100)
             new_price = max(current_price - increment, bid)
             target = 'BID'
         
-        # Don't modify if already at target or very close
-        price_diff_pct = abs((new_price - current_price) / current_price * 100) if current_price > 0 else 0
-        if price_diff_pct < 0.01:  # Less than 0.01% change
+        # Don't modify if price doesn't change meaningfully
+        if abs(new_price - current_price) < tick_size * 0.5:
             print(f"  {symbol}: Already at target price, skipping increment")
             return order_info
         
-        print(f"  {symbol}: Moving {side.upper()} order from ${current_price:.4f} to ${new_price:.4f} (towards {target})")
+        print(f"  {symbol}: Moving {side.upper()} order from ${current_price:.6f} to ${new_price:.6f} (towards {target})")
+        print(f"           Increment: {increment_ticks} ticks × ${tick_size:.8f} = ${increment:.6f}")
         
         # Modify the order
         modified_order = modify_order(
@@ -210,7 +230,7 @@ def aggressive_execute_orders(
     trades: Dict[str, float],
     wait_time: int = 10,
     max_iterations: int = 3,
-    increment_pct: float = 0.5,
+    increment_ticks: int = 5,
     dry_run: bool = True
 ):
     """
@@ -229,7 +249,7 @@ def aggressive_execute_orders(
                 Example: {'BTC/USDC:USDC': 100, 'ETH/USDC:USDC': -50}
         wait_time: Seconds to wait after initial orders (default: 10)
         max_iterations: Maximum iterations to move orders (default: 3)
-        increment_pct: Percentage of spread to move each iteration (default: 0.5%)
+        increment_ticks: Number of price ticks to move each iteration (default: 5 ticks)
         dry_run: If True, only prints actions without executing
         
     Returns:
@@ -241,7 +261,7 @@ def aggressive_execute_orders(
     print(f"Mode: {'DRY RUN' if dry_run else 'LIVE TRADING'}")
     print(f"Wait time: {wait_time}s")
     print(f"Max iterations: {max_iterations}")
-    print(f"Increment per iteration: {increment_pct}% of spread")
+    print(f"Increment per iteration: {increment_ticks} ticks")
     print("=" * 80)
     
     if not trades:
@@ -383,7 +403,7 @@ def aggressive_execute_orders(
                             }
                     
                     new_order_info = move_order_incrementally(
-                        exchange, symbol, status, bid_ask_dict, increment_pct
+                        exchange, symbol, status, bid_ask_dict, increment_ticks
                     )
                     
                     if new_order_info and new_order_info.get('id'):
@@ -549,7 +569,7 @@ Examples:
     "BTC/USDC:USDC:100" \\
     "ETH/USDC:USDC:-50" \\
     "SOL/USDC:USDC:75" \\
-    --live --wait 10 --iterations 3 --increment 1.0
+    --live --wait 10 --iterations 3 --increment 10
 
 Strategy:
   1. Sends limit orders at best bid (buy) or ask (sell)
@@ -593,9 +613,9 @@ Environment Variables Required (for live trading):
     )
     parser.add_argument(
         '--increment',
-        type=float,
-        default=0.5,
-        help='Percentage of spread to move each iteration (default: 0.5)'
+        type=int,
+        default=5,
+        help='Number of price ticks to move each iteration (default: 5)'
     )
     parser.add_argument(
         '--verbose',
@@ -637,7 +657,7 @@ Environment Variables Required (for live trading):
             trades=trades,
             wait_time=args.wait,
             max_iterations=args.iterations,
-            increment_pct=args.increment,
+            increment_ticks=args.increment,
             dry_run=dry_run
         )
         
