@@ -84,17 +84,17 @@ def check_order_fills(exchange, order_ids: Dict[str, str]) -> Dict[str, dict]:
 def move_order_incrementally(exchange, symbol: str, order_info: dict, 
                              bid_ask_dict: dict, increment_ticks: int = 5) -> Optional[dict]:
     """
-    Move an order incrementally closer to crossing the spread.
+    Move an order to the best bid/ask price.
     
-    For buy orders: move price up towards ask
-    For sell orders: move price down towards bid
+    For buy orders: move to current best bid
+    For sell orders: move to current best ask
     
     Args:
         exchange: ccxt exchange instance
         symbol: Trading symbol
         order_info: Current order information
         bid_ask_dict: Dictionary with current bid/ask prices
-        increment_ticks: Number of ticks to move (default 5 ticks)
+        increment_ticks: Unused (kept for API compatibility)
         
     Returns:
         Modified order info or None if error
@@ -104,47 +104,24 @@ def move_order_incrementally(exchange, symbol: str, order_info: dict,
         current_price = order_info['price']
         bid = bid_ask_dict[symbol]['bid']
         ask = bid_ask_dict[symbol]['ask']
-        spread = ask - bid
         
-        # Get market info to determine tick size
-        markets = exchange.load_markets()
-        market = markets.get(symbol)
-        
-        if not market:
-            print(f"  {symbol}: Could not find market info, falling back to spread percentage")
-            # Fallback: use 10% of spread
-            tick_size = spread * 0.1
-        else:
-            # Get tick size (price precision)
-            price_precision = market.get('precision', {}).get('price')
-            if price_precision is not None:
-                # Calculate tick size from precision
-                tick_size = 10 ** (-price_precision)
-            else:
-                # Fallback: estimate tick size from current prices
-                # Use 0.01% of current price as minimum tick
-                tick_size = max(current_price * 0.0001, 0.01)
-        
-        # Calculate increment based on number of ticks
-        increment = tick_size * increment_ticks
-        
-        # Calculate new price
+        # Always move to best bid/ask
         if side == 'buy':
-            # Move buy order up (towards ask)
-            new_price = min(current_price + increment, ask)
-            target = 'ASK'
-        else:  # sell
-            # Move sell order down (towards bid)
-            new_price = max(current_price - increment, bid)
+            # Move buy order to best bid
+            new_price = bid
             target = 'BID'
+        else:  # sell
+            # Move sell order to best ask
+            new_price = ask
+            target = 'ASK'
         
-        # Don't modify if price doesn't change meaningfully
-        if abs(new_price - current_price) < tick_size * 0.5:
-            print(f"  {symbol}: Already at target price, skipping increment")
+        # Don't modify if already at target price
+        price_diff = abs(new_price - current_price)
+        if price_diff < 0.000001:  # Essentially zero difference
+            print(f"  {symbol}: Already at best {target}, skipping")
             return order_info
         
-        print(f"  {symbol}: Moving {side.upper()} order from ${current_price:.6f} to ${new_price:.6f} (towards {target})")
-        print(f"           Increment: {increment_ticks} ticks × ${tick_size:.8f} = ${increment:.6f}")
+        print(f"  {symbol}: Moving {side.upper()} order from ${current_price:.6f} to ${new_price:.6f} (BEST {target})")
         
         # Modify the order
         modified_order = modify_order(
@@ -165,7 +142,7 @@ def move_order_incrementally(exchange, symbol: str, order_info: dict,
         }
         
     except Exception as e:
-        print(f"  {symbol}: Error moving order incrementally: {e}")
+        print(f"  {symbol}: Error moving order: {e}")
         return None
 
 
@@ -239,7 +216,7 @@ def aggressive_execute_orders(
     Strategy:
     1. Send limit orders at best bid/ask
     2. Wait specified time
-    3. Check fills and move unfilled orders incrementally
+    3. Check fills and move unfilled orders to best bid/ask
     4. Repeat moving process
     5. Finally cross spread with market orders for any remaining
     
@@ -249,7 +226,7 @@ def aggressive_execute_orders(
                 Example: {'BTC/USDC:USDC': 100, 'ETH/USDC:USDC': -50}
         wait_time: Seconds to wait after initial orders (default: 10)
         max_iterations: Maximum iterations to move orders (default: 3)
-        increment_ticks: Number of price ticks to move each iteration (default: 5 ticks)
+        increment_ticks: Unused (kept for API compatibility)
         dry_run: If True, only prints actions without executing
         
     Returns:
@@ -261,7 +238,7 @@ def aggressive_execute_orders(
     print(f"Mode: {'DRY RUN' if dry_run else 'LIVE TRADING'}")
     print(f"Wait time: {wait_time}s")
     print(f"Max iterations: {max_iterations}")
-    print(f"Increment per iteration: {increment_ticks} ticks")
+    print(f"Strategy: Always move unfilled orders to best bid/ask")
     print("=" * 80)
     
     if not trades:
@@ -363,8 +340,8 @@ def aggressive_execute_orders(
     
     print("✓ Wait complete")
     
-    # STEP 4: Iterate and move orders incrementally
-    print(f"\n[4/5] Checking fills and moving orders incrementally...")
+    # STEP 4: Iterate and move orders to best bid/ask
+    print(f"\n[4/5] Checking fills and moving unfilled orders to best bid/ask...")
     print("-" * 80)
     
     filled_symbols = set()
@@ -388,7 +365,7 @@ def aggressive_execute_orders(
                     unfilled_symbols.discard(symbol)
                     print(f"  {symbol}: ✓ FILLED")
                 elif status.get('remaining', 0) > 0:
-                    # Move order incrementally
+                    # Move order to best bid/ask
                     print(f"  {symbol}: Partially filled - {status.get('filled', 0):.6f} / {status.get('amount', 0):.6f}")
                     
                     # Update bid/ask for current iteration
@@ -447,23 +424,12 @@ def aggressive_execute_orders(
             
             status = final_status[symbol]
             
-            # Check if still at best bid/ask and unfilled
-            current_price = status.get('price')
-            bid = bid_ask_dict.get(symbol, {}).get('bid')
-            ask = bid_ask_dict.get(symbol, {}).get('ask')
+            remaining = status.get('remaining', 0)
             side = status.get('side')
             
-            # Determine if we're still on best bid/ask
-            at_best = False
-            if side == 'buy' and current_price and bid:
-                at_best = abs(current_price - bid) / bid < 0.001  # Within 0.1%
-            elif side == 'sell' and current_price and ask:
-                at_best = abs(current_price - ask) / ask < 0.001
-            
-            remaining = status.get('remaining', 0)
-            
-            if remaining > 0 and at_best:
-                print(f"\n{symbol}: Still at best {side.upper()} price with {remaining:.6f} remaining")
+            # After all iterations, if still unfilled, cross the spread with market order
+            if remaining > 0:
+                print(f"\n{symbol}: Still unfilled with {remaining:.6f} remaining after {max_iterations} iterations")
                 print(f"          Crossing spread with market order...")
                 
                 market_order = cross_spread_with_market_order(
@@ -472,8 +438,6 @@ def aggressive_execute_orders(
                 
                 if market_order:
                     filled_symbols.add(symbol)
-            elif remaining > 0:
-                print(f"\n{symbol}: Order moved away from best, keeping limit order")
             else:
                 print(f"\n{symbol}: ✓ Order filled during iterations")
                 filled_symbols.add(symbol)
@@ -569,12 +533,12 @@ Examples:
     "BTC/USDC:USDC:100" \\
     "ETH/USDC:USDC:-50" \\
     "SOL/USDC:USDC:75" \\
-    --live --wait 10 --iterations 3 --increment 10
+    --live --wait 10 --iterations 3
 
 Strategy:
   1. Sends limit orders at best bid (buy) or ask (sell)
   2. Waits specified time for fills
-  3. Moves unfilled orders incrementally towards crossing
+  3. Moves unfilled orders to best bid/ask (refreshed each iteration)
   4. Finally crosses spread with market orders if needed
   
 Trade Format:
@@ -615,7 +579,7 @@ Environment Variables Required (for live trading):
         '--increment',
         type=int,
         default=5,
-        help='Number of price ticks to move each iteration (default: 5)'
+        help='[DEPRECATED] Unused - orders always move to best bid/ask'
     )
     parser.add_argument(
         '--verbose',
