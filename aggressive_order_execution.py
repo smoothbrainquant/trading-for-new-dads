@@ -538,10 +538,12 @@ def aggressive_execute_orders(
     print(f"\n[4/4] Handling remaining unfilled orders...")
     print("-" * 80)
     
+    crossed_spread_symbols = set()  # Track which symbols we crossed spread for
+    
     if unfilled_symbols:
         if cross_spread_after:
             print(f"\nRemaining unfilled orders: {len(unfilled_symbols)}")
-            print("Crossing spread with market orders...")
+            print("Crossing spread with limit orders...")
             
             if not dry_run:
                 # Refresh bid/ask one more time
@@ -561,7 +563,7 @@ def aggressive_execute_orders(
                 # Check final status and cross spread
                 final_status = check_order_fills(exchange, {s: order_ids[s] for s in unfilled_symbols})
                 
-                for symbol in unfilled_symbols:
+                for symbol in list(unfilled_symbols):
                     if symbol not in final_status or 'error' in final_status[symbol]:
                         continue
                     
@@ -576,10 +578,123 @@ def aggressive_execute_orders(
                         )
                         
                         if cross_order:
-                            filled_symbols.add(symbol)
+                            crossed_spread_symbols.add(symbol)
+                            # Update order tracking with new crossed-spread order
+                            order_ids[symbol] = cross_order.get('id')
+                            order_info_dict[symbol].update({
+                                'id': cross_order.get('id'),
+                                'price': cross_order.get('price'),
+                                'amount': cross_order.get('amount'),
+                                'filled': cross_order.get('filled', 0),
+                                'remaining': cross_order.get('remaining', cross_order.get('amount', 0))
+                            })
                     else:
                         print(f"\n{symbol}: ✓ Order filled")
                         filled_symbols.add(symbol)
+                        unfilled_symbols.discard(symbol)
+                
+                # STEP 4b: Monitor crossed-spread orders for a short period
+                if crossed_spread_symbols:
+                    print(f"\n[4b] Monitoring crossed-spread orders for 15 seconds...")
+                    print("-" * 80)
+                    
+                    cross_spread_start = time.time()
+                    cross_spread_max_time = 15  # 15 seconds to wait for fills
+                    cross_tick = 0
+                    
+                    while True:
+                        cross_elapsed = time.time() - cross_spread_start
+                        
+                        if cross_elapsed >= cross_spread_max_time:
+                            print(f"\n⏱ Crossed-spread monitoring time ({cross_spread_max_time}s) reached")
+                            break
+                        
+                        if not crossed_spread_symbols:
+                            print(f"\n✓ All crossed-spread orders filled!")
+                            break
+                        
+                        if cross_tick > 0:
+                            time.sleep(2)  # Poll every 2 seconds
+                        
+                        cross_tick += 1
+                        print(f"\n--- Cross-spread tick {cross_tick} (elapsed: {cross_elapsed:.1f}s) ---")
+                        
+                        # Check if crossed-spread orders filled
+                        cross_status = check_order_fills(exchange, {s: order_ids[s] for s in crossed_spread_symbols})
+                        
+                        for symbol in list(crossed_spread_symbols):
+                            if symbol not in cross_status:
+                                continue
+                            
+                            status = cross_status[symbol]
+                            
+                            if 'error' in status:
+                                print(f"  {symbol}: Error - {status['error']}")
+                                continue
+                            
+                            if status.get('status') in ['closed', 'filled']:
+                                filled_symbols.add(symbol)
+                                unfilled_symbols.discard(symbol)
+                                crossed_spread_symbols.discard(symbol)
+                                print(f"  {symbol}: ✓ FILLED")
+                            else:
+                                filled_amt = status.get('filled', 0)
+                                total_amt = status.get('amount', 0)
+                                if filled_amt > 0:
+                                    print(f"  {symbol}: Partially filled - {filled_amt:.6f} / {total_amt:.6f}")
+                                else:
+                                    print(f"  {symbol}: Still open...")
+                    
+                    # STEP 4c: Final cleanup - cancel remaining and use market orders
+                    if crossed_spread_symbols:
+                        print(f"\n[4c] Final cleanup: Using market orders for {len(crossed_spread_symbols)} remaining symbols...")
+                        print("-" * 80)
+                        
+                        # Check final status one more time
+                        final_cross_status = check_order_fills(exchange, {s: order_ids[s] for s in crossed_spread_symbols})
+                        
+                        for symbol in crossed_spread_symbols:
+                            if symbol not in final_cross_status or 'error' in final_cross_status[symbol]:
+                                continue
+                            
+                            status = final_cross_status[symbol]
+                            remaining = status.get('remaining', 0)
+                            
+                            if remaining > 0:
+                                print(f"\n{symbol}: Forcing fill with market order for {remaining:.6f}")
+                                
+                                # Cancel the limit order
+                                try:
+                                    exchange.cancel_order(status['id'], symbol)
+                                    print(f"  {symbol}: Cancelled limit order {status['id']}")
+                                except Exception as e:
+                                    print(f"  {symbol}: Warning - could not cancel order: {e}")
+                                
+                                # Place market order to force fill
+                                try:
+                                    side = status.get('side')
+                                    if symbol in bid_ask_dict:
+                                        current_price = bid_ask_dict[symbol]['last'] if 'last' in bid_ask_dict[symbol] else (bid_ask_dict[symbol]['ask'] if side == 'buy' else bid_ask_dict[symbol]['bid'])
+                                    else:
+                                        ticker = exchange.fetch_ticker(symbol)
+                                        current_price = ticker['last']
+                                    
+                                    market_order = exchange.create_order(
+                                        symbol=symbol,
+                                        type='market',
+                                        side=side,
+                                        amount=remaining,
+                                        price=current_price
+                                    )
+                                    print(f"  {symbol}: ✓ Market order placed - ID: {market_order.get('id')}")
+                                    filled_symbols.add(symbol)
+                                    unfilled_symbols.discard(symbol)
+                                except Exception as e:
+                                    print(f"  {symbol}: ✗ Error placing market order: {e}")
+                            else:
+                                print(f"\n{symbol}: ✓ Order filled")
+                                filled_symbols.add(symbol)
+                                unfilled_symbols.discard(symbol)
             else:
                 print(f"[DRY RUN] Would cross spread for {len(unfilled_symbols)} unfilled orders:")
                 for symbol in unfilled_symbols:
@@ -589,6 +704,7 @@ def aggressive_execute_orders(
                         print(f"  {symbol}: Would place limit order at ${cross_price:.4f} (crosses spread)")
                     else:
                         print(f"  {symbol}: Would cross spread")
+                print(f"\n[DRY RUN] Would then monitor for 15s and use market orders if still unfilled")
         else:
             print(f"\n{len(unfilled_symbols)} orders still open (cross_spread_after=False)")
             for symbol in unfilled_symbols:
@@ -615,9 +731,10 @@ def aggressive_execute_orders(
             print(f"  ✓ {symbol}")
     
     if remaining:
-        print(f"\nRemaining open orders:")
+        print(f"\n⚠ WARNING: {len(remaining)} orders still open (not filled):")
         for symbol in sorted(remaining):
             print(f"  → {symbol}")
+        print("\nThese orders may need manual intervention to cancel or fill.")
     
     if dry_run:
         print("\n" + "=" * 80)
