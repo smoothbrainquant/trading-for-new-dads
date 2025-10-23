@@ -488,12 +488,12 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive
     
     # Use aggressive execution if enabled
     if aggressive:
-        print("\nUsing AGGRESSIVE ORDER EXECUTION strategy...")
+        print("\nUsing AGGRESSIVE ORDER EXECUTION strategy (tick-based)...")
         result = aggressive_execute_orders(
             trades=trades,
-            wait_time=10,
-            max_iterations=3,
-            increment_pct=0.5,
+            tick_interval=2.0,  # Poll every 2 seconds
+            max_time=60,  # Run for max 60 seconds
+            cross_spread_after=True,  # Cross spread if not filled after max_time
             dry_run=dry_run
         )
         return result
@@ -579,7 +579,7 @@ def main():
         '--aggressive',
         action='store_true',
         default=False,
-        help='Use aggressive order execution strategy (limit orders first, then incrementally move towards market)'
+        help='Use aggressive order execution strategy (tick-based: continuously move limit orders to best bid/ask)'
     )
     args = parser.parse_args()
     
