@@ -126,7 +126,7 @@ python3 backtest_size_factor.py \
 |-----------|---------|-------------|
 | `--price-data` | `top10_markets_100d_daily_data.csv` | Historical OHLCV price data |
 | `--marketcap-file` | None | Market cap CSV file (fetches if not provided) |
-| `--cmc-api-key` | None | CoinMarketCap API key (or set CMC_API_KEY env var) |
+| `--cmc-api-key` | None | CoinMarketCap API key (or set CMC_API env var) |
 | `--strategy` | `long_small_short_large` | Strategy variant |
 | `--num-buckets` | 5 | Number of size buckets (quintiles) |
 | `--volatility-window` | 30 | Volatility calculation window (days) |
@@ -200,7 +200,7 @@ To use real market cap data:
 1. Get a free API key from [CoinMarketCap](https://coinmarketcap.com/api/)
 2. Set environment variable:
    ```bash
-   export CMC_API_KEY="your-api-key-here"
+   export CMC_API="your-api-key-here"
    ```
 3. Or pass directly:
    ```bash
