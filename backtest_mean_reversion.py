@@ -8,6 +8,13 @@ This script analyzes mean reversion patterns by:
 4. Analyzing next 1-day returns for each category
 
 The hypothesis is that certain combinations may show stronger mean reversion patterns.
+
+INTERPRETATION OF RESULTS:
+- forward_1d_return is the ACTUAL next-day return (not a strategy return)
+- For mean reversion trading signals:
+  * DOWN move + POSITIVE forward return = LONG signal (price bounces back)
+  * UP move + NEGATIVE forward return = SHORT signal (price retraces)
+- The backtest does NOT implement trades, it only observes forward returns
 """
 
 import pandas as pd
@@ -297,19 +304,30 @@ def print_results(results):
         
         # Test for mean reversion
         print("\nMean Reversion Evidence:")
+        print("  (Interpretation: Positive return after down move = mean reversion/LONG signal)")
+        print("  (Interpretation: Negative return after up move = mean reversion/SHORT signal)")
+        print()
         down_high_vol = directional_df[directional_df['category'] == 'down_move_high_volume']
         down_low_vol = directional_df[directional_df['category'] == 'down_move_low_volume']
         up_high_vol = directional_df[directional_df['category'] == 'up_move_high_volume']
         up_low_vol = directional_df[directional_df['category'] == 'up_move_low_volume']
         
         if not down_high_vol.empty:
-            print(f"  Down moves + high volume -> next day return: {down_high_vol['mean_forward_return'].values[0]:.4%}")
+            fwd_ret = down_high_vol['mean_forward_return'].values[0]
+            signal = "✓ LONG signal (mean reversion)" if fwd_ret > 0 else "✗ momentum continuation"
+            print(f"  Down moves + high volume -> next day return: {fwd_ret:.4%} ({signal})")
         if not down_low_vol.empty:
-            print(f"  Down moves + low volume -> next day return: {down_low_vol['mean_forward_return'].values[0]:.4%}")
+            fwd_ret = down_low_vol['mean_forward_return'].values[0]
+            signal = "✓ LONG signal (mean reversion)" if fwd_ret > 0 else "✗ momentum continuation"
+            print(f"  Down moves + low volume -> next day return: {fwd_ret:.4%} ({signal})")
         if not up_high_vol.empty:
-            print(f"  Up moves + high volume -> next day return: {up_high_vol['mean_forward_return'].values[0]:.4%}")
+            fwd_ret = up_high_vol['mean_forward_return'].values[0]
+            signal = "✓ SHORT signal (mean reversion)" if fwd_ret < 0 else "✗ momentum continuation"
+            print(f"  Up moves + high volume -> next day return: {fwd_ret:.4%} ({signal})")
         if not up_low_vol.empty:
-            print(f"  Up moves + low volume -> next day return: {up_low_vol['mean_forward_return'].values[0]:.4%}")
+            fwd_ret = up_low_vol['mean_forward_return'].values[0]
+            signal = "✓ SHORT signal (mean reversion)" if fwd_ret < 0 else "✗ momentum continuation"
+            print(f"  Up moves + low volume -> next day return: {fwd_ret:.4%} ({signal})")
     
     print("\n" + "=" * 100)
 
@@ -355,7 +373,7 @@ def main():
     parser.add_argument(
         '--data-file',
         type=str,
-        default='top10_markets_100d_daily_data.csv',
+        default='top10_markets_750d_daily_data.csv',
         help='Path to historical OHLCV data CSV file'
     )
     parser.add_argument(
