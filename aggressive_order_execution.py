@@ -216,18 +216,17 @@ def move_order_to_best_bid_ask(exchange, symbol: str, order_info: dict,
         return None
 
 
-def cross_spread_with_limit_order(exchange, symbol: str, order_info: dict, 
-                                  bid_ask_dict: dict) -> Optional[dict]:
+def cross_spread_with_market_order(exchange, symbol: str, order_info: dict, 
+                                   bid_ask_dict: dict) -> Optional[dict]:
     """
-    Cross the spread by placing a limit order on the opposite side.
-    For buy orders: place limit at ASK (crosses spread)
-    For sell orders: place limit at BID (crosses spread)
+    Cross the spread by placing a MARKET order for immediate fill.
+    Market orders guarantee execution but may have price slippage.
     
     Args:
         exchange: ccxt exchange instance
         symbol: Trading symbol
         order_info: Current order information
-        bid_ask_dict: Dictionary with current bid/ask prices
+        bid_ask_dict: Dictionary with current bid/ask prices (for display only)
         
     Returns:
         New order info or None if error
@@ -240,51 +239,43 @@ def cross_spread_with_limit_order(exchange, symbol: str, order_info: dict,
             print(f"  {symbol}: No remaining amount to fill")
             return None
         
-        # Get current bid/ask
-        if symbol not in bid_ask_dict:
-            print(f"  {symbol}: Error - No bid/ask data available")
-            return None
-        
-        bid = bid_ask_dict[symbol]['bid']
-        ask = bid_ask_dict[symbol]['ask']
-        
-        # Cross the spread: buy at ask, sell at bid
-        if side == 'buy':
-            cross_price = ask
-            price_type = "ASK"
-        else:
-            cross_price = bid
-            price_type = "BID"
-        
         old_price = order_info.get('price', 0)
-        remaining_notional = remaining * cross_price
         
-        print(f"  {symbol}: Crossing spread with LIMIT {side.upper()} order")
-        print(f"           Moving from ${old_price:.4f} to ${cross_price:.4f} ({price_type})")
-        print(f"           Remaining: {remaining:.6f} (~${remaining_notional:.2f})")
+        # Get current bid/ask for display purposes
+        if symbol in bid_ask_dict:
+            bid = bid_ask_dict[symbol]['bid']
+            ask = bid_ask_dict[symbol]['ask']
+            expected_price = ask if side == 'buy' else bid
+            remaining_notional = remaining * expected_price
+            print(f"  {symbol}: Crossing spread with MARKET {side.upper()} order")
+            print(f"           Expected price: ~${expected_price:.4f} (was ${old_price:.4f})")
+            print(f"           Remaining: {remaining:.6f} (~${remaining_notional:.2f})")
+        else:
+            print(f"  {symbol}: Crossing spread with MARKET {side.upper()} order")
+            print(f"           Remaining: {remaining:.6f}")
         
         # Cancel the existing limit order first
         try:
             exchange.cancel_order(order_info['id'], symbol)
-            print(f"  {symbol}: Cancelled limit order {order_info['id']}")
+            print(f"  {symbol}: ✓ Cancelled limit order {order_info['id']}")
         except Exception as e:
             print(f"  {symbol}: Warning - could not cancel order: {e}")
         
-        # Place limit order at the opposite side of spread (crosses spread)
+        # Place MARKET order for immediate fill
         new_order = exchange.create_order(
             symbol=symbol,
-            type='limit',
+            type='market',
             side=side,
-            amount=remaining,
-            price=cross_price
+            amount=remaining
         )
         
-        print(f"  {symbol}: ✓ Limit order placed at ${cross_price:.4f} (crosses spread) - ID: {new_order.get('id')}")
+        fill_price = new_order.get('average') or new_order.get('price', 0)
+        print(f"  {symbol}: ✓ MARKET order FILLED at ~${fill_price:.4f} - ID: {new_order.get('id')}")
         
         return new_order
         
     except Exception as e:
-        print(f"  {symbol}: Error placing limit order: {e}")
+        print(f"  {symbol}: Error placing market order: {e}")
         return None
 
 
