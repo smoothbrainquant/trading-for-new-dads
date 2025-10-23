@@ -1,0 +1,2 @@
+date,portfolio_value,num_long_positions,num_short_positions,long_exposure,short_exposure,net_exposure,gross_exposure,long_positions,short_positions,daily_return,log_return
+2025-10-07,50000.0,9,0,0.49999999999999994,0,0.49999999999999994,0.49999999999999994,"BTC/USDC:USDC, DOGE/USDC:USDC, ETH/USDC:USDC, HYPE/USDC, HYPE/USDC:USDC, SOL/USDC:USDC, UBTC/USDC, XPL/USDC:USDC, XRP/USDC:USDC",None,,
