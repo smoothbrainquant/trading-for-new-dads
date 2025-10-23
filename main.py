@@ -1,6 +1,10 @@
 """
 Automated Trading Strategy Execution
-Main script for executing trading strategy based on 200d high and volatility.
+Main script for executing trading strategy combining:
+1. 20d from 200d high strategy (50% allocation)
+2. Breakout signal strategy (50% allocation)
+
+The two strategies are weighted 50/50 and combined into a single portfolio.
 """
 
 import argparse
@@ -9,6 +13,7 @@ from ccxt_get_data import ccxt_fetch_hyperliquid_daily_data
 from ccxt_get_balance import ccxt_get_hyperliquid_balance
 from ccxt_get_positions import ccxt_get_positions
 from select_insts import select_instruments_near_200d_high
+from calc_breakout_signals import get_current_signals
 from calc_vola import calculate_rolling_30d_volatility as calc_vola_func
 from calc_weights import calculate_weights
 from check_positions import check_positions, get_position_weights
@@ -465,6 +470,117 @@ def calculate_trade_amounts(target_positions, current_positions, notional_value,
     return trades
 
 
+def calculate_breakout_signals_from_data(data):
+    """
+    Calculate breakout signals from historical data.
+    
+    Args:
+        data (dict): Historical price data for each symbol
+        
+    Returns:
+        dict: Dictionary mapping symbols to their target direction (1=long, -1=short, 0=flat)
+    """
+    # Combine all data into a single DataFrame
+    combined_data = []
+    for symbol, symbol_df in data.items():
+        df_copy = symbol_df.copy()
+        if 'symbol' not in df_copy.columns:
+            df_copy['symbol'] = symbol
+        combined_data.append(df_copy)
+    
+    if not combined_data:
+        return {}
+    
+    df = pd.concat(combined_data, ignore_index=True)
+    
+    # Get current signals
+    signals_df = get_current_signals(df)
+    
+    # Convert to target positions dictionary
+    target_positions = {}
+    for _, row in signals_df.iterrows():
+        symbol = row['symbol']
+        position = row['position']
+        
+        if position == 'LONG':
+            target_positions[symbol] = 1
+        elif position == 'SHORT':
+            target_positions[symbol] = -1
+        else:
+            target_positions[symbol] = 0
+    
+    return target_positions
+
+
+def combine_strategies_50_50(weights_20d_high, weights_breakout_long, weights_breakout_short, 
+                              notional_value):
+    """
+    Combine 20d from high strategy (50%) with breakout signal strategy (50%).
+    
+    Strategy 1 (50%): 20d from 200d high - all LONG positions
+    Strategy 2 (50%): Breakout signals - can be LONG or SHORT
+    
+    Args:
+        weights_20d_high (dict): Weights from 20d from high strategy (all longs)
+        weights_breakout_long (dict): Long weights from breakout strategy
+        weights_breakout_short (dict): Short weights from breakout strategy
+        notional_value (float): Total account notional value
+        
+    Returns:
+        dict: Combined target positions (positive=long, negative=short)
+    """
+    target_positions = {}
+    
+    # Strategy 1: 20d from high (50% of notional, all longs)
+    strategy1_notional = notional_value * 0.5
+    print("\nStrategy 1: 20d from 200d high (50% allocation = ${:,.2f})".format(strategy1_notional))
+    for symbol, weight in weights_20d_high.items():
+        target_notional = weight * strategy1_notional
+        target_positions[symbol] = target_notional
+        print(f"  {symbol}: LONG weight={weight:.4f}, target=${target_notional:,.2f}")
+    
+    # Strategy 2: Breakout signals (50% of notional, can be long or short)
+    strategy2_notional = notional_value * 0.5
+    print("\nStrategy 2: Breakout signals (50% allocation = ${:,.2f})".format(strategy2_notional))
+    
+    # Add breakout longs
+    if weights_breakout_long:
+        print("  LONG positions:")
+        for symbol, weight in weights_breakout_long.items():
+            target_notional = weight * strategy2_notional
+            # If symbol already in target_positions (from strategy 1), add to it
+            if symbol in target_positions:
+                target_positions[symbol] += target_notional
+                print(f"    {symbol}: LONG weight={weight:.4f}, target=${target_notional:,.2f} (COMBINED with Strategy 1)")
+            else:
+                target_positions[symbol] = target_notional
+                print(f"    {symbol}: LONG weight={weight:.4f}, target=${target_notional:,.2f}")
+    
+    # Add breakout shorts
+    if weights_breakout_short:
+        print("  SHORT positions:")
+        for symbol, weight in weights_breakout_short.items():
+            target_notional = -1 * weight * strategy2_notional
+            # If symbol already in target_positions, this is a conflict
+            # (Strategy 1 wants long, Strategy 2 wants short)
+            # In this case, net them out
+            if symbol in target_positions:
+                print(f"    {symbol}: SHORT weight={weight:.4f}, target=-${abs(target_notional):,.2f} (CONFLICT: Strategy 1 has LONG, netting out)")
+                target_positions[symbol] += target_notional
+            else:
+                target_positions[symbol] = target_notional
+                print(f"    {symbol}: SHORT weight={weight:.4f}, target=-${abs(target_notional):,.2f}")
+    
+    # Print combined positions
+    print("\nCombined Target Positions:")
+    print("=" * 80)
+    for symbol, target in sorted(target_positions.items()):
+        side = "LONG" if target > 0 else "SHORT"
+        print(f"  {symbol}: {side} ${abs(target):,.2f}")
+    
+    return target_positions
+
+
 def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive=False):
     """
     Send orders to adjust positions based on calculated trade amounts.
@@ -531,20 +647,24 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive
 
 def main():
     """
-    Main execution function.
+    Main execution function combining two strategies (50/50 weighting):
     
-    Orchestrates the entire trading strategy workflow:
+    Strategy 1 (50%): 20d from 200d high
+    Strategy 2 (50%): Breakout signals (50d high/low entry, 70d exit)
+    
+    Workflow:
     1. Request markets by volume (>$100k/day)
     2. Get 200d daily data
-    3. Calculate days from 200d high
-    4. Select instruments <= 20d from high
-    5. Calculate rolling 30d volatility
-    6. Calculate weights based on inverse volatility
-    7. Get account notional value from balance + positions
-    8. Calculate target positions with weights * notional
-    9. Get current positions
-    10. Calculate difference between target and current positions
-    11. Calculate trade amounts where target positions are > 5% difference from notional
+    3. Strategy 1: Select instruments <= 20d from 200d high
+    4. Strategy 2: Calculate breakout signals (LONG/SHORT)
+    5. Calculate rolling 30d volatility for all selected instruments
+    6. Calculate weights for Strategy 1 (20d from high)
+    7. Calculate weights for Strategy 2 (breakout longs and shorts separately)
+    8. Get account notional value from balance + positions
+    9. Combine strategies 50/50 to get target positions
+    10. Get current positions
+    11. Calculate trade amounts where difference > threshold
+    12. Execute orders
     """
     # Parse command line arguments
     parser = argparse.ArgumentParser(
@@ -584,18 +704,21 @@ def main():
     args = parser.parse_args()
     
     print("="*80)
-    print("AUTOMATED TRADING STRATEGY EXECUTION")
+    print("AUTOMATED TRADING STRATEGY EXECUTION - COMBINED 50/50")
     print("="*80)
+    print("\nStrategy Allocation:")
+    print("  50% - 20d from 200d high (LONG only)")
+    print("  50% - Breakout signals (LONG/SHORT)")
     print(f"\nParameters:")
-    print(f"  Days since high: {args.days_since_high}")
+    print(f"  Days since high (Strategy 1): {args.days_since_high}")
     print(f"  Rebalance threshold: {args.rebalance_threshold*100:.1f}%")
     print(f"  Leverage: {args.leverage}x")
     print(f"  Aggressive execution: {args.aggressive}")
     print(f"  Dry run: {args.dry_run}")
     print("="*80)
     
-    # Step 1: Request markets by volume, select markets over $100k volume/day
-    print("\n[1/11] Requesting markets by volume (>$100k/day)...")
+    # Step 1: Request markets by volume
+    print("\n[1/13] Requesting markets by volume (>$100k/day)...")
     symbols = request_markets_by_volume(min_volume=100000)
     print(f"Selected {len(symbols)} markets")
     
@@ -604,7 +727,7 @@ def main():
         return
     
     # Step 2: Get 200d daily data
-    print("\n[2/11] Fetching 200 days of daily data...")
+    print("\n[2/13] Fetching 200 days of daily data...")
     historical_data = get_200d_daily_data(symbols)
     print(f"Retrieved data for {len(historical_data)} symbols")
     
@@ -612,43 +735,105 @@ def main():
         print("No historical data available. Exiting.")
         return
     
+    # === STRATEGY 1: 20d from 200d high ===
+    print("\n" + "="*80)
+    print("STRATEGY 1: 20d from 200d high")
+    print("="*80)
+    
     # Step 3: Calculate days from 200d high
-    print("\n[3/11] Calculating days from 200d high...")
+    print("\n[3/13] Calculating days from 200d high...")
     days_from_high = calculate_days_from_200d_high(historical_data)
     print(f"Calculated days from high for {len(days_from_high)} symbols")
     
     # Step 4: Select instruments <= days_since_high from high
-    print(f"\n[4/11] Selecting instruments <= {args.days_since_high} days from high...")
-    # Create a DataFrame for filtering
-    selected_symbols = [symbol for symbol, days in days_from_high.items() if days <= args.days_since_high]
-    print(f"Selected {len(selected_symbols)} instruments near their 200d high:")
-    for symbol in selected_symbols:
+    print(f"\n[4/13] Selecting instruments <= {args.days_since_high} days from high...")
+    selected_symbols_20d = [symbol for symbol, days in days_from_high.items() if days <= args.days_since_high]
+    print(f"Selected {len(selected_symbols_20d)} instruments near their 200d high:")
+    for symbol in selected_symbols_20d:
         print(f"  {symbol}: {days_from_high[symbol]} days from high")
     
-    if not selected_symbols:
-        print("No instruments near their 200d high. Exiting.")
-        return
+    # Step 5: Calculate rolling 30d volatility for Strategy 1
+    print("\n[5/13] Calculating rolling 30d volatility for Strategy 1...")
+    volatilities_20d = {}
+    if selected_symbols_20d:
+        volatilities_20d = calculate_rolling_30d_volatility(historical_data, selected_symbols_20d)
+        print(f"Calculated volatility for {len(volatilities_20d)} symbols:")
+        for symbol, vol in volatilities_20d.items():
+            print(f"  {symbol}: {vol:.6f}")
     
-    # Step 5: Calculate rolling 30d volatility
-    print("\n[5/11] Calculating rolling 30d volatility...")
-    volatilities = calculate_rolling_30d_volatility(historical_data, selected_symbols)
-    print(f"Calculated volatility for {len(volatilities)} symbols:")
-    for symbol, vol in volatilities.items():
-        print(f"  {symbol}: {vol:.6f}")
+    # Step 6: Calculate weights for Strategy 1
+    print("\n[6/13] Calculating weights for Strategy 1 (inverse volatility)...")
+    weights_20d = {}
+    if volatilities_20d:
+        weights_20d = calc_weights(volatilities_20d)
+        print(f"Calculated weights for {len(weights_20d)} symbols:")
+        for symbol, weight in weights_20d.items():
+            print(f"  {symbol}: {weight:.4f} ({weight*100:.2f}%)")
     
-    if not volatilities:
-        print("No volatility data available. Exiting.")
-        return
+    # === STRATEGY 2: Breakout signals ===
+    print("\n" + "="*80)
+    print("STRATEGY 2: Breakout signals (50d high/low, 70d exit)")
+    print("="*80)
     
-    # Step 6: Calculate weights based on inverse volatility
-    print("\n[6/11] Calculating weights based on inverse volatility...")
-    weights = calc_weights(volatilities)
-    print(f"Calculated weights for {len(weights)} symbols:")
-    for symbol, weight in weights.items():
-        print(f"  {symbol}: {weight:.4f} ({weight*100:.2f}%)")
+    # Step 7: Calculate breakout signals
+    print("\n[7/13] Calculating breakout signals...")
+    breakout_signals = calculate_breakout_signals_from_data(historical_data)
     
-    # Step 7: Get account notional value from balance + positions
-    print("\n[7/11] Getting account notional value...")
+    # Separate longs and shorts
+    longs_breakout = [symbol for symbol, direction in breakout_signals.items() if direction == 1]
+    shorts_breakout = [symbol for symbol, direction in breakout_signals.items() if direction == -1]
+    
+    print(f"LONG signals: {len(longs_breakout)} symbols")
+    for symbol in longs_breakout:
+        print(f"  {symbol}")
+    
+    print(f"\nSHORT signals: {len(shorts_breakout)} symbols")
+    for symbol in shorts_breakout:
+        print(f"  {symbol}")
+    
+    # Step 8: Calculate rolling 30d volatility for breakout LONGS
+    print("\n[8/13] Calculating rolling 30d volatility for breakout LONGS...")
+    volatilities_breakout_long = {}
+    if longs_breakout:
+        volatilities_breakout_long = calculate_rolling_30d_volatility(historical_data, longs_breakout)
+        print(f"Calculated volatility for {len(volatilities_breakout_long)} LONG symbols:")
+        for symbol, vol in volatilities_breakout_long.items():
+            print(f"  {symbol}: {vol:.6f}")
+    
+    # Step 9: Calculate rolling 30d volatility for breakout SHORTS
+    print("\n[9/13] Calculating rolling 30d volatility for breakout SHORTS...")
+    volatilities_breakout_short = {}
+    if shorts_breakout:
+        volatilities_breakout_short = calculate_rolling_30d_volatility(historical_data, shorts_breakout)
+        print(f"Calculated volatility for {len(volatilities_breakout_short)} SHORT symbols:")
+        for symbol, vol in volatilities_breakout_short.items():
+            print(f"  {symbol}: {vol:.6f}")
+    
+    # Step 10: Calculate weights for breakout LONGS
+    print("\n[10/13] Calculating weights for breakout LONGS (inverse volatility)...")
+    weights_breakout_long = {}
+    if volatilities_breakout_long:
+        weights_breakout_long = calc_weights(volatilities_breakout_long)
+        print(f"Calculated weights for {len(weights_breakout_long)} LONG symbols:")
+        for symbol, weight in weights_breakout_long.items():
+            print(f"  {symbol}: {weight:.4f} ({weight*100:.2f}%)")
+    
+    # Step 11: Calculate weights for breakout SHORTS
+    print("\n[11/13] Calculating weights for breakout SHORTS (inverse volatility)...")
+    weights_breakout_short = {}
+    if volatilities_breakout_short:
+        weights_breakout_short = calc_weights(volatilities_breakout_short)
+        print(f"Calculated weights for {len(weights_breakout_short)} SHORT symbols:")
+        for symbol, weight in weights_breakout_short.items():
+            print(f"  {symbol}: {weight:.4f} ({weight*100:.2f}%)")
+    
+    # === COMBINE STRATEGIES ===
+    print("\n" + "="*80)
+    print("COMBINING STRATEGIES (50/50)")
+    print("="*80)
+    
+    # Step 12: Get account notional value and combine strategies
+    print("\n[12/13] Getting account notional value and combining strategies...")
     base_notional_value = get_account_notional_value()
     
     # Apply leverage multiplier
@@ -656,22 +841,22 @@ def main():
     if args.leverage != 1.0:
         print(f"Applying {args.leverage}x leverage: ${base_notional_value:,.2f} → ${notional_value:,.2f}")
     
-    # Step 8: Calculate target positions with weights * notional
-    print("\n[8/11] Calculating target positions...")
-    target_positions = calculate_target_positions(weights, notional_value)
+    # Combine strategies 50/50
+    target_positions = combine_strategies_50_50(
+        weights_20d, 
+        weights_breakout_long, 
+        weights_breakout_short, 
+        notional_value
+    )
     
-    # Step 9: Get current positions
-    print("\n[9/11] Getting current positions...")
+    # Step 13: Get current positions
+    print("\n[13/13] Getting current positions...")
     current_positions = get_current_positions()
     print(f"Currently holding {current_positions['total_positions']} positions")
     print(f"Total unrealized PnL: ${current_positions['total_unrealized_pnl']:,.2f}")
     
-    # Step 10: Calculate difference between target and current positions
-    print("\n[10/11] Calculating differences between target and current positions...")
-    # This is handled within calculate_trade_amounts
-    
-    # Step 11: Calculate trade amounts where target positions are > threshold difference from notional
-    print(f"\n[11/11] Calculating trade amounts (>{args.rebalance_threshold*100:.0f}% threshold)...")
+    # Calculate trade amounts
+    print(f"\nCalculating trade amounts (>{args.rebalance_threshold*100:.0f}% threshold)...")
     trades = calculate_trade_amounts(
         target_positions, 
         current_positions, 
