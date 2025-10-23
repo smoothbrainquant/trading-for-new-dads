@@ -607,7 +607,7 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive
         print("\nUsing AGGRESSIVE ORDER EXECUTION strategy (tick-based)...")
         result = aggressive_execute_orders(
             trades=trades,
-            tick_interval=2.0,  # Poll every 2 seconds
+            tick_interval=5.0,  # Poll every 5 seconds
             max_time=60,  # Run for max 60 seconds
             cross_spread_after=True,  # Cross spread if not filled after max_time
             dry_run=dry_run
