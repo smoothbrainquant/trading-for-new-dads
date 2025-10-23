@@ -2,7 +2,6 @@
 Aggressive Order Execution with Tick-Based Best Bid/Ask Tracking
 
 For a collection of orders {symbol: size}:
-0. Cancel all existing open orders (prevents order accumulation)
 1. Send limit orders at best bid/ask
 2. Continuously monitor (tick-based) the market:
    - Poll bid/ask prices every tick_interval seconds
@@ -301,7 +300,6 @@ def aggressive_execute_orders(
     Aggressively execute orders using tick-based best bid/ask tracking.
     
     Strategy:
-    0. Cancel all existing open orders (prevents accumulation from prior runs)
     1. Send limit orders at best bid/ask
     2. Continuously monitor market (tick-based):
        - Poll bid/ask every tick_interval seconds
@@ -345,12 +343,6 @@ def aggressive_execute_orders(
         except Exception as e:
             print(f"\n✗ Failed to initialize exchange: {e}")
             return {'success': False, 'error': str(e)}
-        
-        # IMPORTANT: Cancel all existing open orders before starting
-        print(f"\n[0/4] Canceling existing open orders...")
-        print("-" * 80)
-        canceled_count = cancel_all_open_orders(exchange, dry_run=False)
-        print(f"✓ Canceled {canceled_count} existing order(s)\n")
     
     symbols = list(trades.keys())
     
@@ -700,7 +692,6 @@ Examples:
   python3 aggressive_order_execution.py --trades "BTC/USDC:USDC:100" --live --no-cross-spread
 
 Strategy (Tick-Based Best Bid/Ask Tracking):
-  0. Cancels all existing open orders (prevents accumulation)
   1. Sends limit orders at best bid (buy) or ask (sell)
   2. Continuously monitors market every tick-interval seconds:
      - Polls current bid/ask prices
