@@ -1,0 +1,2 @@
+strategy,num_buckets,long_symbols,short_symbols
+long_small,5,"['BTC', 'ETH', 'SOL', 'XRP', 'DOGE']",[]
