@@ -2,13 +2,16 @@
 Aggressive Order Execution with Tick-Based Best Bid/Ask Tracking
 
 For a collection of orders {symbol: size}:
+0. Cancel all existing open orders (prevents order accumulation)
 1. Send limit orders at best bid/ask
 2. Continuously monitor (tick-based) the market:
    - Poll bid/ask prices every tick_interval seconds
    - If best bid/ask changes, immediately move orders to new best bid/ask
    - Check if orders are filled
 3. Continue until orders are filled, max_time is reached, or max_ticks exceeded
-4. Finally, if still unfilled after max time, cross the spread with market orders
+4. Finally, if still unfilled after max time, cross the spread with limit orders
+   - Buy orders: moved to ASK price (crosses spread)
+   - Sell orders: moved to BID price (crosses spread)
 
 This strategy ensures orders stay at the best bid/ask to maximize fill probability
 while still getting good prices (better than market orders).
@@ -42,6 +45,74 @@ def get_exchange():
         'walletAddress': api_key,
         'enableRateLimit': True,
     })
+
+
+def get_all_open_orders(exchange):
+    """
+    Fetch all open orders from the exchange.
+    
+    Args:
+        exchange: ccxt exchange instance
+        
+    Returns:
+        list: List of open orders
+    """
+    try:
+        open_orders = exchange.fetch_open_orders()
+        return open_orders
+    except Exception as e:
+        print(f"  Warning: Could not fetch open orders: {e}")
+        return []
+
+
+def cancel_all_open_orders(exchange, dry_run=True):
+    """
+    Cancel all existing open orders.
+    
+    Args:
+        exchange: ccxt exchange instance
+        dry_run: If True, only print what would be canceled
+        
+    Returns:
+        int: Number of orders canceled
+    """
+    try:
+        open_orders = get_all_open_orders(exchange)
+        
+        if not open_orders:
+            print("  No existing open orders to cancel")
+            return 0
+        
+        print(f"  Found {len(open_orders)} existing open order(s):")
+        for order in open_orders:
+            symbol = order.get('symbol', 'N/A')
+            side = order.get('side', 'N/A').upper()
+            price = order.get('price', 0)
+            amount = order.get('amount', 0)
+            order_id = order.get('id', 'N/A')
+            print(f"    {symbol}: {side} @ ${price:.4f}, Amount: {amount:.6f}, ID: {order_id}")
+        
+        if dry_run:
+            print(f"  [DRY RUN] Would cancel {len(open_orders)} order(s)")
+            return len(open_orders)
+        
+        # Cancel all orders
+        canceled = 0
+        for order in open_orders:
+            try:
+                symbol = order.get('symbol')
+                order_id = order.get('id')
+                exchange.cancel_order(order_id, symbol)
+                canceled += 1
+                print(f"    ✓ Canceled {symbol} order {order_id}")
+            except Exception as e:
+                print(f"    ✗ Failed to cancel order {order_id}: {e}")
+        
+        return canceled
+        
+    except Exception as e:
+        print(f"  Warning: Error canceling orders: {e}")
+        return 0
 
 
 def check_order_fills(exchange, order_ids: Dict[str, str]) -> Dict[str, dict]:
@@ -146,19 +217,21 @@ def move_order_to_best_bid_ask(exchange, symbol: str, order_info: dict,
         return None
 
 
-def cross_spread_with_market_order(exchange, symbol: str, order_info: dict, 
-                                   notional_amount: float) -> Optional[dict]:
+def cross_spread_with_limit_order(exchange, symbol: str, order_info: dict, 
+                                  bid_ask_dict: dict) -> Optional[dict]:
     """
-    Cross the spread by placing a market order for the remaining amount.
+    Cross the spread by placing a limit order on the opposite side.
+    For buy orders: place limit at ASK (crosses spread)
+    For sell orders: place limit at BID (crosses spread)
     
     Args:
         exchange: ccxt exchange instance
         symbol: Trading symbol
         order_info: Current order information
-        notional_amount: Original notional amount to trade
+        bid_ask_dict: Dictionary with current bid/ask prices
         
     Returns:
-        Market order info or None if error
+        New order info or None if error
     """
     try:
         side = order_info['side']
@@ -168,11 +241,27 @@ def cross_spread_with_market_order(exchange, symbol: str, order_info: dict,
             print(f"  {symbol}: No remaining amount to fill")
             return None
         
-        # Calculate remaining notional based on current price
-        price = order_info.get('price', 0)
-        remaining_notional = remaining * price
+        # Get current bid/ask
+        if symbol not in bid_ask_dict:
+            print(f"  {symbol}: Error - No bid/ask data available")
+            return None
         
-        print(f"  {symbol}: Crossing spread with MARKET {side.upper()} order")
+        bid = bid_ask_dict[symbol]['bid']
+        ask = bid_ask_dict[symbol]['ask']
+        
+        # Cross the spread: buy at ask, sell at bid
+        if side == 'buy':
+            cross_price = ask
+            price_type = "ASK"
+        else:
+            cross_price = bid
+            price_type = "BID"
+        
+        old_price = order_info.get('price', 0)
+        remaining_notional = remaining * cross_price
+        
+        print(f"  {symbol}: Crossing spread with LIMIT {side.upper()} order")
+        print(f"           Moving from ${old_price:.4f} to ${cross_price:.4f} ({price_type})")
         print(f"           Remaining: {remaining:.6f} (~${remaining_notional:.2f})")
         
         # Cancel the existing limit order first
@@ -182,24 +271,21 @@ def cross_spread_with_market_order(exchange, symbol: str, order_info: dict,
         except Exception as e:
             print(f"  {symbol}: Warning - could not cancel order: {e}")
         
-        # Place market order for remaining amount
-        ticker = exchange.fetch_ticker(symbol)
-        current_price = ticker['last']
-        
-        market_order = exchange.create_order(
+        # Place limit order at the opposite side of spread (crosses spread)
+        new_order = exchange.create_order(
             symbol=symbol,
-            type='market',
+            type='limit',
             side=side,
             amount=remaining,
-            price=current_price
+            price=cross_price
         )
         
-        print(f"  {symbol}: ✓ Market order placed - ID: {market_order.get('id')}")
+        print(f"  {symbol}: ✓ Limit order placed at ${cross_price:.4f} (crosses spread) - ID: {new_order.get('id')}")
         
-        return market_order
+        return new_order
         
     except Exception as e:
-        print(f"  {symbol}: Error placing market order: {e}")
+        print(f"  {symbol}: Error placing limit order: {e}")
         return None
 
 
@@ -215,13 +301,16 @@ def aggressive_execute_orders(
     Aggressively execute orders using tick-based best bid/ask tracking.
     
     Strategy:
+    0. Cancel all existing open orders (prevents accumulation from prior runs)
     1. Send limit orders at best bid/ask
     2. Continuously monitor market (tick-based):
        - Poll bid/ask every tick_interval seconds
        - If best bid/ask changes, immediately move orders to new best bid/ask
        - Check if orders are filled
     3. Continue until orders filled, max_time reached, or all trades complete
-    4. Optionally cross spread with market orders for remaining unfilled
+    4. Optionally cross spread with limit orders for remaining unfilled
+       - Buy orders: moved to ASK price (crosses spread, fills immediately)
+       - Sell orders: moved to BID price (crosses spread, fills immediately)
     
     Args:
         trades: Dictionary mapping symbol to notional amount
@@ -256,6 +345,12 @@ def aggressive_execute_orders(
         except Exception as e:
             print(f"\n✗ Failed to initialize exchange: {e}")
             return {'success': False, 'error': str(e)}
+        
+        # IMPORTANT: Cancel all existing open orders before starting
+        print(f"\n[0/4] Canceling existing open orders...")
+        print("-" * 80)
+        canceled_count = cancel_all_open_orders(exchange, dry_run=False)
+        print(f"✓ Canceled {canceled_count} existing order(s)\n")
     
     symbols = list(trades.keys())
     
@@ -484,11 +579,11 @@ def aggressive_execute_orders(
                     if remaining > 0:
                         print(f"\n{symbol}: Crossing spread for {remaining:.6f} remaining")
                         
-                        market_order = cross_spread_with_market_order(
-                            exchange, symbol, status, trades[symbol]
+                        cross_order = cross_spread_with_limit_order(
+                            exchange, symbol, status, bid_ask_dict
                         )
                         
-                        if market_order:
+                        if cross_order:
                             filled_symbols.add(symbol)
                     else:
                         print(f"\n{symbol}: ✓ Order filled")
@@ -496,7 +591,12 @@ def aggressive_execute_orders(
             else:
                 print(f"[DRY RUN] Would cross spread for {len(unfilled_symbols)} unfilled orders:")
                 for symbol in unfilled_symbols:
-                    print(f"  {symbol}: Would place market order")
+                    side = order_info_dict[symbol]['side']
+                    if symbol in bid_ask_dict:
+                        cross_price = bid_ask_dict[symbol]['ask'] if side == 'buy' else bid_ask_dict[symbol]['bid']
+                        print(f"  {symbol}: Would place limit order at ${cross_price:.4f} (crosses spread)")
+                    else:
+                        print(f"  {symbol}: Would cross spread")
         else:
             print(f"\n{len(unfilled_symbols)} orders still open (cross_spread_after=False)")
             for symbol in unfilled_symbols:
@@ -600,13 +700,16 @@ Examples:
   python3 aggressive_order_execution.py --trades "BTC/USDC:USDC:100" --live --no-cross-spread
 
 Strategy (Tick-Based Best Bid/Ask Tracking):
+  0. Cancels all existing open orders (prevents accumulation)
   1. Sends limit orders at best bid (buy) or ask (sell)
   2. Continuously monitors market every tick-interval seconds:
      - Polls current bid/ask prices
      - If best bid/ask changed, moves orders to new best bid/ask
      - Checks if orders are filled
   3. Continues until orders filled or max-time reached
-  4. Optionally crosses spread with market orders for remaining unfilled
+  4. Optionally crosses spread with limit orders for remaining unfilled
+     - Buy orders: moved to ASK (crosses spread)
+     - Sell orders: moved to BID (crosses spread)
   
 Trade Format:
   SYMBOL:AMOUNT
