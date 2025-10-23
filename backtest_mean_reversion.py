@@ -55,23 +55,23 @@ def calculate_z_scores(data, lookback_window=30):
         lambda x: x.pct_change()
     )
     
-    # Calculate rolling mean and std for returns
+    # Calculate rolling mean and std for returns (shifted to avoid look-ahead bias)
     df['return_mean'] = df.groupby('symbol')['pct_change'].transform(
-        lambda x: x.rolling(window=lookback_window, min_periods=lookback_window).mean()
+        lambda x: x.rolling(window=lookback_window, min_periods=lookback_window).mean().shift(1)
     )
     df['return_std'] = df.groupby('symbol')['pct_change'].transform(
-        lambda x: x.rolling(window=lookback_window, min_periods=lookback_window).std()
+        lambda x: x.rolling(window=lookback_window, min_periods=lookback_window).std().shift(1)
     )
     
-    # Calculate rolling mean and std for volume
+    # Calculate rolling mean and std for volume (shifted to avoid look-ahead bias)
     df['volume_mean'] = df.groupby('symbol')['volume_change'].transform(
-        lambda x: x.rolling(window=lookback_window, min_periods=lookback_window).mean()
+        lambda x: x.rolling(window=lookback_window, min_periods=lookback_window).mean().shift(1)
     )
     df['volume_std'] = df.groupby('symbol')['volume_change'].transform(
-        lambda x: x.rolling(window=lookback_window, min_periods=lookback_window).std()
+        lambda x: x.rolling(window=lookback_window, min_periods=lookback_window).std().shift(1)
     )
     
-    # Calculate z-scores
+    # Calculate z-scores using shifted mean and std (no look-ahead bias)
     df['return_zscore'] = (df['pct_change'] - df['return_mean']) / df['return_std']
     df['volume_zscore'] = (df['volume_change'] - df['volume_mean']) / df['volume_std']
     
