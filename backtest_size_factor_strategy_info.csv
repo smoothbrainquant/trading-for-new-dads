@@ -1,2 +1,2 @@
 strategy,num_buckets,long_symbols,short_symbols
-long_small,5,"['BTC', 'ETH', 'SOL', 'XRP', 'DOGE']",[]
+long_small_short_large,5,"['BTC', 'ETH', 'XRP', 'SOL', 'DOGE', 'HYPE']",['XPL']
