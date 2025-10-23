@@ -636,7 +636,7 @@ def main():
         '--cmc-api-key',
         type=str,
         default=None,
-        help='CoinMarketCap API key (or set CMC_API_KEY env var)'
+        help='CoinMarketCap API key (or set CMC_API env var)'
     )
     parser.add_argument(
         '--strategy',

@@ -18,7 +18,7 @@ def fetch_coinmarketcap_data(api_key=None, limit=100, convert='USD'):
     Fetch cryptocurrency market cap data from CoinMarketCap.
     
     Args:
-        api_key (str): CoinMarketCap API key. If None, tries to read from CMC_API_KEY env var
+        api_key (str): CoinMarketCap API key. If None, tries to read from CMC_API env var
         limit (int): Number of cryptocurrencies to fetch (max 5000)
         convert (str): Currency for conversion (default USD)
         
@@ -27,10 +27,10 @@ def fetch_coinmarketcap_data(api_key=None, limit=100, convert='USD'):
     """
     # Get API key from environment if not provided
     if api_key is None:
-        api_key = os.environ.get('CMC_API_KEY')
+        api_key = os.environ.get('CMC_API')
         if not api_key:
             print("WARNING: No CoinMarketCap API key found.")
-            print("Please set CMC_API_KEY environment variable or use demo mode.")
+            print("Please set CMC_API environment variable or use demo mode.")
             print("Using demo/mock data instead...")
             return fetch_mock_marketcap_data(limit)
     
@@ -196,7 +196,7 @@ def main():
         '--api-key',
         type=str,
         default=None,
-        help='CoinMarketCap API key (or set CMC_API_KEY env var)'
+        help='CoinMarketCap API key (or set CMC_API env var)'
     )
     parser.add_argument(
         '--limit',
