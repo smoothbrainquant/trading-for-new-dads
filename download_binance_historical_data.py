@@ -54,6 +54,11 @@ def download_binance_daily_data(
                 }
             })
             print("Connecting to Bybit Spot...")
+    elif exchange_name == 'coinbase':
+        exchange = ccxt.coinbase({
+            'enableRateLimit': True,
+        })
+        print("Connecting to Coinbase Spot...")
     else:  # binance
         if market_type == 'futures':
             exchange = ccxt.binance({
@@ -229,6 +234,13 @@ def get_top_binance_pairs(exchange, market_type='spot', limit=20, exchange_name=
                             'symbol': symbol,
                             'volume': ticker.get('quoteVolume', 0) or 0
                         })
+            elif exchange_name == 'coinbase':
+                # Coinbase: filter for USD and USDT pairs
+                if ('/USD' in symbol or '/USDT' in symbol) and ':' not in symbol:
+                    volume_data.append({
+                        'symbol': symbol,
+                        'volume': ticker.get('quoteVolume', 0) or ticker.get('baseVolume', 0) or 0
+                    })
             else:  # binance
                 if market_type == 'spot':
                     # Spot markets: filter for USDT pairs, exclude futures
@@ -358,7 +370,7 @@ if __name__ == "__main__":
         '--exchange',
         type=str,
         default='bybit',
-        choices=['binance', 'bybit'],
+        choices=['binance', 'bybit', 'coinbase'],
         help='Exchange to use (default: bybit)'
     )
     
