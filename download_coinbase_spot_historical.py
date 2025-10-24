@@ -65,15 +65,16 @@ def get_coinbase_spot_markets() -> Dict[str, str]:
         print(f"Error fetching Coinbase markets: {str(e)}")
         return {}
 
-def fetch_daily_data_for_symbol(exchange: ccxt.Exchange, symbol: str, start_date: datetime) -> pd.DataFrame:
+def fetch_daily_data_for_symbol(exchange: ccxt.Exchange, symbol: str, preferred_start_date: datetime = None) -> pd.DataFrame:
     """
-    Fetch daily OHLCV data for a single symbol from a start date to present.
+    Fetch all available daily OHLCV data for a single symbol.
+    Tries to fetch from preferred_start_date if provided, otherwise fetches all available data.
     Fetches in chunks to handle Coinbase's 300-day limit.
     
     Args:
         exchange: CCXT exchange instance
         symbol: Trading pair symbol (e.g., 'BTC/USD')
-        start_date: Start date for historical data
+        preferred_start_date: Preferred start date (will use actual listing date if earlier)
     
     Returns:
         DataFrame with OHLCV data
@@ -82,53 +83,85 @@ def fetch_daily_data_for_symbol(exchange: ccxt.Exchange, symbol: str, start_date
         print(f"  Fetching data for {symbol}...", end=' ', flush=True)
         
         all_ohlcv = []
-        current_date = start_date
         now = datetime.now()
         
-        # Fetch data in 250-day chunks (to stay under the limit)
-        chunk_days = 250
+        # Fetch data in 300-day chunks
+        chunk_days = 300
         
-        while current_date < now:
-            # Convert current date to timestamp
-            since = int(current_date.timestamp() * 1000)
+        # Try different start dates if preferred date doesn't work
+        start_dates_to_try = []
+        
+        if preferred_start_date:
+            start_dates_to_try.append(preferred_start_date)
+        
+        # Also try progressively more recent dates
+        start_dates_to_try.extend([
+            datetime(2021, 1, 1),
+            datetime(2022, 1, 1),
+            datetime(2023, 1, 1),
+            datetime(2024, 1, 1),
+        ])
+        
+        # Try to fetch data starting from each date
+        for start_date in start_dates_to_try:
+            if start_date >= now:
+                continue
+                
+            current_date = start_date
+            temp_ohlcv = []
             
+            while current_date < now:
+                since = int(current_date.timestamp() * 1000)
+                
+                try:
+                    ohlcv = exchange.fetch_ohlcv(
+                        symbol=symbol,
+                        timeframe='1d',
+                        since=since,
+                        limit=chunk_days
+                    )
+                    
+                    if not ohlcv:
+                        break
+                    
+                    temp_ohlcv.extend(ohlcv)
+                    
+                    # Get the last timestamp
+                    last_timestamp = ohlcv[-1][0]
+                    last_date = datetime.fromtimestamp(last_timestamp / 1000)
+                    
+                    # If we got less data than requested, we've reached the end
+                    if len(ohlcv) < chunk_days:
+                        break
+                    
+                    # Move forward
+                    current_date = last_date + timedelta(days=1)
+                    time.sleep(0.1)
+                    
+                except Exception as e:
+                    if 'INVALID_ARGUMENT' in str(e):
+                        # Try next start date
+                        break
+                    else:
+                        break
+            
+            # If we got data, use it
+            if temp_ohlcv:
+                all_ohlcv = temp_ohlcv
+                break
+        
+        # If still no data, try without any start date (fetch most recent)
+        if not all_ohlcv:
             try:
                 ohlcv = exchange.fetch_ohlcv(
                     symbol=symbol,
                     timeframe='1d',
-                    since=since,
-                    limit=chunk_days
+                    limit=1000  # Get last 1000 days
                 )
-                
-                if not ohlcv:
-                    # No more data available
-                    break
-                
-                all_ohlcv.extend(ohlcv)
-                
-                # Move to the next chunk
-                # Get the last timestamp and add 1 day
-                last_timestamp = ohlcv[-1][0]
-                last_date = datetime.fromtimestamp(last_timestamp / 1000)
-                
-                # If we got less data than requested, we've reached the end
-                if len(ohlcv) < chunk_days:
-                    break
-                
-                # Move forward by the chunk size
-                current_date = last_date + timedelta(days=1)
-                
-                # Add a small delay to respect rate limits
-                time.sleep(0.1)
-                
-            except Exception as e:
-                # If we hit an error mid-fetch, break and use what we have
-                if 'INVALID_ARGUMENT' in str(e):
-                    # This symbol doesn't exist on Coinbase
-                    break
-                else:
-                    # Try to continue with what we have
-                    break
+                if ohlcv:
+                    all_ohlcv = ohlcv
+            except:
+                pass
         
         if not all_ohlcv:
             print(f"No data available")
@@ -151,13 +184,11 @@ def fetch_daily_data_for_symbol(exchange: ccxt.Exchange, symbol: str, start_date
         # Select and reorder columns
         df = df[['date', 'symbol', 'base', 'open', 'high', 'low', 'close', 'volume']]
         
-        # Remove duplicates (in case of overlapping data)
+        # Remove duplicates
         df = df.drop_duplicates(subset=['date', 'symbol'], keep='first')
+        df = df.sort_values('date').reset_index(drop=True)
         
-        # Filter to only include data from start_date onwards
-        df = df[df['date'] >= start_date.date()]
-        
-        print(f"✓ Got {len(df)} days of data (from {df['date'].min()} to {df['date'].max()})")
+        print(f"✓ Got {len(df)} days (from {df['date'].min()} to {df['date'].max()})")
         
         return df
         
@@ -221,28 +252,8 @@ def download_coinbase_historical_data(
     for i, (base, full_symbol) in enumerate(matched_symbols, 1):
         print(f"[{i}/{len(matched_symbols)}]", end=' ')
         
-        # First try from start_date
+        # Fetch all available data for this symbol
         df = fetch_daily_data_for_symbol(exchange, full_symbol, start_dt)
-        
-        # If we got partial data (less than expected), try fetching recent data separately
-        if not df.empty:
-            days_fetched = len(df)
-            expected_days = (now - start_dt).days
-            
-            # If we got significantly less data than expected, try fetching recent data
-            if days_fetched < expected_days * 0.5:  # Less than 50% of expected
-                print(f"\n    Attempting to fetch recent data...", end=' ')
-                
-                # Try fetching last 2 years of data
-                recent_start = now - timedelta(days=730)
-                df_recent = fetch_daily_data_for_symbol(exchange, full_symbol, recent_start)
-                
-                if not df_recent.empty:
-                    # Combine with existing data, removing duplicates
-                    df = pd.concat([df, df_recent], ignore_index=True)
-                    df = df.drop_duplicates(subset=['date', 'symbol'], keep='first')
-                    df = df.sort_values('date').reset_index(drop=True)
-                    print(f"✓ Combined to {len(df)} total days")
         
         if not df.empty:
             all_data.append(df)
