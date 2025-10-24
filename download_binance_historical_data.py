@@ -17,10 +17,11 @@ def download_binance_daily_data(
     days=500,
     market_type='spot',
     output_file=None,
-    rate_limit_pause=0.5
+    rate_limit_pause=0.5,
+    exchange_name='bybit'
 ):
     """
-    Download historical daily OHLCV data from Binance.
+    Download historical daily OHLCV data from exchange.
     
     Args:
         symbols (list): List of trading pairs to fetch (e.g., ['BTC/USDT', 'ETH/USDT'])
@@ -29,30 +30,49 @@ def download_binance_daily_data(
         market_type (str): 'spot' or 'futures' (default: 'spot')
         output_file (str): Path to save CSV file. If None, auto-generates filename
         rate_limit_pause (float): Seconds to pause between requests (default: 0.5)
+        exchange_name (str): Exchange to use ('binance', 'bybit', etc.)
     
     Returns:
         pd.DataFrame: DataFrame with columns: date, symbol, open, high, low, close, volume
     """
     
-    # Initialize Binance exchange
-    if market_type == 'futures':
-        exchange = ccxt.binance({
-            'enableRateLimit': True,
-            'options': {
-                'defaultType': 'future',  # Use perpetual futures
-            }
-        })
-        print("Connecting to Binance Futures...")
-    else:
-        exchange = ccxt.binance({
-            'enableRateLimit': True,
-        })
-        print("Connecting to Binance Spot...")
+    # Initialize exchange
+    if exchange_name == 'bybit':
+        if market_type == 'futures':
+            exchange = ccxt.bybit({
+                'enableRateLimit': True,
+                'options': {
+                    'defaultType': 'linear',  # Use USDT perpetuals
+                }
+            })
+            print("Connecting to Bybit Linear Futures...")
+        else:
+            exchange = ccxt.bybit({
+                'enableRateLimit': True,
+                'options': {
+                    'defaultType': 'spot',
+                }
+            })
+            print("Connecting to Bybit Spot...")
+    else:  # binance
+        if market_type == 'futures':
+            exchange = ccxt.binance({
+                'enableRateLimit': True,
+                'options': {
+                    'defaultType': 'future',  # Use perpetual futures
+                }
+            })
+            print("Connecting to Binance Futures...")
+        else:
+            exchange = ccxt.binance({
+                'enableRateLimit': True,
+            })
+            print("Connecting to Binance Spot...")
     
     # If no symbols provided, get top volume pairs
     if symbols is None:
         print("\nFetching top volume pairs...")
-        symbols = get_top_binance_pairs(exchange, market_type=market_type, limit=20)
+        symbols = get_top_binance_pairs(exchange, market_type=market_type, limit=20, exchange_name=exchange_name)
         print(f"Selected {len(symbols)} top volume pairs")
     
     # Calculate start timestamp
@@ -145,7 +165,7 @@ def download_binance_daily_data(
         # Save to CSV
         if output_file is None:
             timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            output_file = f"binance_{market_type}_daily_data_{days}d_{timestamp}.csv"
+            output_file = f"{exchange_name}_{market_type}_daily_data_{days}d_{timestamp}.csv"
         
         combined_df.to_csv(output_file, index=False)
         
@@ -170,14 +190,15 @@ def download_binance_daily_data(
         return pd.DataFrame(columns=['date', 'symbol', 'open', 'high', 'low', 'close', 'volume'])
 
 
-def get_top_binance_pairs(exchange, market_type='spot', limit=20):
+def get_top_binance_pairs(exchange, market_type='spot', limit=20, exchange_name='bybit'):
     """
-    Get top trading pairs by volume from Binance.
+    Get top trading pairs by volume from exchange.
     
     Args:
         exchange: ccxt exchange instance
         market_type (str): 'spot' or 'futures'
         limit (int): Number of top pairs to return
+        exchange_name (str): Exchange name for filtering
     
     Returns:
         list: List of trading pair symbols
@@ -192,21 +213,37 @@ def get_top_binance_pairs(exchange, market_type='spot', limit=20):
         # Filter and sort by volume
         volume_data = []
         for symbol, ticker in tickers.items():
-            # Filter based on market type
-            if market_type == 'spot':
-                # Spot markets: filter for USDT pairs, exclude futures
-                if '/USDT' in symbol and ':' not in symbol:
-                    volume_data.append({
-                        'symbol': symbol,
-                        'volume': ticker.get('quoteVolume', 0)
-                    })
-            else:  # futures
-                # Futures markets: filter for perpetual futures with USDT
-                if '/USDT:USDT' in symbol:
-                    volume_data.append({
-                        'symbol': symbol,
-                        'volume': ticker.get('quoteVolume', 0)
-                    })
+            # Filter based on market type and exchange
+            if exchange_name == 'bybit':
+                if market_type == 'spot':
+                    # Bybit spot: filter for USDT pairs
+                    if '/USDT' in symbol and ':' not in symbol:
+                        volume_data.append({
+                            'symbol': symbol,
+                            'volume': ticker.get('quoteVolume', 0) or 0
+                        })
+                else:  # futures
+                    # Bybit linear perpetuals: /USDT:USDT format
+                    if '/USDT:USDT' in symbol:
+                        volume_data.append({
+                            'symbol': symbol,
+                            'volume': ticker.get('quoteVolume', 0) or 0
+                        })
+            else:  # binance
+                if market_type == 'spot':
+                    # Spot markets: filter for USDT pairs, exclude futures
+                    if '/USDT' in symbol and ':' not in symbol:
+                        volume_data.append({
+                            'symbol': symbol,
+                            'volume': ticker.get('quoteVolume', 0) or 0
+                        })
+                else:  # futures
+                    # Futures markets: filter for perpetual futures with USDT
+                    if '/USDT:USDT' in symbol:
+                        volume_data.append({
+                            'symbol': symbol,
+                            'volume': ticker.get('quoteVolume', 0) or 0
+                        })
         
         # Sort by volume and get top pairs
         volume_df = pd.DataFrame(volume_data)
@@ -219,12 +256,12 @@ def get_top_binance_pairs(exchange, market_type='spot', limit=20):
         print(f"Error fetching top pairs: {str(e)}")
         # Return default pairs if error
         if market_type == 'futures':
-            return ['BTC/USDT:USDT', 'ETH/USDT:USDT', 'BNB/USDT:USDT']
+            return ['BTC/USDT:USDT', 'ETH/USDT:USDT', 'SOL/USDT:USDT']
         else:
-            return ['BTC/USDT', 'ETH/USDT', 'BNB/USDT']
+            return ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
 
 
-def download_specific_symbols(symbols, days=500, market_type='spot', output_file=None):
+def download_specific_symbols(symbols, days=500, market_type='spot', output_file=None, exchange_name='bybit'):
     """
     Convenience function to download data for specific symbols.
     
@@ -233,6 +270,7 @@ def download_specific_symbols(symbols, days=500, market_type='spot', output_file
         days (int): Number of days to download
         market_type (str): 'spot' or 'futures'
         output_file (str): Output CSV filename
+        exchange_name (str): Exchange to use
     
     Returns:
         pd.DataFrame: Downloaded data
@@ -241,11 +279,12 @@ def download_specific_symbols(symbols, days=500, market_type='spot', output_file
         symbols=symbols,
         days=days,
         market_type=market_type,
-        output_file=output_file
+        output_file=output_file,
+        exchange_name=exchange_name
     )
 
 
-def download_top_volume_pairs(limit=20, days=500, market_type='spot', output_file=None):
+def download_top_volume_pairs(limit=20, days=500, market_type='spot', output_file=None, exchange_name='bybit'):
     """
     Convenience function to download top volume pairs.
     
@@ -254,15 +293,29 @@ def download_top_volume_pairs(limit=20, days=500, market_type='spot', output_fil
         days (int): Number of days to download
         market_type (str): 'spot' or 'futures'
         output_file (str): Output CSV filename
+        exchange_name (str): Exchange to use
     
     Returns:
         pd.DataFrame: Downloaded data
     """
+    # Fetch top pairs first to pass the limit
+    exchange_cls = getattr(ccxt, exchange_name)
+    if market_type == 'futures':
+        exchange = exchange_cls({
+            'enableRateLimit': True,
+            'options': {'defaultType': 'linear' if exchange_name == 'bybit' else 'future'}
+        })
+    else:
+        exchange = exchange_cls({'enableRateLimit': True})
+    
+    symbols = get_top_binance_pairs(exchange, market_type=market_type, limit=limit, exchange_name=exchange_name)
+    
     return download_binance_daily_data(
-        symbols=None,  # Will auto-fetch top pairs
+        symbols=symbols,
         days=days,
         market_type=market_type,
-        output_file=output_file
+        output_file=output_file,
+        exchange_name=exchange_name
     )
 
 
@@ -270,7 +323,7 @@ if __name__ == "__main__":
     import argparse
     
     parser = argparse.ArgumentParser(
-        description='Download historical daily data from Binance',
+        description='Download historical daily data from crypto exchange',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument(
@@ -301,13 +354,21 @@ if __name__ == "__main__":
         type=str,
         help='Output CSV filename (auto-generated if not provided)'
     )
+    parser.add_argument(
+        '--exchange',
+        type=str,
+        default='bybit',
+        choices=['binance', 'bybit'],
+        help='Exchange to use (default: bybit)'
+    )
     
     args = parser.parse_args()
     
     print("=" * 80)
-    print("BINANCE HISTORICAL DATA DOWNLOADER")
+    print(f"{args.exchange.upper()} HISTORICAL DATA DOWNLOADER")
     print("=" * 80)
     print(f"\nConfiguration:")
+    print(f"  Exchange: {args.exchange}")
     print(f"  Market type: {args.market_type}")
     print(f"  Days: {args.days}")
     
@@ -317,7 +378,8 @@ if __name__ == "__main__":
             symbols=args.symbols,
             days=args.days,
             market_type=args.market_type,
-            output_file=args.output
+            output_file=args.output,
+            exchange_name=args.exchange
         )
     else:
         print(f"  Mode: Top {args.limit} volume pairs")
@@ -325,7 +387,8 @@ if __name__ == "__main__":
             limit=args.limit,
             days=args.days,
             market_type=args.market_type,
-            output_file=args.output
+            output_file=args.output,
+            exchange_name=args.exchange
         )
     
     if not df.empty:
