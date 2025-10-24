@@ -10,7 +10,9 @@ import requests
 import pandas as pd
 import json
 import os
-from datetime import datetime
+import time
+from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 
 
 def fetch_coinmarketcap_data(api_key=None, limit=100, convert='USD'):
@@ -85,6 +87,151 @@ def fetch_coinmarketcap_data(api_key=None, limit=100, convert='USD'):
         print(f"ERROR fetching from CoinMarketCap: {e}")
         print("Using mock data instead...")
         return fetch_mock_marketcap_data(limit)
+
+
+def fetch_historical_top100_quarterly(api_key=None, start_year=2020, end_date=None, limit=100, convert='USD', delay_seconds=1):
+    """
+    Fetch historical top 100 cryptocurrencies by market cap, once per quarter.
+    
+    This fetches snapshots of the top cryptocurrencies at the end of each quarter
+    (March 31, June 30, September 30, December 31) from the start year to present.
+    
+    Args:
+        api_key (str): CoinMarketCap API key. If None, tries to read from CMC_API env var
+        start_year (int): Starting year for historical data (default 2020)
+        end_date (datetime): End date for data collection (default today)
+        limit (int): Number of cryptocurrencies to fetch per quarter (default 100)
+        convert (str): Currency for conversion (default USD)
+        delay_seconds (float): Delay between API calls to respect rate limits (default 1 second)
+        
+    Returns:
+        pd.DataFrame: DataFrame with all quarterly snapshots, includes 'snapshot_date' column
+    """
+    # Get API key from environment if not provided
+    if api_key is None:
+        api_key = os.environ.get('CMC_API')
+        if not api_key:
+            print("ERROR: No CoinMarketCap API key found.")
+            print("Historical data requires a paid CoinMarketCap API plan.")
+            print("Please set CMC_API environment variable with a valid API key.")
+            return None
+    
+    if end_date is None:
+        end_date = datetime.now()
+    
+    # Generate quarterly dates (end of each quarter)
+    quarterly_dates = []
+    current_date = datetime(start_year, 3, 31)  # Q1 end: March 31
+    
+    while current_date <= end_date:
+        quarterly_dates.append(current_date)
+        # Move to next quarter end
+        if current_date.month == 3:
+            current_date = datetime(current_date.year, 6, 30)
+        elif current_date.month == 6:
+            current_date = datetime(current_date.year, 9, 30)
+        elif current_date.month == 9:
+            current_date = datetime(current_date.year, 12, 31)
+        else:  # December
+            current_date = datetime(current_date.year + 1, 3, 31)
+    
+    print(f"Fetching historical data for {len(quarterly_dates)} quarters")
+    print(f"Date range: {quarterly_dates[0].strftime('%Y-%m-%d')} to {quarterly_dates[-1].strftime('%Y-%m-%d')}")
+    print(f"This will make {len(quarterly_dates)} API calls with {delay_seconds}s delays")
+    print(f"Estimated time: ~{len(quarterly_dates) * delay_seconds / 60:.1f} minutes\n")
+    
+    url = 'https://pro-api.coinmarketcap.com/v1/cryptocurrency/listings/historical'
+    
+    headers = {
+        'Accepts': 'application/json',
+        'X-CMC_PRO_API_KEY': api_key,
+    }
+    
+    all_data = []
+    failed_dates = []
+    
+    for i, snapshot_date in enumerate(quarterly_dates, 1):
+        date_str = snapshot_date.strftime('%Y-%m-%d')
+        
+        parameters = {
+            'date': date_str,
+            'limit': str(limit),
+            'convert': convert,
+            'sort': 'market_cap',
+            'sort_dir': 'desc'
+        }
+        
+        try:
+            print(f"[{i}/{len(quarterly_dates)}] Fetching {date_str}...", end=' ')
+            response = requests.get(url, headers=headers, params=parameters)
+            response.raise_for_status()
+            
+            data = response.json()
+            
+            if 'data' not in data:
+                print(f"❌ No data in response")
+                failed_dates.append(date_str)
+                continue
+            
+            # Parse the data for this quarter
+            for coin in data['data']:
+                quote = coin['quote'][convert]
+                all_data.append({
+                    'snapshot_date': date_str,
+                    'quarter': f"{snapshot_date.year}-Q{(snapshot_date.month-1)//3 + 1}",
+                    'symbol': coin['symbol'],
+                    'name': coin['name'],
+                    'cmc_rank': coin['cmc_rank'],
+                    'market_cap': quote['market_cap'],
+                    'price': quote['price'],
+                    'volume_24h': quote['volume_24h'],
+                    'percent_change_24h': quote.get('percent_change_24h'),
+                    'percent_change_7d': quote.get('percent_change_7d'),
+                    'market_cap_dominance': quote.get('market_cap_dominance'),
+                    'circulating_supply': coin.get('circulating_supply'),
+                    'total_supply': coin.get('total_supply'),
+                    'max_supply': coin.get('max_supply'),
+                })
+            
+            print(f"✓ {len(data['data'])} coins")
+            
+            # Respect rate limits
+            if i < len(quarterly_dates):
+                time.sleep(delay_seconds)
+                
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error: {e}")
+            failed_dates.append(date_str)
+            # Continue with other dates even if one fails
+            time.sleep(delay_seconds)
+    
+    if not all_data:
+        print("\n❌ No data was successfully fetched!")
+        print("This could be due to:")
+        print("  1. Invalid or expired API key")
+        print("  2. API plan doesn't include historical data access")
+        print("  3. Network connectivity issues")
+        return None
+    
+    df = pd.DataFrame(all_data)
+    
+    print(f"\n{'='*80}")
+    print(f"✓ Successfully fetched {len(df)} records across {len(quarterly_dates) - len(failed_dates)} quarters")
+    print(f"  Unique coins: {df['symbol'].nunique()}")
+    print(f"  Date range: {df['snapshot_date'].min()} to {df['snapshot_date'].max()}")
+    
+    if failed_dates:
+        print(f"\n⚠️  Failed dates ({len(failed_dates)}): {', '.join(failed_dates)}")
+    
+    # Summary by quarter
+    print(f"\nRecords per quarter:")
+    quarter_counts = df.groupby('quarter').size()
+    for quarter, count in quarter_counts.items():
+        print(f"  {quarter}: {count} coins")
+    
+    print(f"{'='*80}\n")
+    
+    return df
 
 
 def fetch_mock_marketcap_data(limit=100):
@@ -163,8 +310,17 @@ def save_marketcap_data(df, filepath='crypto_marketcap.csv'):
     print("\nMarket Cap Summary:")
     print(f"  Total cryptos: {len(df)}")
     print(f"  Total market cap: ${df['market_cap'].sum():,.0f}")
-    print(f"  Largest market cap: {df.iloc[0]['symbol']} - ${df.iloc[0]['market_cap']:,.0f}")
-    print(f"  Smallest market cap: {df.iloc[-1]['symbol']} - ${df.iloc[-1]['market_cap']:,.0f}")
+    
+    if 'snapshot_date' not in df.columns:
+        # Current snapshot data
+        print(f"  Largest market cap: {df.iloc[0]['symbol']} - ${df.iloc[0]['market_cap']:,.0f}")
+        print(f"  Smallest market cap: {df.iloc[-1]['symbol']} - ${df.iloc[-1]['market_cap']:,.0f}")
+    else:
+        # Historical data
+        print(f"  Quarters: {df['quarter'].nunique()}")
+        print(f"  Unique symbols: {df['symbol'].nunique()}")
+        print(f"  Date range: {df['snapshot_date'].min()} to {df['snapshot_date'].max()}")
+    
     print(f"  Median market cap: ${df['market_cap'].median():,.0f}")
 
 
@@ -210,6 +366,23 @@ def main():
         default='crypto_marketcap.csv',
         help='Output CSV file path'
     )
+    parser.add_argument(
+        '--historical',
+        action='store_true',
+        help='Fetch historical quarterly data instead of current snapshot'
+    )
+    parser.add_argument(
+        '--start-year',
+        type=int,
+        default=2020,
+        help='Start year for historical data (only used with --historical)'
+    )
+    parser.add_argument(
+        '--delay',
+        type=float,
+        default=1.0,
+        help='Delay in seconds between API calls for historical data'
+    )
     
     args = parser.parse_args()
     
@@ -217,16 +390,42 @@ def main():
     print("COINMARKETCAP DATA FETCH")
     print("=" * 80)
     
-    # Fetch data
-    df = fetch_coinmarketcap_data(api_key=args.api_key, limit=args.limit)
-    
-    # Add trading symbol mapping
-    df = map_symbols_to_trading_pairs(df)
-    
-    # Display sample
-    print("\nSample Data (first 10 rows):")
-    display_cols = ['cmc_rank', 'symbol', 'name', 'market_cap', 'price', 'volume_24h']
-    print(df[display_cols].head(10).to_string(index=False))
+    if args.historical:
+        # Fetch historical quarterly data
+        print("\nMode: HISTORICAL QUARTERLY DATA")
+        print(f"Fetching top {args.limit} coins per quarter from {args.start_year} onwards")
+        print("Note: This requires a paid CoinMarketCap API plan\n")
+        
+        df = fetch_historical_top100_quarterly(
+            api_key=args.api_key,
+            start_year=args.start_year,
+            limit=args.limit,
+            delay_seconds=args.delay
+        )
+        
+        if df is None:
+            print("\n❌ Failed to fetch historical data")
+            return
+        
+        # Display sample
+        print("\nSample Data (first 20 rows):")
+        display_cols = ['snapshot_date', 'quarter', 'cmc_rank', 'symbol', 'name', 'market_cap']
+        print(df[display_cols].head(20).to_string(index=False))
+        
+    else:
+        # Fetch current snapshot data
+        print("\nMode: CURRENT SNAPSHOT")
+        print(f"Fetching top {args.limit} cryptocurrencies by current market cap\n")
+        
+        df = fetch_coinmarketcap_data(api_key=args.api_key, limit=args.limit)
+        
+        # Add trading symbol mapping
+        df = map_symbols_to_trading_pairs(df)
+        
+        # Display sample
+        print("\nSample Data (first 10 rows):")
+        display_cols = ['cmc_rank', 'symbol', 'name', 'market_cap', 'price', 'volume_24h']
+        print(df[display_cols].head(10).to_string(index=False))
     
     # Save to file
     save_marketcap_data(df, args.output)
