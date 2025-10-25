@@ -1,0 +1,642 @@
+"""
+Run All Backtests and Calculate Performance Metrics
+
+This script runs all available backtest strategies and calculates comprehensive
+performance metrics including:
+- Average return
+- Average drawdown
+- Standard deviation of returns
+- Standard deviation of downside returns
+- Sharpe ratio
+- Sortino ratio
+- Information coefficient
+
+The results are compiled into a summary table for easy comparison.
+"""
+
+import pandas as pd
+import numpy as np
+import sys
+import os
+from datetime import datetime
+import argparse
+
+# Add parent directories to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'signals'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'data', 'scripts'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..', 'backtests', 'scripts'))
+
+# Import backtest functions
+from backtests.scripts.backtest_breakout_signals import backtest as backtest_breakout, load_data
+from backtests.scripts.backtest_mean_reversion import (
+    calculate_z_scores, categorize_moves, analyze_mean_reversion, load_data
+)
+from backtests.scripts.backtest_size_factor import (
+    backtest as backtest_size, load_marketcap_data, load_data
+)
+from backtests.scripts.backtest_carry_factor import (
+    backtest as backtest_carry, load_funding_rates, load_price_data
+)
+
+
+def calculate_comprehensive_metrics(portfolio_df, initial_capital, benchmark_returns=None):
+    """
+    Calculate comprehensive performance metrics.
+    
+    Args:
+        portfolio_df (pd.DataFrame): DataFrame with portfolio values over time
+        initial_capital (float): Initial portfolio capital
+        benchmark_returns (pd.Series): Benchmark returns for IC calculation (optional)
+        
+    Returns:
+        dict: Dictionary of comprehensive performance metrics
+    """
+    # Calculate returns
+    portfolio_df = portfolio_df.copy()
+    portfolio_df['daily_return'] = portfolio_df['portfolio_value'].pct_change()
+    portfolio_df['log_return'] = np.log(
+        portfolio_df['portfolio_value'] / portfolio_df['portfolio_value'].shift(1)
+    )
+    
+    # Filter out NaN values
+    daily_returns = portfolio_df['daily_return'].dropna()
+    log_returns = portfolio_df['log_return'].dropna()
+    
+    if len(daily_returns) == 0:
+        return None
+    
+    # --- Basic Return Metrics ---
+    final_value = portfolio_df['portfolio_value'].iloc[-1]
+    total_return = (final_value - initial_capital) / initial_capital
+    
+    num_days = len(portfolio_df)
+    years = num_days / 365.25
+    annualized_return = (final_value / initial_capital) ** (1 / years) - 1 if years > 0 else 0
+    
+    # Average daily return (annualized)
+    avg_daily_return = daily_returns.mean()
+    avg_annual_return = (1 + avg_daily_return) ** 365 - 1
+    
+    # --- Volatility Metrics ---
+    # Standard deviation of returns (annualized)
+    daily_vol = log_returns.std()
+    annualized_vol = daily_vol * np.sqrt(365)
+    
+    # Downside deviation (annualized) - only negative returns
+    downside_returns = log_returns[log_returns < 0]
+    downside_vol = downside_returns.std() if len(downside_returns) > 0 else 0
+    annualized_downside_vol = downside_vol * np.sqrt(365)
+    
+    # --- Drawdown Metrics ---
+    # Calculate running drawdown
+    cumulative_returns = (1 + daily_returns.fillna(0)).cumprod()
+    running_max = cumulative_returns.expanding().max()
+    drawdown = (cumulative_returns - running_max) / running_max
+    
+    # Maximum drawdown
+    max_drawdown = drawdown.min()
+    
+    # Average drawdown (average of all drawdown periods)
+    # A drawdown period is when portfolio is below previous peak
+    in_drawdown = drawdown < 0
+    avg_drawdown = drawdown[in_drawdown].mean() if in_drawdown.any() else 0
+    
+    # --- Risk-Adjusted Return Metrics ---
+    # Sharpe ratio (assuming 0% risk-free rate)
+    sharpe_ratio = annualized_return / annualized_vol if annualized_vol > 0 else 0
+    
+    # Sortino ratio (using downside deviation)
+    sortino_ratio = (annualized_return / annualized_downside_vol 
+                     if annualized_downside_vol > 0 else 0)
+    
+    # --- Information Coefficient ---
+    # IC measures correlation between predicted and actual returns
+    # For strategies, we can calculate autocorrelation of returns as a signal quality measure
+    # Alternatively, if we have benchmark returns, we can calculate tracking error
+    information_coefficient = None
+    if benchmark_returns is not None:
+        # Calculate IC as correlation between strategy returns and benchmark
+        try:
+            # Align returns
+            aligned_returns = pd.concat([daily_returns, benchmark_returns], axis=1, join='inner')
+            if len(aligned_returns) > 1:
+                information_coefficient = aligned_returns.corr().iloc[0, 1]
+        except:
+            pass
+    
+    # If no benchmark, calculate return predictability using autocorrelation
+    if information_coefficient is None:
+        # Use 1-day autocorrelation as a measure of signal quality
+        if len(daily_returns) > 1:
+            information_coefficient = daily_returns.autocorr(lag=1)
+    
+    # --- Additional Metrics ---
+    # Win rate
+    positive_days = (daily_returns > 0).sum()
+    win_rate = positive_days / len(daily_returns) if len(daily_returns) > 0 else 0
+    
+    # Calmar ratio (annualized return / max drawdown)
+    calmar_ratio = (annualized_return / abs(max_drawdown) 
+                   if max_drawdown != 0 else 0)
+    
+    metrics = {
+        'avg_return': avg_annual_return,
+        'avg_drawdown': avg_drawdown,
+        'stdev_return': annualized_vol,
+        'stdev_downside_return': annualized_downside_vol,
+        'sharpe_ratio': sharpe_ratio,
+        'sortino_ratio': sortino_ratio,
+        'information_coefficient': information_coefficient if information_coefficient is not None else 0,
+        
+        # Additional useful metrics
+        'total_return': total_return,
+        'annualized_return': annualized_return,
+        'max_drawdown': max_drawdown,
+        'win_rate': win_rate,
+        'calmar_ratio': calmar_ratio,
+        'num_days': num_days,
+        'final_value': final_value,
+    }
+    
+    return metrics
+
+
+def run_breakout_backtest(data_file, **kwargs):
+    """Run breakout signal backtest."""
+    print("\n" + "="*80)
+    print("Running Breakout Signal Backtest")
+    print("="*80)
+    
+    try:
+        data = load_data(data_file)
+        results = backtest_breakout(
+            data=data,
+            entry_window=kwargs.get('entry_window', 50),
+            exit_window=kwargs.get('exit_window', 70),
+            volatility_window=kwargs.get('volatility_window', 30),
+            initial_capital=kwargs.get('initial_capital', 10000),
+            leverage=kwargs.get('leverage', 1.0),
+            long_allocation=kwargs.get('long_allocation', 0.5),
+            short_allocation=kwargs.get('short_allocation', 0.5),
+            start_date=kwargs.get('start_date'),
+            end_date=kwargs.get('end_date')
+        )
+        
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results['portfolio_values'],
+            kwargs.get('initial_capital', 10000)
+        )
+        
+        return {
+            'strategy': 'Breakout Signal',
+            'description': f"Entry: {kwargs.get('entry_window', 50)}d, Exit: {kwargs.get('exit_window', 70)}d",
+            'metrics': metrics,
+            'results': results
+        }
+    except Exception as e:
+        print(f"Error in Breakout backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+def run_mean_reversion_backtest(data_file, **kwargs):
+    """Run mean reversion backtest."""
+    print("\n" + "="*80)
+    print("Running Mean Reversion Backtest")
+    print("="*80)
+    
+    try:
+        data = load_data(data_file)
+        
+        # Calculate z-scores
+        data_with_zscores = calculate_z_scores(
+            data, 
+            lookback_window=kwargs.get('lookback_window', 30)
+        )
+        
+        # Categorize moves
+        data_categorized = categorize_moves(
+            data_with_zscores,
+            return_threshold=kwargs.get('return_threshold', 1.0),
+            volume_threshold=kwargs.get('volume_threshold', 1.0)
+        )
+        
+        # Analyze mean reversion
+        results = analyze_mean_reversion(data_categorized)
+        
+        # Create a synthetic portfolio based on mean reversion signals
+        # We'll use the directional category with best performance
+        directional_stats = results['by_directional_category']
+        
+        if not directional_stats.empty:
+            best_strategy = directional_stats.loc[
+                directional_stats['mean_forward_return'].idxmax()
+            ]
+            
+            # Create portfolio from detailed data
+            detailed_data = results['detailed_data']
+            
+            # Filter for best strategy category
+            strategy_data = detailed_data[
+                detailed_data['category_directional'] == best_strategy['category']
+            ].copy()
+            
+            if len(strategy_data) > 0:
+                # Create cumulative portfolio value
+                initial_capital = kwargs.get('initial_capital', 10000)
+                strategy_data = strategy_data.sort_values('date')
+                strategy_data['cumulative_return'] = (
+                    1 + strategy_data['forward_1d_return'].fillna(0)
+                ).cumprod()
+                strategy_data['portfolio_value'] = (
+                    initial_capital * strategy_data['cumulative_return']
+                )
+                
+                # Calculate metrics
+                portfolio_df = strategy_data[['date', 'portfolio_value']].copy()
+                metrics = calculate_comprehensive_metrics(
+                    portfolio_df,
+                    initial_capital
+                )
+                
+                return {
+                    'strategy': 'Mean Reversion',
+                    'description': f"Best category: {best_strategy['category']}",
+                    'metrics': metrics,
+                    'results': results
+                }
+        
+        print("Insufficient data for mean reversion backtest")
+        return None
+        
+    except Exception as e:
+        print(f"Error in Mean Reversion backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+def run_size_factor_backtest(data_file, marketcap_file, **kwargs):
+    """Run size factor backtest."""
+    print("\n" + "="*80)
+    print("Running Size Factor Backtest")
+    print("="*80)
+    
+    try:
+        price_data = load_data(data_file)
+        marketcap_data = load_marketcap_data(filepath=marketcap_file)
+        
+        if marketcap_data is None or len(marketcap_data) == 0:
+            print("No market cap data available")
+            return None
+        
+        # Normalize column names (handle both API and CSV formats)
+        if 'Market Cap' in marketcap_data.columns:
+            marketcap_data = marketcap_data.rename(columns={'Market Cap': 'market_cap', 'Symbol': 'symbol'})
+        if 'symbol' not in marketcap_data.columns and 'Symbol' in marketcap_data.columns:
+            marketcap_data = marketcap_data.rename(columns={'Symbol': 'symbol'})
+        
+        results = backtest_size(
+            price_data=price_data,
+            marketcap_data=marketcap_data,
+            strategy=kwargs.get('strategy', 'long_small_short_large'),
+            num_buckets=kwargs.get('num_buckets', 5),
+            volatility_window=kwargs.get('volatility_window', 30),
+            rebalance_days=kwargs.get('rebalance_days', 7),
+            initial_capital=kwargs.get('initial_capital', 10000),
+            leverage=kwargs.get('leverage', 1.0),
+            long_allocation=kwargs.get('long_allocation', 0.5),
+            short_allocation=kwargs.get('short_allocation', 0.5),
+            start_date=kwargs.get('start_date'),
+            end_date=kwargs.get('end_date')
+        )
+        
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results['portfolio_values'],
+            kwargs.get('initial_capital', 10000)
+        )
+        
+        return {
+            'strategy': 'Size Factor',
+            'description': f"Strategy: {kwargs.get('strategy', 'long_small_short_large')}",
+            'metrics': metrics,
+            'results': results
+        }
+    except Exception as e:
+        print(f"Error in Size Factor backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+def run_carry_factor_backtest(data_file, funding_rates_file, **kwargs):
+    """Run carry factor backtest."""
+    print("\n" + "="*80)
+    print("Running Carry Factor Backtest")
+    print("="*80)
+    
+    try:
+        price_data = load_price_data(data_file)
+        funding_data = load_funding_rates(funding_rates_file)
+        
+        if funding_data is None or len(funding_data) == 0:
+            print("No funding rates data available")
+            return None
+        
+        results = backtest_carry(
+            price_data=price_data,
+            funding_data=funding_data,
+            top_n=kwargs.get('top_n', 10),
+            bottom_n=kwargs.get('bottom_n', 10),
+            volatility_window=kwargs.get('volatility_window', 30),
+            rebalance_days=kwargs.get('rebalance_days', 7),
+            initial_capital=kwargs.get('initial_capital', 10000),
+            leverage=kwargs.get('leverage', 1.0),
+            long_allocation=kwargs.get('long_allocation', 0.5),
+            short_allocation=kwargs.get('short_allocation', 0.5),
+            start_date=kwargs.get('start_date'),
+            end_date=kwargs.get('end_date')
+        )
+        
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results['portfolio_values'],
+            kwargs.get('initial_capital', 10000)
+        )
+        
+        return {
+            'strategy': 'Carry Factor',
+            'description': f"Top {kwargs.get('top_n', 10)} short, Bottom {kwargs.get('bottom_n', 10)} long",
+            'metrics': metrics,
+            'results': results
+        }
+    except Exception as e:
+        print(f"Error in Carry Factor backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+def create_summary_table(all_results):
+    """
+    Create summary table with all metrics.
+    
+    Args:
+        all_results (list): List of dictionaries with backtest results
+        
+    Returns:
+        pd.DataFrame: Summary table with all metrics
+    """
+    summary_data = []
+    
+    for result in all_results:
+        if result is None or result['metrics'] is None:
+            continue
+        
+        metrics = result['metrics']
+        
+        summary_data.append({
+            'Strategy': result['strategy'],
+            'Description': result['description'],
+            'Avg Return': metrics['avg_return'],
+            'Avg Drawdown': metrics['avg_drawdown'],
+            'Stdev Return': metrics['stdev_return'],
+            'Stdev Downside Return': metrics['stdev_downside_return'],
+            'Sharpe Ratio': metrics['sharpe_ratio'],
+            'Sortino Ratio': metrics['sortino_ratio'],
+            'Information Coefficient': metrics['information_coefficient'],
+            'Max Drawdown': metrics['max_drawdown'],
+            'Win Rate': metrics['win_rate'],
+            'Calmar Ratio': metrics['calmar_ratio'],
+            'Total Return': metrics['total_return'],
+            'Final Value': metrics['final_value'],
+            'Num Days': metrics['num_days']
+        })
+    
+    summary_df = pd.DataFrame(summary_data)
+    return summary_df
+
+
+def print_summary_table(summary_df):
+    """Print formatted summary table."""
+    print("\n" + "="*120)
+    print("BACKTEST PERFORMANCE SUMMARY")
+    print("="*120)
+    
+    if summary_df.empty:
+        print("No results to display")
+        return
+    
+    # Format the display
+    display_df = summary_df.copy()
+    
+    # Format percentage columns
+    pct_cols = ['Avg Return', 'Avg Drawdown', 'Stdev Return', 'Stdev Downside Return',
+                'Max Drawdown', 'Win Rate', 'Total Return']
+    for col in pct_cols:
+        if col in display_df.columns:
+            display_df[col] = display_df[col].apply(lambda x: f"{x:.2%}")
+    
+    # Format ratio columns
+    ratio_cols = ['Sharpe Ratio', 'Sortino Ratio', 'Calmar Ratio', 'Information Coefficient']
+    for col in ratio_cols:
+        if col in display_df.columns:
+            display_df[col] = display_df[col].apply(lambda x: f"{x:.3f}")
+    
+    # Format value columns
+    if 'Final Value' in display_df.columns:
+        display_df['Final Value'] = display_df['Final Value'].apply(lambda x: f"${x:,.2f}")
+    
+    # Print main metrics table
+    main_metrics = ['Strategy', 'Description', 'Avg Return', 'Avg Drawdown', 
+                   'Stdev Return', 'Stdev Downside Return', 'Sharpe Ratio', 
+                   'Sortino Ratio', 'Information Coefficient']
+    
+    print("\nCore Performance Metrics:")
+    print(display_df[main_metrics].to_string(index=False))
+    
+    # Print additional metrics
+    print("\n" + "="*120)
+    print("Additional Metrics:")
+    additional_metrics = ['Strategy', 'Max Drawdown', 'Win Rate', 'Calmar Ratio', 
+                         'Total Return', 'Final Value', 'Num Days']
+    print(display_df[additional_metrics].to_string(index=False))
+    
+    print("\n" + "="*120)
+
+
+def main():
+    """Main execution function."""
+    parser = argparse.ArgumentParser(
+        description='Run all backtests and generate comprehensive performance metrics',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument(
+        '--data-file',
+        type=str,
+        default='data/raw/top10_markets_500d_daily_data.csv',
+        help='Path to historical OHLCV data CSV file'
+    )
+    parser.add_argument(
+        '--marketcap-file',
+        type=str,
+        default='data/raw/coinmarketcap_historical_20250105.csv',
+        help='Path to market cap data CSV file'
+    )
+    parser.add_argument(
+        '--funding-rates-file',
+        type=str,
+        default='data/raw/historical_funding_rates_top100_20251025_124832.csv',
+        help='Path to funding rates data CSV file'
+    )
+    parser.add_argument(
+        '--initial-capital',
+        type=float,
+        default=10000,
+        help='Initial portfolio capital in USD'
+    )
+    parser.add_argument(
+        '--start-date',
+        type=str,
+        default=None,
+        help='Start date for backtest (YYYY-MM-DD)'
+    )
+    parser.add_argument(
+        '--end-date',
+        type=str,
+        default=None,
+        help='End date for backtest (YYYY-MM-DD)'
+    )
+    parser.add_argument(
+        '--output-file',
+        type=str,
+        default='backtests/results/all_backtests_summary.csv',
+        help='Output file for summary table'
+    )
+    parser.add_argument(
+        '--run-breakout',
+        action='store_true',
+        default=True,
+        help='Run breakout signal backtest'
+    )
+    parser.add_argument(
+        '--run-mean-reversion',
+        action='store_true',
+        default=True,
+        help='Run mean reversion backtest'
+    )
+    parser.add_argument(
+        '--run-size',
+        action='store_true',
+        default=True,
+        help='Run size factor backtest'
+    )
+    parser.add_argument(
+        '--run-carry',
+        action='store_true',
+        default=True,
+        help='Run carry factor backtest'
+    )
+    
+    args = parser.parse_args()
+    
+    print("="*120)
+    print("RUNNING ALL BACKTESTS")
+    print("="*120)
+    print(f"\nConfiguration:")
+    print(f"  Data file: {args.data_file}")
+    print(f"  Market cap file: {args.marketcap_file}")
+    print(f"  Funding rates file: {args.funding_rates_file}")
+    print(f"  Initial capital: ${args.initial_capital:,.2f}")
+    print(f"  Start date: {args.start_date or 'First available'}")
+    print(f"  End date: {args.end_date or 'Last available'}")
+    print(f"  Output file: {args.output_file}")
+    print("="*120)
+    
+    # Common parameters
+    common_params = {
+        'initial_capital': args.initial_capital,
+        'start_date': args.start_date,
+        'end_date': args.end_date,
+        'leverage': 1.0,
+        'long_allocation': 0.5,
+        'short_allocation': 0.5,
+        'volatility_window': 30
+    }
+    
+    # Run all backtests
+    all_results = []
+    
+    # 1. Breakout Signal
+    if args.run_breakout:
+        result = run_breakout_backtest(
+            args.data_file,
+            entry_window=50,
+            exit_window=70,
+            **common_params
+        )
+        if result:
+            all_results.append(result)
+    
+    # 2. Mean Reversion
+    if args.run_mean_reversion:
+        result = run_mean_reversion_backtest(
+            args.data_file,
+            lookback_window=30,
+            return_threshold=1.0,
+            volume_threshold=1.0,
+            **common_params
+        )
+        if result:
+            all_results.append(result)
+    
+    # 3. Size Factor
+    if args.run_size and os.path.exists(args.marketcap_file):
+        result = run_size_factor_backtest(
+            args.data_file,
+            args.marketcap_file,
+            strategy='long_small_short_large',
+            num_buckets=5,
+            rebalance_days=7,
+            **common_params
+        )
+        if result:
+            all_results.append(result)
+    
+    # 4. Carry Factor
+    if args.run_carry and os.path.exists(args.funding_rates_file):
+        result = run_carry_factor_backtest(
+            args.data_file,
+            args.funding_rates_file,
+            top_n=10,
+            bottom_n=10,
+            rebalance_days=7,
+            **common_params
+        )
+        if result:
+            all_results.append(result)
+    
+    # Create and display summary table
+    summary_df = create_summary_table(all_results)
+    print_summary_table(summary_df)
+    
+    # Save results
+    if not summary_df.empty:
+        # Ensure output directory exists
+        os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
+        
+        # Save with original numeric values (not formatted)
+        summary_df.to_csv(args.output_file, index=False)
+        print(f"\nSummary table saved to: {args.output_file}")
+    
+    print("\n" + "="*120)
+    print("ALL BACKTESTS COMPLETE")
+    print("="*120)
+
+
+if __name__ == "__main__":
+    main()
