@@ -43,13 +43,25 @@ from ccxt_get_markets_by_volume import ccxt_get_markets_by_volume
 from ccxt_get_data import ccxt_fetch_hyperliquid_daily_data
 from ccxt_get_balance import ccxt_get_hyperliquid_balance
 from ccxt_get_positions import ccxt_get_positions
-from select_insts import select_instruments_near_200d_high
-from calc_breakout_signals import get_current_signals
-from calc_vola import calculate_rolling_30d_volatility as calc_vola_func
-from calc_weights import calculate_weights
 from check_positions import check_positions, get_position_weights
 from aggressive_order_execution import aggressive_execute_orders
-import pandas as pd
+
+# Import strategies from dedicated package
+from execution.strategies import (
+    strategy_days_from_high,
+    strategy_breakout,
+    strategy_carry,
+    strategy_mean_reversion,
+    strategy_size,
+)
+
+# Import shared strategy utilities for legacy path
+from execution.strategies.utils import (
+    calculate_days_from_200d_high,
+    calculate_rolling_30d_volatility,
+    calc_weights,
+    calculate_breakout_signals_from_data,
+)
 
 
 def request_markets_by_volume(min_volume=100000):
@@ -105,168 +117,32 @@ def get_200d_daily_data(symbols):
 
 
 def calculate_days_from_200d_high(data):
-    """
-    Calculate days from 200d high.
-    
-    Computes the number of days since each instrument reached
-    its 200-day high price.
-    
-    Args:
-        data (dict): Historical price data for each symbol
-        
-    Returns:
-        dict: Dictionary mapping symbols to days since 200d high
-    """
-    from calc_days_from_high import get_current_days_since_high
-    
-    # Combine all data into a single DataFrame
-    combined_data = []
-    for symbol, symbol_df in data.items():
-        df_copy = symbol_df.copy()
-        if 'symbol' not in df_copy.columns:
-            df_copy['symbol'] = symbol
-        combined_data.append(df_copy)
-    
-    if not combined_data:
-        return {}
-    
-    df = pd.concat(combined_data, ignore_index=True)
-    
-    # Calculate days since 200d high
-    result_df = get_current_days_since_high(df)
-    
-    # Convert to dictionary
-    result = {}
-    for _, row in result_df.iterrows():
-        result[row['symbol']] = int(row['days_since_200d_high'])
-    
-    return result
+    """Deprecated shim; use execution.strategies.utils.calculate_days_from_200d_high instead."""
+    from execution.strategies.utils import calculate_days_from_200d_high as _impl
+    return _impl(data)
 
 
 def calculate_200d_ma(data):
-    """
-    Calculate 200d MA (Moving Average).
-    
-    Computes the 200-day moving average for each instrument.
-    
-    Args:
-        data (dict): Historical price data for each symbol
-        
-    Returns:
-        dict: Dictionary mapping symbols to their 200d MA values
-    """
+    """Placeholder for 200d MA calculation (unused)."""
     pass
 
 
 def select_instruments_by_days_from_high(data_source, threshold):
-    """
-    Select instruments based on days from 200d high.
-    
-    Filters instruments based on how many days have passed since
-    their 200-day high, using a specified threshold.
-    
-    Args:
-        data_source (str or pd.DataFrame): Either a path to a CSV file or a pandas DataFrame
-        threshold (int): Maximum number of days from high to include
-        
-    Returns:
-        pd.DataFrame: DataFrame of selected instruments with their days since 200d high
-    """
-    # Use the imported function from select_insts.py
-    return select_instruments_near_200d_high(data_source, max_days=threshold)
+    """Deprecated; selection is handled within strategies modules."""
+    from execution.strategies.utils import select_instruments_by_days_from_high as _impl
+    return _impl(data_source, threshold)
 
 
 def calculate_rolling_30d_volatility(data, selected_symbols):
-    """
-    Calculate rolling 30d volatility.
-    
-    Computes the 30-day rolling volatility for the selected instruments
-    to assess risk and determine position sizing.
-    
-    Args:
-        data (dict): Historical price data for each symbol
-        selected_symbols (list): List of selected instrument symbols
-        
-    Returns:
-        dict: Dictionary mapping symbols to their 30d volatility
-    """
-    # Combine data for selected symbols into a single DataFrame
-    combined_data = []
-    for symbol in selected_symbols:
-        if symbol in data:
-            symbol_df = data[symbol].copy()
-            if 'symbol' not in symbol_df.columns:
-                symbol_df['symbol'] = symbol
-            combined_data.append(symbol_df)
-    
-    if not combined_data:
-        return {}
-    
-    # Concatenate all data into one DataFrame
-    df = pd.concat(combined_data, ignore_index=True)
-    
-    # Calculate rolling volatility using the imported function
-    volatility_df = calc_vola_func(df)
-    
-    # Extract the most recent volatility for each symbol
-    result = {}
-    for symbol in selected_symbols:
-        symbol_data = volatility_df[volatility_df['symbol'] == symbol]
-        if not symbol_data.empty:
-            # Get the most recent non-null volatility value
-            latest_volatility = symbol_data['volatility_30d'].dropna().iloc[-1] if not symbol_data['volatility_30d'].dropna().empty else None
-            if latest_volatility is not None:
-                result[symbol] = latest_volatility
-    
-    return result
+    """Deprecated shim; use execution.strategies.utils.calculate_rolling_30d_volatility instead."""
+    from execution.strategies.utils import calculate_rolling_30d_volatility as _impl
+    return _impl(data, selected_symbols)
 
 
 def calc_weights(volatilities):
-    """
-    Calculate portfolio weights based on risk parity.
-    
-    Risk parity is a portfolio allocation strategy that aims to equalize
-    the risk contribution of each asset in the portfolio. Unlike equal
-    weighting (which can lead to concentration of risk in volatile assets),
-    risk parity assigns weights inversely proportional to asset volatility.
-    
-    Methodology:
-    1. Calculate inverse volatility for each asset (1 / volatility)
-    2. Sum all inverse volatilities
-    3. Normalize by dividing each inverse volatility by the sum
-    
-    This ensures that:
-    - Lower volatility assets receive higher weights
-    - Higher volatility assets receive lower weights
-    - All assets contribute equally to portfolio risk
-    - Weights sum to 1.0 (100% of portfolio)
-    
-    Mathematical formula:
-        weight_i = (1 / vol_i) / sum(1 / vol_j for all j)
-    
-    Where:
-        vol_i = rolling volatility of asset i
-        weight_i = resulting portfolio weight for asset i
-    
-    Args:
-        volatilities (dict): Dictionary mapping symbols to their rolling volatility values.
-                           Volatility should be expressed as standard deviation of returns.
-                           Example: {'BTC/USD': 0.045, 'ETH/USD': 0.062}
-        
-    Returns:
-        dict: Dictionary mapping symbols to their risk parity weights (summing to 1.0).
-              Returns empty dict if volatilities is empty or contains invalid values.
-              Example: {'BTC/USD': 0.58, 'ETH/USD': 0.42}
-    
-    Notes:
-        - Assets with zero or negative volatility are excluded from calculation
-        - If all assets have zero/invalid volatility, returns empty dict
-        - Weights are normalized to sum to exactly 1.0
-        - This is a simple equal risk contribution approach; more sophisticated
-          implementations might consider correlations between assets
-    """
-    # Use the imported calculate_weights function from calc_weights module
-    return calculate_weights(volatilities)
+    """Deprecated shim; use execution.strategies.utils.calc_weights instead."""
+    from execution.strategies.utils import calc_weights as _impl
+    return _impl(volatilities)
 
 
 def get_current_positions():
@@ -502,45 +378,9 @@ def calculate_trade_amounts(target_positions, current_positions, notional_value,
 
 
 def calculate_breakout_signals_from_data(data):
-    """
-    Calculate breakout signals from historical data.
-    
-    Args:
-        data (dict): Historical price data for each symbol
-        
-    Returns:
-        dict: Dictionary mapping symbols to their target direction (1=long, -1=short, 0=flat)
-    """
-    # Combine all data into a single DataFrame
-    combined_data = []
-    for symbol, symbol_df in data.items():
-        df_copy = symbol_df.copy()
-        if 'symbol' not in df_copy.columns:
-            df_copy['symbol'] = symbol
-        combined_data.append(df_copy)
-    
-    if not combined_data:
-        return {}
-    
-    df = pd.concat(combined_data, ignore_index=True)
-    
-    # Get current signals
-    signals_df = get_current_signals(df)
-    
-    # Convert to target positions dictionary
-    target_positions = {}
-    for _, row in signals_df.iterrows():
-        symbol = row['symbol']
-        position = row['position']
-        
-        if position == 'LONG':
-            target_positions[symbol] = 1
-        elif position == 'SHORT':
-            target_positions[symbol] = -1
-        else:
-            target_positions[symbol] = 0
-    
-    return target_positions
+    """Deprecated shim; use execution.strategies.utils.calculate_breakout_signals_from_data instead."""
+    from execution.strategies.utils import calculate_breakout_signals_from_data as _impl
+    return _impl(data)
 
 
 def _normalize_weights(weights_dict):
@@ -578,215 +418,12 @@ def load_signal_config(config_path):
 
 
 def get_base_symbol(symbol):
-    """Extract base asset symbol from ccxt-style market symbol (e.g., 'BTC/USDC:USDC' -> 'BTC')."""
-    if not isinstance(symbol, str):
-        return symbol
-    return symbol.split('/')[0]
+    """Deprecated shim; use execution.strategies.utils.get_base_symbol instead."""
+    from execution.strategies.utils import get_base_symbol as _impl
+    return _impl(symbol)
 
 
-def strategy_days_from_high(historical_data, notional, max_days=20):
-    """Compute long-only target notionals for instruments within max_days of 200d high."""
-    # Calculate days since 200d high
-    days_from_high = calculate_days_from_200d_high(historical_data)
-    selected_symbols = [s for s, d in days_from_high.items() if d <= max_days]
-    if not selected_symbols:
-        print("  No symbols selected for days_from_high.")
-        return {}
-
-    # Volatility and inverse-vol weights
-    volatilities = calculate_rolling_30d_volatility(historical_data, selected_symbols)
-    if not volatilities:
-        print("  No volatilities computed for days_from_high.")
-        return {}
-    weights = calc_weights(volatilities)
-    if not weights:
-        print("  No weights computed for days_from_high.")
-        return {}
-
-    # Allocate notional to longs
-    target_positions = {symbol: weight * notional for symbol, weight in weights.items()}
-    print(f"  Allocated ${notional:,.2f} to days_from_high (LONG-only) across {len(target_positions)} symbols")
-    return target_positions
-
-
-def strategy_breakout(historical_data, notional):
-    """Compute long/short target notionals based on breakout signals."""
-    signals = calculate_breakout_signals_from_data(historical_data)
-    longs = [s for s, d in signals.items() if d == 1]
-    shorts = [s for s, d in signals.items() if d == -1]
-
-    target_positions = {}
-
-    # LONGS
-    if longs:
-        vola_long = calculate_rolling_30d_volatility(historical_data, longs)
-        w_long = calc_weights(vola_long) if vola_long else {}
-        for symbol, w in w_long.items():
-            target_positions[symbol] = target_positions.get(symbol, 0.0) + w * notional
-        print(f"  Allocated ${notional:,.2f} to breakout LONGS across {len(w_long)} symbols")
-    else:
-        print("  No breakout LONG signals.")
-
-    # SHORTS
-    if shorts:
-        vola_short = calculate_rolling_30d_volatility(historical_data, shorts)
-        w_short = calc_weights(vola_short) if vola_short else {}
-        for symbol, w in w_short.items():
-            target_positions[symbol] = target_positions.get(symbol, 0.0) - w * notional
-        print(f"  Allocated ${notional:,.2f} to breakout SHORTS across {len(w_short)} symbols")
-    else:
-        print("  No breakout SHORT signals.")
-
-    return target_positions
-
-
-def strategy_carry(historical_data, universe_symbols, notional, exchange_id="binance"):
-    """Basic carry strategy using funding rates: long negative funding, short positive funding.
-
-    Note: Uses Binance funding rates as proxy; maps by base asset symbol.
-    """
-    try:
-        from get_carry import fetch_binance_funding_rates
-    except Exception as e:
-        print(f"  Carry handler unavailable (import error): {e}")
-        return {}
-
-    df_rates = fetch_binance_funding_rates(symbols=None, exchange_id=exchange_id)
-    if df_rates is None or df_rates.empty:
-        print("  No funding rate data available for carry.")
-        return {}
-
-    # Map to our universe by base symbol
-    universe_bases = {get_base_symbol(s): s for s in universe_symbols}
-    df_rates = df_rates.copy()
-    df_rates['base'] = df_rates['symbol'].astype(str).str.split('/').str[0]
-    df_rates = df_rates[df_rates['base'].isin(universe_bases.keys())]
-    if df_rates.empty:
-        print("  No funding symbols matched our universe for carry.")
-        return {}
-
-    # Partition by funding sign
-    df_rates = df_rates.dropna(subset=['funding_rate'])
-    long_bases = df_rates[df_rates['funding_rate'] < 0]['base'].unique().tolist()  # long collect
-    short_bases = df_rates[df_rates['funding_rate'] > 0]['base'].unique().tolist() # short collect
-
-    long_symbols = [universe_bases[b] for b in long_bases if b in universe_bases]
-    short_symbols = [universe_bases[b] for b in short_bases if b in universe_bases]
-
-    target_positions = {}
-
-    if long_symbols:
-        vola_long = calculate_rolling_30d_volatility(historical_data, long_symbols)
-        w_long = calc_weights(vola_long) if vola_long else {}
-        for symbol, w in w_long.items():
-            target_positions[symbol] = target_positions.get(symbol, 0.0) + w * notional
-        print(f"  Allocated ${notional:,.2f} to carry LONGS across {len(w_long)} symbols")
-    else:
-        print("  No carry LONG candidates (negative funding).")
-
-    if short_symbols:
-        vola_short = calculate_rolling_30d_volatility(historical_data, short_symbols)
-        w_short = calc_weights(vola_short) if vola_short else {}
-        for symbol, w in w_short.items():
-            target_positions[symbol] = target_positions.get(symbol, 0.0) - w * notional
-        print(f"  Allocated ${notional:,.2f} to carry SHORTS across {len(w_short)} symbols")
-    else:
-        print("  No carry SHORT candidates (positive funding).")
-
-    return target_positions
-
-
-def strategy_mean_reversion(historical_data, notional, quantile=0.2):
-    """Simple mean reversion: long bottom quantile of 1-day returns, short top quantile."""
-    # Build latest 1d returns per symbol
-    latest_returns = []
-    for symbol, df in historical_data.items():
-        s = df.sort_values('date').copy()
-        if 'close' not in s.columns:
-            continue
-        s['ret'] = s['close'].pct_change()
-        last_ret = s['ret'].iloc[-1] if len(s) > 1 else None
-        if last_ret is not None and pd.notna(last_ret):
-            latest_returns.append((symbol, float(last_ret)))
-
-    if not latest_returns:
-        print("  No returns computed for mean_reversion.")
-        return {}
-
-    sr = pd.Series({sym: r for sym, r in latest_returns})
-    low_thresh = sr.quantile(quantile)
-    high_thresh = sr.quantile(1 - quantile)
-    long_symbols = sr[sr <= low_thresh].index.tolist()
-    short_symbols = sr[sr >= high_thresh].index.tolist()
-
-    target_positions = {}
-    if long_symbols:
-        vola_long = calculate_rolling_30d_volatility(historical_data, long_symbols)
-        w_long = calc_weights(vola_long) if vola_long else {}
-        for symbol, w in w_long.items():
-            target_positions[symbol] = target_positions.get(symbol, 0.0) + w * notional
-        print(f"  Allocated ${notional:,.2f} to mean_reversion LONGS across {len(w_long)} symbols")
-    else:
-        print("  No mean_reversion LONG candidates.")
-
-    if short_symbols:
-        vola_short = calculate_rolling_30d_volatility(historical_data, short_symbols)
-        w_short = calc_weights(vola_short) if vola_short else {}
-        for symbol, w in w_short.items():
-            target_positions[symbol] = target_positions.get(symbol, 0.0) - w * notional
-        print(f"  Allocated ${notional:,.2f} to mean_reversion SHORTS across {len(w_short)} symbols")
-    else:
-        print("  No mean_reversion SHORT candidates.")
-
-    return target_positions
-
-
-def strategy_size(historical_data, universe_symbols, notional, top_n=10, bottom_n=10):
-    """Simple size proxy using 24h notional volume as a surrogate for size.
-
-    Long top_n largest by 24h notional volume; short bottom_n among the universe.
-    """
-    try:
-        df_markets = ccxt_get_markets_by_volume()
-    except Exception as e:
-        print(f"  Size handler unavailable (market data error): {e}")
-        return {}
-
-    if df_markets is None or df_markets.empty:
-        print("  No market volume data for size factor.")
-        return {}
-
-    # Filter to our universe
-    df = df_markets.copy()
-    df = df[df['symbol'].isin(universe_symbols)]
-    if df.empty:
-        print("  Market volume data did not match our universe for size factor.")
-        return {}
-
-    df = df.sort_values('notional_volume_24h', ascending=False)
-    long_symbols = df.head(max(0, int(top_n)))['symbol'].tolist()
-    short_symbols = df.tail(max(0, int(bottom_n)))['symbol'].tolist()
-
-    target_positions = {}
-    if long_symbols:
-        vola_long = calculate_rolling_30d_volatility(historical_data, long_symbols)
-        w_long = calc_weights(vola_long) if vola_long else {}
-        for symbol, w in w_long.items():
-            target_positions[symbol] = target_positions.get(symbol, 0.0) + w * notional
-        print(f"  Allocated ${notional:,.2f} to size LONGS across {len(w_long)} symbols")
-    else:
-        print("  No size LONG candidates.")
-
-    if short_symbols:
-        vola_short = calculate_rolling_30d_volatility(historical_data, short_symbols)
-        w_short = calc_weights(vola_short) if vola_short else {}
-        for symbol, w in w_short.items():
-            target_positions[symbol] = target_positions.get(symbol, 0.0) - w * notional
-        print(f"  Allocated ${notional:,.2f} to size SHORTS across {len(w_short)} symbols")
-    else:
-        print("  No size SHORT candidates.")
-
-    return target_positions
+# Note: Strategy functions are now imported from execution.strategies package
 
 
 def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive=False):
