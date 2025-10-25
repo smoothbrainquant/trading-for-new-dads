@@ -343,9 +343,11 @@ def backtest(
             last_rebalance_date = current_date
         
         # Calculate daily portfolio return based on current weights
-        if date_idx > 0 and current_weights:
-            current_returns = data_with_returns[data_with_returns['date'] == current_date]
-            portfolio_return = calculate_portfolio_returns(current_weights, current_returns)
+        # Use NEXT day's returns to avoid lookahead bias (weights from day T applied to returns from day T+1)
+        if current_weights and date_idx < len(daily_tracking_dates) - 1:
+            next_date = daily_tracking_dates[date_idx + 1]
+            next_returns = data_with_returns[data_with_returns['date'] == next_date]
+            portfolio_return = calculate_portfolio_returns(current_weights, next_returns)
             current_capital = current_capital * np.exp(portfolio_return)
         
         # Record portfolio value daily
