@@ -18,6 +18,35 @@ This project uses [ccxt](https://github.com/ccxt/ccxt) (CryptoCurrency eXchange 
 pip install -r requirements.txt
 ```
 
+## Environment Variables
+
+The following environment variables can be configured for API access:
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `CMC_API` | CoinMarketCap API key for fetching historical cryptocurrency market data | Optional (required for CoinMarketCap data fetching) |
+| `HL_API` | HyperLiquid API key for exchange access | Optional (required for HyperLiquid trading) |
+| `HL_SECRET` | HyperLiquid API secret for authentication | Optional (required for HyperLiquid trading) |
+| `COINALYZE_API` | Coinalyze API key for market analytics data | Optional (required for Coinalyze data fetching) |
+
+Set these variables in your shell environment:
+
+```bash
+export CMC_API="your_coinmarketcap_api_key"
+export HL_API="your_hyperliquid_api_key"
+export HL_SECRET="your_hyperliquid_secret"
+export COINALYZE_API="your_coinalyze_api_key"
+```
+
+Or create a `.env` file in the project root:
+
+```
+CMC_API=your_coinmarketcap_api_key
+HL_API=your_hyperliquid_api_key
+HL_SECRET=your_hyperliquid_secret
+COINALYZE_API=your_coinalyze_api_key
+```
+
 ## Usage
 
 ### Data Fetching
