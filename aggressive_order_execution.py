@@ -1,19 +1,23 @@
 """
-Aggressive Order Execution with Tick-Based Best Bid/Ask Tracking
+Aggressive Order Execution with Notional Limit and Price Ladder
 
-For a collection of orders {symbol: size}:
-1. Send limit orders at best bid/ask
-2. Continuously monitor (tick-based) the market:
-   - Poll bid/ask prices every tick_interval seconds
-   - If best bid/ask changes, immediately move orders to new best bid/ask
+For a collection of orders {symbol: notional_amount}:
+1. Calculate position size based on notional / (last + spread * 2) to ensure sufficient budget
+2. Send initial limit orders at best bid (buy) or ask (sell)
+3. Continuously monitor (tick-based) and walk price ladder:
+   - Poll prices every tick_interval seconds
+   - For buys: gradually increase price from bid towards max_price (last + spread * 2)
+   - For sells: gradually decrease price from ask towards min_price (last - spread * 2)
+   - Walk 20% of remaining distance to max/min price each tick
    - Check if orders are filled
-3. Continue until orders are filled, max_time is reached, or max_ticks exceeded
-4. Finally, if still unfilled after max time, cross the spread with limit orders
+4. Continue until orders are filled or max_time is reached
+5. Optionally cross spread with limit orders for remaining unfilled
    - Buy orders: moved to ASK price (crosses spread)
    - Sell orders: moved to BID price (crosses spread)
+   - NO MARKET ORDERS - all orders remain as limit orders
 
-This strategy ensures orders stay at the best bid/ask to maximize fill probability
-while still getting good prices (better than market orders).
+This strategy ensures we have enough notional to fill at higher prices while
+progressively moving towards max acceptable price (NOT taking market orders).
 """
 
 import argparse
@@ -24,6 +28,7 @@ from typing import Dict, List, Optional
 from get_bid_ask import get_bid_ask
 from ccxt_make_order import ccxt_make_order
 from modify_order import modify_order
+import pandas as pd
 
 
 def get_exchange():
@@ -44,6 +49,47 @@ def get_exchange():
         'walletAddress': api_key,
         'enableRateLimit': True,
     })
+
+
+def get_prices_with_last(symbols):
+    """
+    Fetch bid/ask/last prices for symbols.
+    
+    Args:
+        symbols: List of trading symbols
+        
+    Returns:
+        DataFrame with columns: symbol, bid, ask, last, spread, spread_pct, max_price
+    """
+    exchange = ccxt.hyperliquid({
+        'enableRateLimit': True,
+    })
+    
+    price_data = []
+    for symbol in symbols:
+        try:
+            ticker = exchange.fetch_ticker(symbol)
+            bid = ticker.get('bid')
+            ask = ticker.get('ask')
+            last = ticker.get('last')
+            
+            if bid and ask and last:
+                spread = ask - bid
+                spread_pct = (spread / bid * 100) if bid > 0 else 0
+                # Calculate max acceptable price: last + (spread * 2)
+                max_price = last + (spread * 2)
+                
+                price_data.append({
+                    'symbol': symbol,
+                    'bid': bid,
+                    'ask': ask,
+                    'last': last,
+                    'spread': spread,
+                    'spread_pct': spread_pct,
+                    'max_price': max_price
+                })
+        except Exception as e:
+            print(f\"  Warning: Could not fetch prices for {symbol}: {e}\")\n    \n    return pd.DataFrame(price_data) if price_data else None
 
 
 def get_all_open_orders(exchange):
@@ -155,7 +201,7 @@ def check_order_fills(exchange, order_ids: Dict[str, str]) -> Dict[str, dict]:
 
 
 def move_order_to_best_bid_ask(exchange, symbol: str, order_info: dict, 
-                               bid_ask_dict: dict) -> Optional[dict]:
+                               price_dict: dict) -> Optional[dict]:
     """
     Move an order to the current best bid/ask price.
     
@@ -166,7 +212,7 @@ def move_order_to_best_bid_ask(exchange, symbol: str, order_info: dict,
         exchange: ccxt exchange instance
         symbol: Trading symbol
         order_info: Current order information
-        bid_ask_dict: Dictionary with current bid/ask prices
+        price_dict: Dictionary with current bid/ask prices
         
     Returns:
         Modified order info or None if error or no change needed
@@ -174,8 +220,8 @@ def move_order_to_best_bid_ask(exchange, symbol: str, order_info: dict,
     try:
         side = order_info['side']
         current_price = order_info['price']
-        bid = bid_ask_dict[symbol]['bid']
-        ask = bid_ask_dict[symbol]['ask']
+        bid = price_dict[symbol]['bid']
+        ask = price_dict[symbol]['ask']
         
         # Determine target price based on side
         if side == 'buy':
@@ -217,7 +263,7 @@ def move_order_to_best_bid_ask(exchange, symbol: str, order_info: dict,
 
 
 def cross_spread_with_limit_order(exchange, symbol: str, order_info: dict, 
-                                  bid_ask_dict: dict) -> Optional[dict]:
+                                  price_dict: dict) -> Optional[dict]:
     """
     Cross the spread by placing a limit order on the opposite side.
     For buy orders: place limit at ASK (crosses spread)
@@ -227,7 +273,7 @@ def cross_spread_with_limit_order(exchange, symbol: str, order_info: dict,
         exchange: ccxt exchange instance
         symbol: Trading symbol
         order_info: Current order information
-        bid_ask_dict: Dictionary with current bid/ask prices
+        price_dict: Dictionary with current bid/ask prices
         
     Returns:
         New order info or None if error
@@ -241,12 +287,12 @@ def cross_spread_with_limit_order(exchange, symbol: str, order_info: dict,
             return None
         
         # Get current bid/ask
-        if symbol not in bid_ask_dict:
-            print(f"  {symbol}: Error - No bid/ask data available")
+        if symbol not in price_dict:
+            print(f"  {symbol}: Error - No price data available")
             return None
         
-        bid = bid_ask_dict[symbol]['bid']
-        ask = bid_ask_dict[symbol]['ask']
+        bid = price_dict[symbol]['bid']
+        ask = price_dict[symbol]['ask']
         
         # Cross the spread: buy at ask, sell at bid
         if side == 'buy':
@@ -297,24 +343,28 @@ def aggressive_execute_orders(
     **kwargs  # Accept but ignore legacy parameters
 ):
     """
-    Aggressively execute orders using tick-based best bid/ask tracking.
+    Aggressively execute orders using notional limit and price ladder strategy.
     
     Strategy:
-    1. Send limit orders at best bid/ask
-    2. Continuously monitor market (tick-based):
-       - Poll bid/ask every tick_interval seconds
-       - If best bid/ask changes, immediately move orders to new best bid/ask
+    1. Calculate position size: notional / (last + spread * 2) to ensure sufficient budget
+    2. Send limit orders at best bid (buy) or ask (sell)
+    3. Continuously monitor market and walk price ladder (tick-based):
+       - Poll prices every tick_interval seconds
+       - For buys: walk up from bid towards max_price (last + spread * 2)
+       - For sells: walk down from ask towards min_price (last - spread * 2)
+       - Move 20% of remaining distance to max/min each tick
        - Check if orders are filled
-    3. Continue until orders filled, max_time reached, or all trades complete
-    4. Optionally cross spread with limit orders for remaining unfilled
-       - Buy orders: moved to ASK price (crosses spread, fills immediately)
-       - Sell orders: moved to BID price (crosses spread, fills immediately)
+    4. Continue until orders filled or max_time reached
+    5. Optionally cross spread with limit orders for remaining unfilled
+       - Buy orders: moved to ASK price (crosses spread)
+       - Sell orders: moved to BID price (crosses spread)
+       - NO MARKET ORDERS - all orders remain as limit orders
     
     Args:
         trades: Dictionary mapping symbol to notional amount
                 Positive = buy, Negative = sell
                 Example: {'BTC/USDC:USDC': 100, 'ETH/USDC:USDC': -50}
-        tick_interval: Seconds between bid/ask polls (default: 2.0)
+        tick_interval: Seconds between price polls (default: 2.0)
         max_time: Maximum seconds to run before crossing spread (default: 60)
         cross_spread_after: If True, cross spread for remaining orders after max_time (default: True)
         dry_run: If True, only prints actions without executing
@@ -323,7 +373,7 @@ def aggressive_execute_orders(
         dict: Summary of execution results
     """
     print("=" * 80)
-    print("AGGRESSIVE ORDER EXECUTION - TICK-BASED BID/ASK TRACKING")
+    print("AGGRESSIVE ORDER EXECUTION - NOTIONAL LIMIT WITH PRICE LADDER")
     print("=" * 80)
     print(f"Mode: {'DRY RUN' if dry_run else 'LIVE TRADING'}")
     print(f"Tick interval: {tick_interval}s")
@@ -346,34 +396,36 @@ def aggressive_execute_orders(
     
     symbols = list(trades.keys())
     
-    # STEP 1: Get initial bid/ask prices
-    print(f"\n[1/4] Fetching initial bid/ask prices for {len(symbols)} symbols...")
+    # STEP 1: Get initial bid/ask/last prices
+    print(f"\n[1/5] Fetching initial bid/ask/last prices for {len(symbols)} symbols...")
     print("-" * 80)
     
     try:
-        bid_ask_df = get_bid_ask(symbols)
+        price_df = get_prices_with_last(symbols)
     except Exception as e:
-        print(f"\n✗ Failed to fetch bid/ask prices: {e}")
+        print(f"\n✗ Failed to fetch prices: {e}")
         return {'success': False, 'error': str(e)}
     
-    if bid_ask_df is None or bid_ask_df.empty:
-        print("\n✗ Error: Could not fetch bid/ask prices")
-        return {'success': False, 'error': 'No bid/ask data'}
+    if price_df is None or price_df.empty:
+        print("\n✗ Error: Could not fetch prices")
+        return {'success': False, 'error': 'No price data'}
     
     # Convert to dict for easy lookup
-    bid_ask_dict = {}
-    for _, row in bid_ask_df.iterrows():
-        bid_ask_dict[row['symbol']] = {
+    price_dict = {}
+    for _, row in price_df.iterrows():
+        price_dict[row['symbol']] = {
             'bid': row['bid'],
             'ask': row['ask'],
+            'last': row['last'],
             'spread': row['spread'],
-            'spread_pct': row['spread_pct']
+            'spread_pct': row['spread_pct'],
+            'max_price': row['max_price']
         }
     
-    print("✓ Initial bid/ask prices fetched")
+    print("✓ Initial prices fetched with last and max_price calculated")
     
-    # STEP 2: Send initial limit orders at best bid/ask
-    print(f"\n[2/4] Sending initial limit orders at best bid/ask...")
+    # STEP 2: Calculate position sizes and send initial limit orders
+    print(f"\n[2/5] Calculating position sizes and placing initial limit orders...")
     print("-" * 80)
     
     order_ids = {}  # Track order IDs for each symbol
@@ -384,56 +436,87 @@ def aggressive_execute_orders(
             print(f"{symbol}: SKIP (amount is zero)")
             continue
         
-        if symbol not in bid_ask_dict:
-            print(f"{symbol}: ERROR - No bid/ask data")
+        if symbol not in price_dict:
+            print(f"{symbol}: ERROR - No price data")
             continue
         
-        bid = bid_ask_dict[symbol]['bid']
-        ask = bid_ask_dict[symbol]['ask']
+        prices = price_dict[symbol]
+        bid = prices['bid']
+        ask = prices['ask']
+        last = prices['last']
+        spread = prices['spread']
+        max_price = prices['max_price']
+        
         side = 'buy' if notional_amount > 0 else 'sell'
-        price = bid if side == 'buy' else ask
-        abs_amount = abs(notional_amount)
+        abs_notional = abs(notional_amount)
+        
+        # Calculate position size using max_price to ensure we have enough notional
+        # For buys: max_price is last + spread*2
+        # For sells: use min_price which is last - spread*2
+        if side == 'buy':
+            position_size = abs_notional / max_price
+            initial_price = bid
+            min_price = bid
+        else:
+            min_price = last - (spread * 2)
+            position_size = abs_notional / min_price
+            initial_price = ask
+            # For sells, we walk down so max becomes the starting point
+            max_price_for_sell = ask
+            min_price_for_sell = min_price
         
         print(f"\n{symbol}:")
-        print(f"  Side:        {side.upper()}")
-        print(f"  Notional:    ${abs_amount:,.2f}")
-        print(f"  Bid:         ${bid:,.4f}")
-        print(f"  Ask:         ${ask:,.4f}")
-        print(f"  Order Price: ${price:,.4f}")
+        print(f"  Side:          {side.upper()}")
+        print(f"  Notional:      ${abs_notional:,.2f}")
+        print(f"  Last Price:    ${last:,.4f}")
+        print(f"  Spread:        ${spread:,.6f}")
+        if side == 'buy':
+            print(f"  Max Price:     ${max_price:,.4f} (last + spread*2)")
+        else:
+            print(f"  Min Price:     ${min_price_for_sell:,.4f} (last - spread*2)")
+        print(f"  Position Size: {position_size:.6f}")
+        print(f"  Initial Price: ${initial_price:,.4f} (best {side})")
         
         if dry_run:
-            print(f"  Status:      [DRY RUN] Would place {side.upper()} limit order")
+            print(f"  Status:        [DRY RUN] Would place {side.upper()} limit order")
             order_ids[symbol] = f"DRY_RUN_{symbol}"
             order_info_dict[symbol] = {
                 'id': f"DRY_RUN_{symbol}",
                 'side': side,
-                'price': price,
-                'amount': abs_amount / price,
+                'price': initial_price,
+                'amount': position_size,
+                'target_amount': position_size,
+                'max_price': max_price if side == 'buy' else max_price_for_sell,
+                'min_price': min_price if side == 'buy' else min_price_for_sell,
                 'status': 'open'
             }
         else:
             try:
-                order = ccxt_make_order(
+                # Place order with calculated position size at initial price
+                order = exchange.create_order(
                     symbol=symbol,
-                    notional_amount=abs_amount,
+                    type='limit',
                     side=side,
-                    order_type='limit',
-                    price=price
+                    amount=position_size,
+                    price=initial_price
                 )
                 order_id = order.get('id')
                 order_ids[symbol] = order_id
                 order_info_dict[symbol] = {
                     'id': order_id,
                     'side': side,
-                    'price': price,
-                    'amount': order.get('amount', abs_amount / price),
+                    'price': initial_price,
+                    'amount': position_size,
+                    'target_amount': position_size,
+                    'max_price': max_price if side == 'buy' else max_price_for_sell,
+                    'min_price': min_price if side == 'buy' else min_price_for_sell,
                     'filled': order.get('filled', 0),
-                    'remaining': order.get('remaining', order.get('amount', 0)),
+                    'remaining': order.get('remaining', position_size),
                     'status': order.get('status', 'open')
                 }
-                print(f"  Status:      ✓ Order placed - ID: {order_id}")
+                print(f"  Status:        ✓ Order placed - ID: {order_id}")
             except Exception as e:
-                print(f"  Status:      ✗ Error: {e}")
+                print(f"  Status:        ✗ Error: {e}")
     
     if not order_ids:
         print("\n✗ No orders were placed")
@@ -441,8 +524,9 @@ def aggressive_execute_orders(
     
     print(f"\n✓ Placed {len(order_ids)} initial orders")
     
-    # STEP 3: Tick-based monitoring loop
-    print(f"\n[3/4] Starting tick-based monitoring (polling every {tick_interval}s for max {max_time}s)...")
+    # STEP 3: Tick-based monitoring loop with price ladder
+    print(f"\n[3/5] Starting price ladder execution (polling every {tick_interval}s for max {max_time}s)...")
+    print(f"      Orders will walk price ladder towards max acceptable price...")
     print("-" * 80)
     
     start_time = time.time()
@@ -471,21 +555,23 @@ def aggressive_execute_orders(
         print(f"\n--- Tick {tick_count} (elapsed: {elapsed_time:.1f}s) ---")
         
         if not dry_run:
-            # Fetch current bid/ask for unfilled symbols
+            # Fetch current prices for unfilled symbols
             try:
-                current_bid_ask = get_bid_ask(list(unfilled_symbols))
-                if current_bid_ask is not None and not current_bid_ask.empty:
-                    for _, row in current_bid_ask.iterrows():
-                        bid_ask_dict[row['symbol']] = {
+                current_prices = get_prices_with_last(list(unfilled_symbols))
+                if current_prices is not None and not current_prices.empty:
+                    for _, row in current_prices.iterrows():
+                        price_dict[row['symbol']] = {
                             'bid': row['bid'],
                             'ask': row['ask'],
+                            'last': row['last'],
                             'spread': row['spread'],
-                            'spread_pct': row['spread_pct']
+                            'spread_pct': row['spread_pct'],
+                            'max_price': row['max_price']
                         }
             except Exception as e:
-                print(f"  Warning: Could not fetch bid/ask: {e}")
+                print(f"  Warning: Could not fetch prices: {e}")
             
-            # Check order fills and move orders to best bid/ask if needed
+            # Check order fills and walk up price ladder if needed
             order_status = check_order_fills(exchange, {s: order_ids[s] for s in unfilled_symbols})
             
             for symbol in list(unfilled_symbols):
@@ -512,19 +598,65 @@ def aggressive_execute_orders(
                 if filled_amt > 0:
                     print(f"  {symbol}: Partially filled - {filled_amt:.6f} / {total_amt:.6f}")
                 
-                # Move order to current best bid/ask if it changed
-                if symbol in bid_ask_dict:
-                    new_order_info = move_order_to_best_bid_ask(
-                        exchange, symbol, status, bid_ask_dict
-                    )
+                # Walk up price ladder towards max_price (for buys) or down (for sells)
+                if symbol in price_dict and symbol in order_info_dict:
+                    current_order_price = status.get('price')
+                    side = status.get('side')
+                    max_acceptable = order_info_dict[symbol].get('max_price')
+                    min_acceptable = order_info_dict[symbol].get('min_price')
                     
-                    if new_order_info:
-                        # Order was moved, update tracking
-                        order_ids[symbol] = new_order_info['id']
-                        order_info_dict[symbol] = new_order_info
+                    if side == 'buy':
+                        # For buys, walk up from bid towards max_price
+                        # Increase price by 20% of remaining distance to max_price
+                        if current_order_price and current_order_price < max_acceptable:
+                            price_increment = (max_acceptable - current_order_price) * 0.2
+                            new_price = min(current_order_price + price_increment, max_acceptable)
+                            
+                            # Only move if significantly different (more than 0.1%)
+                            if (new_price - current_order_price) / current_order_price > 0.001:
+                                print(f"  {symbol}: Walking up price ladder ${current_order_price:.4f} → ${new_price:.4f} (max: ${max_acceptable:.4f})")
+                                try:
+                                    modified_order = modify_order(
+                                        order_id=status['id'],
+                                        symbol=symbol,
+                                        new_price=new_price,
+                                        new_amount=None
+                                    )
+                                    if modified_order:
+                                        order_ids[symbol] = modified_order.get('id')
+                                        order_info_dict[symbol]['price'] = new_price
+                                        print(f"  {symbol}: ✓ Price updated")
+                                except Exception as e:
+                                    print(f"  {symbol}: Error modifying order: {e}")
+                            else:
+                                print(f"  {symbol}: At max price ${current_order_price:.4f}")
+                        elif current_order_price and current_order_price >= max_acceptable:
+                            print(f"  {symbol}: Already at max price ${current_order_price:.4f}")
                     else:
-                        # No move needed, already at best bid/ask
-                        print(f"  {symbol}: Already at best bid/ask")
+                        # For sells, walk down from ask towards min_price
+                        if current_order_price and current_order_price > min_acceptable:
+                            price_decrement = (current_order_price - min_acceptable) * 0.2
+                            new_price = max(current_order_price - price_decrement, min_acceptable)
+                            
+                            if (current_order_price - new_price) / current_order_price > 0.001:
+                                print(f"  {symbol}: Walking down price ladder ${current_order_price:.4f} → ${new_price:.4f} (min: ${min_acceptable:.4f})")
+                                try:
+                                    modified_order = modify_order(
+                                        order_id=status['id'],
+                                        symbol=symbol,
+                                        new_price=new_price,
+                                        new_amount=None
+                                    )
+                                    if modified_order:
+                                        order_ids[symbol] = modified_order.get('id')
+                                        order_info_dict[symbol]['price'] = new_price
+                                        print(f"  {symbol}: ✓ Price updated")
+                                except Exception as e:
+                                    print(f"  {symbol}: Error modifying order: {e}")
+                            else:
+                                print(f"  {symbol}: At min price ${current_order_price:.4f}")
+                        elif current_order_price and current_order_price <= min_acceptable:
+                            print(f"  {symbol}: Already at min price ${current_order_price:.4f}")
         else:
             print(f"  [DRY RUN] Would monitor {len(unfilled_symbols)} orders")
             # Simulate some fills in dry run
@@ -534,8 +666,8 @@ def aggressive_execute_orders(
                 unfilled_symbols.discard(filled)
                 print(f"  {filled}: ✓ FILLED (simulated)")
     
-    # STEP 4: Cross spread for remaining unfilled orders (optional)
-    print(f"\n[4/4] Handling remaining unfilled orders...")
+    # STEP 4: Handle remaining unfilled orders
+    print(f"\n[4/5] Handling remaining unfilled orders...")
     print("-" * 80)
     
     crossed_spread_symbols = set()  # Track which symbols we crossed spread for
@@ -546,19 +678,21 @@ def aggressive_execute_orders(
             print("Crossing spread with limit orders...")
             
             if not dry_run:
-                # Refresh bid/ask one more time
+                # Refresh prices one more time
                 try:
-                    final_bid_ask = get_bid_ask(list(unfilled_symbols))
-                    if final_bid_ask is not None and not final_bid_ask.empty:
-                        for _, row in final_bid_ask.iterrows():
-                            bid_ask_dict[row['symbol']] = {
+                    final_prices = get_prices_with_last(list(unfilled_symbols))
+                    if final_prices is not None and not final_prices.empty:
+                        for _, row in final_prices.iterrows():
+                            price_dict[row['symbol']] = {
                                 'bid': row['bid'],
                                 'ask': row['ask'],
+                                'last': row['last'],
                                 'spread': row['spread'],
-                                'spread_pct': row['spread_pct']
+                                'spread_pct': row['spread_pct'],
+                                'max_price': row['max_price']
                             }
                 except Exception as e:
-                    print(f"Warning: Could not refresh bid/ask: {e}")
+                    print(f"Warning: Could not refresh prices: {e}")
                 
                 # Check final status and cross spread
                 final_status = check_order_fills(exchange, {s: order_ids[s] for s in unfilled_symbols})
@@ -574,7 +708,7 @@ def aggressive_execute_orders(
                         print(f"\n{symbol}: Crossing spread for {remaining:.6f} remaining")
                         
                         cross_order = cross_spread_with_limit_order(
-                            exchange, symbol, status, bid_ask_dict
+                            exchange, symbol, status, price_dict
                         )
                         
                         if cross_order:
@@ -645,9 +779,10 @@ def aggressive_execute_orders(
                                 else:
                                     print(f"  {symbol}: Still open...")
                     
-                    # STEP 4c: Final cleanup - cancel remaining and use market orders
+                    # STEP 4c: Check final status (NO MARKET ORDERS - keep limit orders open)
                     if crossed_spread_symbols:
-                        print(f"\n[4c] Final cleanup: Using market orders for {len(crossed_spread_symbols)} remaining symbols...")
+                        print(f"\n[4c] Final check for {len(crossed_spread_symbols)} remaining symbols...")
+                        print("      (Limit orders will remain open - no market orders)")
                         print("-" * 80)
                         
                         # Check final status one more time
@@ -661,50 +796,22 @@ def aggressive_execute_orders(
                             remaining = status.get('remaining', 0)
                             
                             if remaining > 0:
-                                print(f"\n{symbol}: Forcing fill with market order for {remaining:.6f}")
-                                
-                                # Cancel the limit order
-                                try:
-                                    exchange.cancel_order(status['id'], symbol)
-                                    print(f"  {symbol}: Cancelled limit order {status['id']}")
-                                except Exception as e:
-                                    print(f"  {symbol}: Warning - could not cancel order: {e}")
-                                
-                                # Place market order to force fill
-                                try:
-                                    side = status.get('side')
-                                    if symbol in bid_ask_dict:
-                                        current_price = bid_ask_dict[symbol]['last'] if 'last' in bid_ask_dict[symbol] else (bid_ask_dict[symbol]['ask'] if side == 'buy' else bid_ask_dict[symbol]['bid'])
-                                    else:
-                                        ticker = exchange.fetch_ticker(symbol)
-                                        current_price = ticker['last']
-                                    
-                                    market_order = exchange.create_order(
-                                        symbol=symbol,
-                                        type='market',
-                                        side=side,
-                                        amount=remaining,
-                                        price=current_price
-                                    )
-                                    print(f"  {symbol}: ✓ Market order placed - ID: {market_order.get('id')}")
-                                    filled_symbols.add(symbol)
-                                    unfilled_symbols.discard(symbol)
-                                except Exception as e:
-                                    print(f"  {symbol}: ✗ Error placing market order: {e}")
+                                print(f"\n{symbol}: Still {remaining:.6f} remaining - limit order stays open")
                             else:
                                 print(f"\n{symbol}: ✓ Order filled")
                                 filled_symbols.add(symbol)
                                 unfilled_symbols.discard(symbol)
+                                crossed_spread_symbols.discard(symbol)
             else:
                 print(f"[DRY RUN] Would cross spread for {len(unfilled_symbols)} unfilled orders:")
                 for symbol in unfilled_symbols:
                     side = order_info_dict[symbol]['side']
-                    if symbol in bid_ask_dict:
-                        cross_price = bid_ask_dict[symbol]['ask'] if side == 'buy' else bid_ask_dict[symbol]['bid']
+                    if symbol in price_dict:
+                        cross_price = price_dict[symbol]['ask'] if side == 'buy' else price_dict[symbol]['bid']
                         print(f"  {symbol}: Would place limit order at ${cross_price:.4f} (crosses spread)")
                     else:
                         print(f"  {symbol}: Would cross spread")
-                print(f"\n[DRY RUN] Would then monitor for 15s and use market orders if still unfilled")
+                print(f"\n[DRY RUN] Would then monitor for 15s (NO MARKET ORDERS - keep limit orders)")
         else:
             print(f"\n{len(unfilled_symbols)} orders still open (cross_spread_after=False)")
             for symbol in unfilled_symbols:
@@ -808,16 +915,19 @@ Examples:
   # Keep limit orders open without crossing spread
   python3 aggressive_order_execution.py --trades "BTC/USDC:USDC:100" --live --no-cross-spread
 
-Strategy (Tick-Based Best Bid/Ask Tracking):
-  1. Sends limit orders at best bid (buy) or ask (sell)
-  2. Continuously monitors market every tick-interval seconds:
-     - Polls current bid/ask prices
-     - If best bid/ask changed, moves orders to new best bid/ask
+Strategy (Notional Limit with Price Ladder):
+  1. Calculates position size: notional / (last + spread * 2)
+  2. Sends limit orders at best bid (buy) or ask (sell)
+  3. Continuously monitors market and walks price ladder every tick-interval seconds:
+     - For buys: walks up from bid towards max_price (last + spread * 2)
+     - For sells: walks down from ask towards min_price (last - spread * 2)
+     - Moves 20% of remaining distance to max/min each tick
      - Checks if orders are filled
-  3. Continues until orders filled or max-time reached
-  4. Optionally crosses spread with limit orders for remaining unfilled
+  4. Continues until orders filled or max-time reached
+  5. Optionally crosses spread with limit orders for remaining unfilled
      - Buy orders: moved to ASK (crosses spread)
      - Sell orders: moved to BID (crosses spread)
+     - NO MARKET ORDERS - all remain as limit orders
   
 Trade Format:
   SYMBOL:AMOUNT
