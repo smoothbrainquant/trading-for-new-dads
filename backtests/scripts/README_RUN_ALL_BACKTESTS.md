@@ -32,6 +32,7 @@ The script runs the following backtests:
 2. **Mean Reversion** - Contrarian strategy betting on price reversals
 3. **Size Factor** - Long small-cap / short large-cap strategy
 4. **Carry Factor** - Long low funding rate / short high funding rate strategy
+5. **20d from 200d High** - Momentum strategy selecting instruments within 20 days of their 200-day high
 
 ## Usage
 
@@ -70,6 +71,7 @@ python3 backtests/scripts/run_all_backtests.py \
 - `--run-mean-reversion`: Run mean reversion backtest (default: True)
 - `--run-size`: Run size factor backtest (default: True)
 - `--run-carry`: Run carry factor backtest (default: True)
+- `--run-20d-from-200d-high`: Run 20d from 200d high backtest (default: True)
 
 ## Output
 
@@ -86,6 +88,7 @@ Breakout Signal,"Entry: 50d, Exit: 70d",-25.47%,-23.63%,26.77%,19.39%,-1.047,-1.
 Mean Reversion,Best category: up_move_low_volume,1140.86%,-27.78%,105.40%,52.28%,6.383,12.868,0.140,-64.75%,51.34%,10.390,556.00%,$65600.35,336
 Size Factor,Strategy: long_small_short_large,41.17%,-9.63%,32.67%,23.26%,1.034,1.453,0.007,-30.19%,52.88%,1.120,45.45%,$14545.04,470
 Carry Factor,"Top 10 short, Bottom 10 long",32.65%,-2.86%,28.99%,18.44%,0.921,1.448,0.178,-6.32%,31.58%,4.226,3.83%,$10383.10,58
+20d from 200d High,"Momentum: within 20d of 200d high",15.32%,-8.21%,24.53%,16.78%,0.624,0.912,0.092,-18.45%,48.73%,0.831,18.92%,$11892.47,420
 ```
 
 ## Performance Metrics Explanation

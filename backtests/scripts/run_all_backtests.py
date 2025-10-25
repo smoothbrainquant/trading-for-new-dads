@@ -38,6 +38,9 @@ from backtests.scripts.backtest_size_factor import (
 from backtests.scripts.backtest_carry_factor import (
     backtest as backtest_carry, load_funding_rates, load_price_data
 )
+from backtests.scripts.backtest_20d_from_200d_high import (
+    backtest as backtest_20d_from_200d_high, load_data
+)
 
 
 def calculate_comprehensive_metrics(portfolio_df, initial_capital, benchmark_returns=None):
@@ -381,6 +384,45 @@ def run_carry_factor_backtest(data_file, funding_rates_file, **kwargs):
         return None
 
 
+def run_20d_from_200d_high_backtest(data_file, **kwargs):
+    """Run 20d from 200d high backtest."""
+    print("\n" + "="*80)
+    print("Running 20d from 200d High Backtest")
+    print("="*80)
+    
+    try:
+        data = load_data(data_file)
+        
+        results = backtest_20d_from_200d_high(
+            data=data,
+            days_threshold=kwargs.get('days_threshold', 20),
+            lookback_window=kwargs.get('lookback_window', 200),
+            volatility_window=kwargs.get('volatility_window', 30),
+            rebalance_freq=kwargs.get('rebalance_freq', 'daily'),
+            initial_capital=kwargs.get('initial_capital', 10000),
+            start_date=kwargs.get('start_date'),
+            end_date=kwargs.get('end_date')
+        )
+        
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results['portfolio_values'],
+            kwargs.get('initial_capital', 10000)
+        )
+        
+        return {
+            'strategy': '20d from 200d High',
+            'description': f"Momentum: within {kwargs.get('days_threshold', 20)}d of {kwargs.get('lookback_window', 200)}d high",
+            'metrics': metrics,
+            'results': results
+        }
+    except Exception as e:
+        print(f"Error in 20d from 200d High backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 def create_summary_table(all_results):
     """
     Create summary table with all metrics.
@@ -541,6 +583,12 @@ def main():
         default=True,
         help='Run carry factor backtest'
     )
+    parser.add_argument(
+        '--run-20d-from-200d-high',
+        action='store_true',
+        default=True,
+        help='Run 20d from 200d high backtest'
+    )
     
     args = parser.parse_args()
     
@@ -615,6 +663,18 @@ def main():
             top_n=10,
             bottom_n=10,
             rebalance_days=7,
+            **common_params
+        )
+        if result:
+            all_results.append(result)
+    
+    # 5. 20d from 200d High
+    if args.run_20d_from_200d_high:
+        result = run_20d_from_200d_high_backtest(
+            args.data_file,
+            days_threshold=20,
+            lookback_window=200,
+            rebalance_freq='daily',
             **common_params
         )
         if result:
