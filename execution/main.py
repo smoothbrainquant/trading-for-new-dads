@@ -512,6 +512,64 @@ def calculate_breakout_signals_from_data(data):
     return target_positions
 
 
+def calculate_mean_reversion_signals_from_data(
+    data,
+    period: int = 2,
+    zscore_lookback: int = 30,
+    return_threshold: float = -1.5,
+    volume_threshold: float = 1.0,
+    require_high_volume: bool = True,
+):
+    """
+    Calculate mean reversion signals (long-on-dips) from historical data.
+
+    Args:
+        data (dict): Historical price data for each symbol
+        period (int): N-day percent change period
+        zscore_lookback (int): Lookback window for z-scores
+        return_threshold (float): Negative z threshold for extreme down moves
+        volume_threshold (float): Absolute volume z threshold
+        require_high_volume (bool): Require high volume confirmation
+
+    Returns:
+        dict: Dictionary mapping symbols to target direction (1=long, 0=flat)
+    """
+    # Local import to avoid module path issues on import
+    from calc_mean_reversion_signals import get_current_mean_reversion_signals
+
+    # Combine all data into a single DataFrame
+    combined_data = []
+    for symbol, symbol_df in data.items():
+        df_copy = symbol_df.copy()
+        if 'symbol' not in df_copy.columns:
+            df_copy['symbol'] = symbol
+        combined_data.append(df_copy)
+
+    if not combined_data:
+        return {}
+
+    df = pd.concat(combined_data, ignore_index=True)
+
+    # Get current mean reversion signals
+    signals_df = get_current_mean_reversion_signals(
+        df,
+        period=period,
+        zscore_lookback=zscore_lookback,
+        return_threshold=return_threshold,
+        volume_threshold=volume_threshold,
+        require_high_volume=require_high_volume,
+    )
+
+    # Convert to target positions dictionary (LONG-only)
+    target_positions = {}
+    for _, row in signals_df.iterrows():
+        symbol = row['symbol']
+        position = row['position']
+        target_positions[symbol] = 1 if position == 'LONG' else 0
+
+    return target_positions
+
+
 def combine_strategies_50_50(weights_20d_high, weights_breakout_long, weights_breakout_short, 
                               notional_value):
     """
@@ -701,6 +759,50 @@ def main():
         default=False,
         help='Use aggressive order execution strategy (tick-based: continuously move limit orders to best bid/ask)'
     )
+    # Strategy 2 selection and mean reversion parameters
+    parser.add_argument(
+        '--strategy2',
+        type=str,
+        default='breakout',
+        choices=['breakout', 'mean_reversion'],
+        help='Select Strategy 2 implementation'
+    )
+    parser.add_argument(
+        '--mr-period',
+        type=int,
+        default=2,
+        help='Mean reversion N-day period'
+    )
+    parser.add_argument(
+        '--mr-zlookback',
+        type=int,
+        default=30,
+        help='Mean reversion z-score lookback window'
+    )
+    parser.add_argument(
+        '--mr-return-th',
+        type=float,
+        default=-1.5,
+        help='Mean reversion return z threshold (negative)'
+    )
+    parser.add_argument(
+        '--mr-volume-th',
+        type=float,
+        default=1.0,
+        help='Mean reversion absolute volume z threshold'
+    )
+    parser.add_argument(
+        '--mr-require-high-vol',
+        action='store_true',
+        default=True,
+        help='Require high volume confirmation for mean reversion signals'
+    )
+    parser.add_argument(
+        '--mr-no-high-vol',
+        dest='mr_require_high_vol',
+        action='store_false',
+        help='Disable high volume requirement for mean reversion signals'
+    )
     args = parser.parse_args()
     
     print("="*80)
@@ -708,7 +810,7 @@ def main():
     print("="*80)
     print("\nStrategy Allocation:")
     print("  50% - 20d from 200d high (LONG only)")
-    print("  50% - Breakout signals (LONG/SHORT)")
+    print(f"  50% - {'Breakout signals (LONG/SHORT)' if args.strategy2 == 'breakout' else 'Mean reversion (LONG-only)'}")
     print(f"\nParameters:")
     print(f"  Days since high (Strategy 1): {args.days_since_high}")
     print(f"  Rebalance threshold: {args.rebalance_threshold*100:.1f}%")
@@ -770,62 +872,103 @@ def main():
         for symbol, weight in weights_20d.items():
             print(f"  {symbol}: {weight:.4f} ({weight*100:.2f}%)")
     
-    # === STRATEGY 2: Breakout signals ===
+    # === STRATEGY 2: Breakout or Mean Reversion signals ===
     print("\n" + "="*80)
-    print("STRATEGY 2: Breakout signals (50d high/low, 70d exit)")
+    print("STRATEGY 2: " + ("Breakout signals (50d high/low, 70d exit)" if args.strategy2 == 'breakout' else "Mean reversion (2d z-scores)") )
     print("="*80)
     
-    # Step 7: Calculate breakout signals
-    print("\n[7/13] Calculating breakout signals...")
-    breakout_signals = calculate_breakout_signals_from_data(historical_data)
-    
-    # Separate longs and shorts
-    longs_breakout = [symbol for symbol, direction in breakout_signals.items() if direction == 1]
-    shorts_breakout = [symbol for symbol, direction in breakout_signals.items() if direction == -1]
-    
-    print(f"LONG signals: {len(longs_breakout)} symbols")
-    for symbol in longs_breakout:
-        print(f"  {symbol}")
-    
-    print(f"\nSHORT signals: {len(shorts_breakout)} symbols")
-    for symbol in shorts_breakout:
-        print(f"  {symbol}")
-    
-    # Step 8: Calculate rolling 30d volatility for breakout LONGS
-    print("\n[8/13] Calculating rolling 30d volatility for breakout LONGS...")
-    volatilities_breakout_long = {}
-    if longs_breakout:
-        volatilities_breakout_long = calculate_rolling_30d_volatility(historical_data, longs_breakout)
-        print(f"Calculated volatility for {len(volatilities_breakout_long)} LONG symbols:")
-        for symbol, vol in volatilities_breakout_long.items():
-            print(f"  {symbol}: {vol:.6f}")
-    
-    # Step 9: Calculate rolling 30d volatility for breakout SHORTS
-    print("\n[9/13] Calculating rolling 30d volatility for breakout SHORTS...")
-    volatilities_breakout_short = {}
-    if shorts_breakout:
-        volatilities_breakout_short = calculate_rolling_30d_volatility(historical_data, shorts_breakout)
-        print(f"Calculated volatility for {len(volatilities_breakout_short)} SHORT symbols:")
-        for symbol, vol in volatilities_breakout_short.items():
-            print(f"  {symbol}: {vol:.6f}")
-    
-    # Step 10: Calculate weights for breakout LONGS
-    print("\n[10/13] Calculating weights for breakout LONGS (inverse volatility)...")
+    # Initialize containers used later when combining
     weights_breakout_long = {}
-    if volatilities_breakout_long:
-        weights_breakout_long = calc_weights(volatilities_breakout_long)
-        print(f"Calculated weights for {len(weights_breakout_long)} LONG symbols:")
-        for symbol, weight in weights_breakout_long.items():
-            print(f"  {symbol}: {weight:.4f} ({weight*100:.2f}%)")
-    
-    # Step 11: Calculate weights for breakout SHORTS
-    print("\n[11/13] Calculating weights for breakout SHORTS (inverse volatility)...")
     weights_breakout_short = {}
-    if volatilities_breakout_short:
-        weights_breakout_short = calc_weights(volatilities_breakout_short)
-        print(f"Calculated weights for {len(weights_breakout_short)} SHORT symbols:")
-        for symbol, weight in weights_breakout_short.items():
-            print(f"  {symbol}: {weight:.4f} ({weight*100:.2f}%)")
+
+    if args.strategy2 == 'breakout':
+        # Step 7: Calculate breakout signals
+        print("\n[7/13] Calculating breakout signals...")
+        breakout_signals = calculate_breakout_signals_from_data(historical_data)
+
+        # Separate longs and shorts
+        longs_breakout = [symbol for symbol, direction in breakout_signals.items() if direction == 1]
+        shorts_breakout = [symbol for symbol, direction in breakout_signals.items() if direction == -1]
+
+        print(f"LONG signals: {len(longs_breakout)} symbols")
+        for symbol in longs_breakout:
+            print(f"  {symbol}")
+
+        print(f"\nSHORT signals: {len(shorts_breakout)} symbols")
+        for symbol in shorts_breakout:
+            print(f"  {symbol}")
+
+        # Step 8: Calculate rolling 30d volatility for breakout LONGS
+        print("\n[8/13] Calculating rolling 30d volatility for breakout LONGS...")
+        volatilities_breakout_long = {}
+        if longs_breakout:
+            volatilities_breakout_long = calculate_rolling_30d_volatility(historical_data, longs_breakout)
+            print(f"Calculated volatility for {len(volatilities_breakout_long)} LONG symbols:")
+            for symbol, vol in volatilities_breakout_long.items():
+                print(f"  {symbol}: {vol:.6f}")
+
+        # Step 9: Calculate rolling 30d volatility for breakout SHORTS
+        print("\n[9/13] Calculating rolling 30d volatility for breakout SHORTS...")
+        volatilities_breakout_short = {}
+        if shorts_breakout:
+            volatilities_breakout_short = calculate_rolling_30d_volatility(historical_data, shorts_breakout)
+            print(f"Calculated volatility for {len(volatilities_breakout_short)} SHORT symbols:")
+            for symbol, vol in volatilities_breakout_short.items():
+                print(f"  {symbol}: {vol:.6f}")
+
+        # Step 10: Calculate weights for breakout LONGS
+        print("\n[10/13] Calculating weights for breakout LONGS (inverse volatility)...")
+        if volatilities_breakout_long:
+            weights_breakout_long = calc_weights(volatilities_breakout_long)
+            print(f"Calculated weights for {len(weights_breakout_long)} LONG symbols:")
+            for symbol, weight in weights_breakout_long.items():
+                print(f"  {symbol}: {weight:.4f} ({weight*100:.2f}%)")
+
+        # Step 11: Calculate weights for breakout SHORTS
+        print("\n[11/13] Calculating weights for breakout SHORTS (inverse volatility)...")
+        if volatilities_breakout_short:
+            weights_breakout_short = calc_weights(volatilities_breakout_short)
+            print(f"Calculated weights for {len(weights_breakout_short)} SHORT symbols:")
+            for symbol, weight in weights_breakout_short.items():
+                print(f"  {symbol}: {weight:.4f} ({weight*100:.2f}%)")
+    else:
+        # Mean reversion path (LONG-only)
+        print("\n[7/13] Calculating mean reversion signals...")
+        mr_signals = calculate_mean_reversion_signals_from_data(
+            historical_data,
+            period=args.mr_period,
+            zscore_lookback=args.mr_zlookback,
+            return_threshold=args.mr_return_th,
+            volume_threshold=args.mr_volume_th,
+            require_high_volume=args.mr_require_high_vol,
+        )
+
+        longs_breakout = [symbol for symbol, direction in mr_signals.items() if direction == 1]
+        shorts_breakout = []
+
+        print(f"Active mean reversion LONGs: {len(longs_breakout)} symbols")
+        for symbol in longs_breakout:
+            print(f"  {symbol}")
+
+        # Step 8: Calculate rolling 30d volatility for MR LONGS only
+        print("\n[8/13] Calculating rolling 30d volatility for mean reversion LONGS...")
+        volatilities_breakout_long = {}
+        if longs_breakout:
+            volatilities_breakout_long = calculate_rolling_30d_volatility(historical_data, longs_breakout)
+            print(f"Calculated volatility for {len(volatilities_breakout_long)} LONG symbols:")
+            for symbol, vol in volatilities_breakout_long.items():
+                print(f"  {symbol}: {vol:.6f}")
+
+        # No shorts for mean reversion
+        volatilities_breakout_short = {}
+
+        # Step 10-equivalent: Calculate weights for MR LONGS (inverse volatility)
+        print("\n[10/13] Calculating weights for mean reversion LONGS (inverse volatility)...")
+        if volatilities_breakout_long:
+            weights_breakout_long = calc_weights(volatilities_breakout_long)
+            print(f"Calculated weights for {len(weights_breakout_long)} LONG symbols:")
+            for symbol, weight in weights_breakout_long.items():
+                print(f"  {symbol}: {weight:.4f} ({weight*100:.2f}%)")
     
     # === COMBINE STRATEGIES ===
     print("\n" + "="*80)
