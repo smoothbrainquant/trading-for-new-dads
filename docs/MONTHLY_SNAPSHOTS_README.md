@@ -6,13 +6,16 @@ This repository contains monthly historical snapshots of cryptocurrency market d
 
 ## Data Coverage
 
-### Complete Coverage (34 months)
+### Complete Coverage (70 months)
+- **2020**: January - December (12 months)
+- **2021**: January - December (12 months)
+- **2022**: January - December (12 months)
 - **2023**: January - December (12 months)
 - **2024**: January - December (12 months)  
 - **2025**: January - October (10 months)
 
 ### Date Range
-- **Start**: January 2023 (20230101)
+- **Start**: January 2020 (20200101)
 - **End**: October 2025 (20251001)
 
 ## Files
@@ -26,8 +29,9 @@ Example files:
 - `coinmarketcap_monthly_20250101.csv` - January 2025
 
 ### Combined File
-- `coinmarketcap_monthly_all_snapshots.csv` - All 34 monthly snapshots combined into one file
-  - Total rows: 6,800 (200 cryptocurrencies × 34 months)
+- `coinmarketcap_monthly_all_snapshots.csv` - All 70 monthly snapshots combined into one file
+  - Total rows: 14,000 (200 cryptocurrencies × 70 months)
+  - Unique symbols: 737 different cryptocurrencies tracked over time
   - Columns: Rank, Name, Symbol, Market Cap, Price, Circulating Supply, Volume (24h), % 1h, % 24h, % 7d, snapshot_date
 
 ## Data Structure
@@ -49,6 +53,24 @@ Each snapshot file contains the following columns:
 | snapshot_date | Date of snapshot in YYYYMMDD format |
 
 ## Market Cap Trends
+
+### 2020 Market Development
+- **Q1 2020**: COVID-19 impact and recovery (~$193B - $245B)
+- **Q2 2020**: Recovery phase (~$188B - $286B)
+- **Q3 2020**: Strong growth momentum (~$266B - $391B)
+- **Q4 2020**: Year-end bull run begins (~$339B - $565B)
+
+### 2021 Market Development
+- **Q1 2021**: Major institutional adoption (~$768B - $1.50T)
+- **Q2 2021**: All-time high territory (~$1.88T - $2.22T)
+- **Q3 2021**: Summer correction and recovery (~$1.38T - $2.19T)
+- **Q4 2021**: Peak market cycle (~$2.09T - $2.62T)
+
+### 2022 Market Development
+- **Q1 2022**: Correction begins (~$1.76T - $2.24T)
+- **Q2 2022**: Bear market intensifies (~$1.22T - $1.72T)
+- **Q3 2022**: Market bottoming (~$860B - $1.07T)
+- **Q4 2022**: Consolidation at lows (~$844B - $1.00T)
 
 ### 2023 Market Development
 - **Q1 2023**: Recovery phase after 2022 bear market (~$0.79T - $1.17T)
@@ -83,10 +105,18 @@ All data is sourced from CoinMarketCap's historical snapshot pages:
    - Fetches monthly snapshots for a rolling 12-month period
    - Used to keep data current
 
-2. **fetch_monthly_2023_2024_snapshots.py**
+2. **fetch_monthly_2020_2022_snapshots.py**
+   - Fetches 36 months of historical data (Jan 2020 - Dec 2022)
+   - Includes 3-second delay between requests to be respectful to the server
+
+3. **fetch_monthly_2023_2024_snapshots.py**
    - Specific script used to backfill 2023-2024 data
    - Fetches 22 months of historical data (Jan 2023 - Oct 2024)
    - Includes 3-second delay between requests to be respectful to the server
+
+4. **combine_all_monthly_snapshots_2020_2025.py**
+   - Combines all individual monthly snapshot files into one consolidated file
+   - Creates the `coinmarketcap_monthly_all_snapshots.csv` file
 
 ### Usage Example
 
@@ -116,7 +146,13 @@ monthly_avg = df.groupby('snapshot_date')['Market Cap'].mean()
 
 ## Update History
 
-- **October 2025**: Expanded dataset to include 2023-2024 monthly snapshots
+- **October 2025 (Expansion 2)**: Further expanded dataset to include 2020-2022 monthly snapshots
+  - Added 36 new monthly snapshots (Jan 2020 - Dec 2022)
+  - Combined with existing 2023-2025 data
+  - Total coverage: 70 months from January 2020 to October 2025
+  - Now includes complete data through COVID-19 era, 2021 bull run, and 2022 bear market
+
+- **October 2025 (Expansion 1)**: Expanded dataset to include 2023-2024 monthly snapshots
   - Added 22 new monthly snapshots (Jan 2023 - Oct 2024)
   - Combined with existing 2024-2025 data
   - Total coverage: 34 months from January 2023 to October 2025
