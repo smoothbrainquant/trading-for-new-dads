@@ -1,19 +1,24 @@
 """
-Aggressive Order Execution with Tick-Based Best Bid/Ask Tracking
+Aggressive Order Execution with Notional Limit and Price Walking
 
-For a collection of orders {symbol: size}:
-1. Send limit orders at best bid/ask
-2. Continuously monitor (tick-based) the market:
+For a collection of orders {symbol: notional_amount}:
+1. Calculate shares based on: notional / (last_price + spread * max_price_factor)
+   - This ensures we can afford the shares even at max acceptable price
+2. Send limit orders at best bid (buy) or ask (sell)
+3. Continuously monitor (tick-based) the market:
    - Poll bid/ask prices every tick_interval seconds
-   - If best bid/ask changes, immediately move orders to new best bid/ask
+   - Keep orders at best bid/ask to maximize fill probability
    - Check if orders are filled
-3. Continue until orders are filled, max_time is reached, or max_ticks exceeded
-4. Finally, if still unfilled after max time, cross the spread with limit orders
-   - Buy orders: moved to ASK price (crosses spread)
-   - Sell orders: moved to BID price (crosses spread)
+4. After max_time, walk price to max acceptable price:
+   - Buy orders: walk up to (last + spread * max_price_factor)
+   - Sell orders: walk down to (last - spread * max_price_factor)
+5. Never use market orders - only limit orders up to max acceptable price
 
-This strategy ensures orders stay at the best bid/ask to maximize fill probability
-while still getting good prices (better than market orders).
+This strategy ensures:
+- We never exceed our notional budget
+- We start with the best possible price (best bid/ask)
+- We gradually walk to max acceptable price if not filled
+- We NEVER use market orders that could slip beyond our budget
 """
 
 import argparse
@@ -216,17 +221,15 @@ def move_order_to_best_bid_ask(exchange, symbol: str, order_info: dict,
         return None
 
 
-def cross_spread_with_limit_order(exchange, symbol: str, order_info: dict, 
-                                  bid_ask_dict: dict) -> Optional[dict]:
+def walk_to_max_price(exchange, symbol: str, order_info: dict, 
+                     bid_ask_dict: dict) -> Optional[dict]:
     """
-    Cross the spread by placing a limit order on the opposite side.
-    For buy orders: place limit at ASK (crosses spread)
-    For sell orders: place limit at BID (crosses spread)
+    Walk order price to max acceptable price.
     
     Args:
         exchange: ccxt exchange instance
         symbol: Trading symbol
-        order_info: Current order information
+        order_info: Current order information (includes max_price)
         bid_ask_dict: Dictionary with current bid/ask prices
         
     Returns:
@@ -235,56 +238,51 @@ def cross_spread_with_limit_order(exchange, symbol: str, order_info: dict,
     try:
         side = order_info['side']
         remaining = order_info.get('remaining', 0)
+        max_price = order_info.get('max_price')
         
         if remaining <= 0:
             print(f"  {symbol}: No remaining amount to fill")
             return None
         
-        # Get current bid/ask
-        if symbol not in bid_ask_dict:
-            print(f"  {symbol}: Error - No bid/ask data available")
+        if not max_price:
+            print(f"  {symbol}: Error - no max_price set")
             return None
         
-        bid = bid_ask_dict[symbol]['bid']
-        ask = bid_ask_dict[symbol]['ask']
-        
-        # Cross the spread: buy at ask, sell at bid
-        if side == 'buy':
-            cross_price = ask
-            price_type = "ASK"
-        else:
-            cross_price = bid
-            price_type = "BID"
-        
         old_price = order_info.get('price', 0)
-        remaining_notional = remaining * cross_price
+        remaining_notional = remaining * max_price
         
-        print(f"  {symbol}: Crossing spread with LIMIT {side.upper()} order")
-        print(f"           Moving from ${old_price:.4f} to ${cross_price:.4f} ({price_type})")
+        print(f"  {symbol}: Walking to max acceptable price")
+        print(f"           Moving from ${old_price:.4f} to ${max_price:.4f}")
         print(f"           Remaining: {remaining:.6f} (~${remaining_notional:.2f})")
         
-        # Cancel the existing limit order first
+        # Modify order to max acceptable price
         try:
-            exchange.cancel_order(order_info['id'], symbol)
-            print(f"  {symbol}: Cancelled limit order {order_info['id']}")
+            modified_order = modify_order(
+                order_id=order_info['id'],
+                symbol=symbol,
+                new_price=max_price,
+                new_amount=None  # Keep same amount
+            )
+            
+            print(f"  {symbol}: ✓ Order moved to max price ${max_price:.4f} - ID: {modified_order.get('id')}")
+            
+            return {
+                'id': modified_order.get('id'),
+                'filled': modified_order.get('filled', 0),
+                'remaining': modified_order.get('remaining', 0),
+                'status': modified_order.get('status'),
+                'price': max_price,
+                'side': side,
+                'amount': modified_order.get('amount'),
+                'max_price': max_price
+            }
+            
         except Exception as e:
-            print(f"  {symbol}: Warning - could not cancel order: {e}")
-        
-        # Place limit order at the opposite side of spread (crosses spread)
-        new_order = exchange.create_order(
-            symbol=symbol,
-            type='limit',
-            side=side,
-            amount=remaining,
-            price=cross_price
-        )
-        
-        print(f"  {symbol}: ✓ Limit order placed at ${cross_price:.4f} (crosses spread) - ID: {new_order.get('id')}")
-        
-        return new_order
+            print(f"  {symbol}: Error modifying order: {e}")
+            return None
         
     except Exception as e:
-        print(f"  {symbol}: Error placing limit order: {e}")
+        print(f"  {symbol}: Error walking to max price: {e}")
         return None
 
 
@@ -294,29 +292,30 @@ def aggressive_execute_orders(
     max_time: int = 60,
     cross_spread_after: bool = True,
     dry_run: bool = True,
+    max_price_factor: float = 2.0,  # Max acceptable price = last + spread * this factor
     **kwargs  # Accept but ignore legacy parameters
 ):
     """
-    Aggressively execute orders using tick-based best bid/ask tracking.
+    Aggressively execute orders using notional limit with calculated shares.
     
     Strategy:
-    1. Send limit orders at best bid/ask
-    2. Continuously monitor market (tick-based):
+    1. Calculate shares based on: notional / (last_price + spread * max_price_factor)
+    2. Send limit orders at best bid (buy) or ask (sell)
+    3. Continuously monitor market (tick-based):
        - Poll bid/ask every tick_interval seconds
-       - If best bid/ask changes, immediately move orders to new best bid/ask
+       - If not filled, walk price towards max acceptable price
        - Check if orders are filled
-    3. Continue until orders filled, max_time reached, or all trades complete
-    4. Optionally cross spread with limit orders for remaining unfilled
-       - Buy orders: moved to ASK price (crosses spread, fills immediately)
-       - Sell orders: moved to BID price (crosses spread, fills immediately)
+    4. Continue until orders filled, max_time reached, or max acceptable price reached
+    5. Never use market orders - only limit orders up to max acceptable price
     
     Args:
         trades: Dictionary mapping symbol to notional amount
                 Positive = buy, Negative = sell
                 Example: {'BTC/USDC:USDC': 100, 'ETH/USDC:USDC': -50}
         tick_interval: Seconds between bid/ask polls (default: 2.0)
-        max_time: Maximum seconds to run before crossing spread (default: 60)
-        cross_spread_after: If True, cross spread for remaining orders after max_time (default: True)
+        max_time: Maximum seconds to run before reaching max price (default: 60)
+        cross_spread_after: If True, walk price to max acceptable for remaining orders (default: True)
+        max_price_factor: Factor for calculating max acceptable price (default: 2.0)
         dry_run: If True, only prints actions without executing
         
     Returns:
@@ -476,9 +475,13 @@ def aggressive_execute_orders(
                 current_bid_ask = get_bid_ask(list(unfilled_symbols))
                 if current_bid_ask is not None and not current_bid_ask.empty:
                     for _, row in current_bid_ask.iterrows():
+                        bid = row['bid']
+                        ask = row['ask']
+                        last = (bid + ask) / 2
                         bid_ask_dict[row['symbol']] = {
-                            'bid': row['bid'],
-                            'ask': row['ask'],
+                            'bid': bid,
+                            'ask': ask,
+                            'last': last,
                             'spread': row['spread'],
                             'spread_pct': row['spread_pct']
                         }
@@ -512,19 +515,36 @@ def aggressive_execute_orders(
                 if filled_amt > 0:
                     print(f"  {symbol}: Partially filled - {filled_amt:.6f} / {total_amt:.6f}")
                 
-                # Move order to current best bid/ask if it changed
+                # Keep order at best bid/ask, don't walk yet
                 if symbol in bid_ask_dict:
-                    new_order_info = move_order_to_best_bid_ask(
-                        exchange, symbol, status, bid_ask_dict
-                    )
+                    # Just report status, don't move during monitoring phase
+                    current_price = status.get('price', 0)
+                    side = status.get('side')
+                    bid = bid_ask_dict[symbol]['bid']
+                    ask = bid_ask_dict[symbol]['ask']
+                    target = bid if side == 'buy' else ask
                     
-                    if new_order_info:
-                        # Order was moved, update tracking
-                        order_ids[symbol] = new_order_info['id']
-                        order_info_dict[symbol] = new_order_info
-                    else:
-                        # No move needed, already at best bid/ask
-                        print(f"  {symbol}: Already at best bid/ask")
+                    # Move to best bid/ask if it changed significantly
+                    if current_price:
+                        price_diff_pct = abs((target - current_price) / current_price * 100)
+                        if price_diff_pct > 0.01:
+                            print(f"  {symbol}: Moving to best {'BID' if side == 'buy' else 'ASK'} ${target:.4f}")
+                            try:
+                                modified_order = modify_order(
+                                    order_id=status['id'],
+                                    symbol=symbol,
+                                    new_price=target,
+                                    new_amount=None
+                                )
+                                order_ids[symbol] = modified_order.get('id')
+                                order_info_dict[symbol].update({
+                                    'id': modified_order.get('id'),
+                                    'price': target
+                                })
+                            except Exception as e:
+                                print(f"  {symbol}: Error moving to best bid/ask: {e}")
+                        else:
+                            print(f"  {symbol}: At best {'BID' if side == 'buy' else 'ASK'}")
         else:
             print(f"  [DRY RUN] Would monitor {len(unfilled_symbols)} orders")
             # Simulate some fills in dry run
@@ -534,16 +554,16 @@ def aggressive_execute_orders(
                 unfilled_symbols.discard(filled)
                 print(f"  {filled}: ✓ FILLED (simulated)")
     
-    # STEP 4: Cross spread for remaining unfilled orders (optional)
+    # STEP 4: Walk to max price for remaining unfilled orders (optional)
     print(f"\n[4/4] Handling remaining unfilled orders...")
     print("-" * 80)
     
-    crossed_spread_symbols = set()  # Track which symbols we crossed spread for
+    walked_symbols = set()  # Track which symbols we walked to max price
     
     if unfilled_symbols:
         if cross_spread_after:
             print(f"\nRemaining unfilled orders: {len(unfilled_symbols)}")
-            print("Crossing spread with limit orders...")
+            print("Walking to max acceptable price...")
             
             if not dry_run:
                 # Refresh bid/ask one more time
@@ -551,16 +571,18 @@ def aggressive_execute_orders(
                     final_bid_ask = get_bid_ask(list(unfilled_symbols))
                     if final_bid_ask is not None and not final_bid_ask.empty:
                         for _, row in final_bid_ask.iterrows():
+                            last = (row['bid'] + row['ask']) / 2
                             bid_ask_dict[row['symbol']] = {
                                 'bid': row['bid'],
                                 'ask': row['ask'],
+                                'last': last,
                                 'spread': row['spread'],
                                 'spread_pct': row['spread_pct']
                             }
                 except Exception as e:
                     print(f"Warning: Could not refresh bid/ask: {e}")
                 
-                # Check final status and cross spread
+                # Check final status and walk to max price
                 final_status = check_order_fills(exchange, {s: order_ids[s] for s in unfilled_symbols})
                 
                 for symbol in list(unfilled_symbols):
@@ -568,65 +590,61 @@ def aggressive_execute_orders(
                         continue
                     
                     status = final_status[symbol]
+                    # Add max_price to status from our tracking
+                    status['max_price'] = order_info_dict[symbol].get('max_price')
                     remaining = status.get('remaining', 0)
                     
                     if remaining > 0:
-                        print(f"\n{symbol}: Crossing spread for {remaining:.6f} remaining")
+                        print(f"\n{symbol}: Walking to max price for {remaining:.6f} remaining")
                         
-                        cross_order = cross_spread_with_limit_order(
+                        walked_order = walk_to_max_price(
                             exchange, symbol, status, bid_ask_dict
                         )
                         
-                        if cross_order:
-                            crossed_spread_symbols.add(symbol)
-                            # Update order tracking with new crossed-spread order
-                            order_ids[symbol] = cross_order.get('id')
-                            order_info_dict[symbol].update({
-                                'id': cross_order.get('id'),
-                                'price': cross_order.get('price'),
-                                'amount': cross_order.get('amount'),
-                                'filled': cross_order.get('filled', 0),
-                                'remaining': cross_order.get('remaining', cross_order.get('amount', 0))
-                            })
+                        if walked_order:
+                            walked_symbols.add(symbol)
+                            # Update order tracking
+                            order_ids[symbol] = walked_order.get('id')
+                            order_info_dict[symbol].update(walked_order)
                     else:
                         print(f"\n{symbol}: ✓ Order filled")
                         filled_symbols.add(symbol)
                         unfilled_symbols.discard(symbol)
                 
-                # STEP 4b: Monitor crossed-spread orders for a short period
-                if crossed_spread_symbols:
-                    print(f"\n[4b] Monitoring crossed-spread orders for 15 seconds...")
+                # STEP 4b: Monitor walked orders for a short period
+                if walked_symbols:
+                    print(f"\n[4b] Monitoring max-price orders for 30 seconds...")
                     print("-" * 80)
                     
-                    cross_spread_start = time.time()
-                    cross_spread_max_time = 15  # 15 seconds to wait for fills
-                    cross_tick = 0
+                    walk_start = time.time()
+                    walk_max_time = 30  # 30 seconds to wait for fills at max price
+                    walk_tick = 0
                     
                     while True:
-                        cross_elapsed = time.time() - cross_spread_start
+                        walk_elapsed = time.time() - walk_start
                         
-                        if cross_elapsed >= cross_spread_max_time:
-                            print(f"\n⏱ Crossed-spread monitoring time ({cross_spread_max_time}s) reached")
+                        if walk_elapsed >= walk_max_time:
+                            print(f"\n⏱ Max-price monitoring time ({walk_max_time}s) reached")
                             break
                         
-                        if not crossed_spread_symbols:
-                            print(f"\n✓ All crossed-spread orders filled!")
+                        if not walked_symbols:
+                            print(f"\n✓ All max-price orders filled!")
                             break
                         
-                        if cross_tick > 0:
+                        if walk_tick > 0:
                             time.sleep(2)  # Poll every 2 seconds
                         
-                        cross_tick += 1
-                        print(f"\n--- Cross-spread tick {cross_tick} (elapsed: {cross_elapsed:.1f}s) ---")
+                        walk_tick += 1
+                        print(f"\n--- Max-price tick {walk_tick} (elapsed: {walk_elapsed:.1f}s) ---")
                         
-                        # Check if crossed-spread orders filled
-                        cross_status = check_order_fills(exchange, {s: order_ids[s] for s in crossed_spread_symbols})
+                        # Check if orders filled
+                        walk_status = check_order_fills(exchange, {s: order_ids[s] for s in walked_symbols})
                         
-                        for symbol in list(crossed_spread_symbols):
-                            if symbol not in cross_status:
+                        for symbol in list(walked_symbols):
+                            if symbol not in walk_status:
                                 continue
                             
-                            status = cross_status[symbol]
+                            status = walk_status[symbol]
                             
                             if 'error' in status:
                                 print(f"  {symbol}: Error - {status['error']}")
@@ -635,7 +653,7 @@ def aggressive_execute_orders(
                             if status.get('status') in ['closed', 'filled']:
                                 filled_symbols.add(symbol)
                                 unfilled_symbols.discard(symbol)
-                                crossed_spread_symbols.discard(symbol)
+                                walked_symbols.discard(symbol)
                                 print(f"  {symbol}: ✓ FILLED")
                             else:
                                 filled_amt = status.get('filled', 0)
@@ -643,68 +661,20 @@ def aggressive_execute_orders(
                                 if filled_amt > 0:
                                     print(f"  {symbol}: Partially filled - {filled_amt:.6f} / {total_amt:.6f}")
                                 else:
-                                    print(f"  {symbol}: Still open...")
+                                    print(f"  {symbol}: Still open at max price...")
                     
-                    # STEP 4c: Final cleanup - cancel remaining and use market orders
-                    if crossed_spread_symbols:
-                        print(f"\n[4c] Final cleanup: Using market orders for {len(crossed_spread_symbols)} remaining symbols...")
-                        print("-" * 80)
-                        
-                        # Check final status one more time
-                        final_cross_status = check_order_fills(exchange, {s: order_ids[s] for s in crossed_spread_symbols})
-                        
-                        for symbol in crossed_spread_symbols:
-                            if symbol not in final_cross_status or 'error' in final_cross_status[symbol]:
-                                continue
-                            
-                            status = final_cross_status[symbol]
-                            remaining = status.get('remaining', 0)
-                            
-                            if remaining > 0:
-                                print(f"\n{symbol}: Forcing fill with market order for {remaining:.6f}")
-                                
-                                # Cancel the limit order
-                                try:
-                                    exchange.cancel_order(status['id'], symbol)
-                                    print(f"  {symbol}: Cancelled limit order {status['id']}")
-                                except Exception as e:
-                                    print(f"  {symbol}: Warning - could not cancel order: {e}")
-                                
-                                # Place market order to force fill
-                                try:
-                                    side = status.get('side')
-                                    if symbol in bid_ask_dict:
-                                        current_price = bid_ask_dict[symbol]['last'] if 'last' in bid_ask_dict[symbol] else (bid_ask_dict[symbol]['ask'] if side == 'buy' else bid_ask_dict[symbol]['bid'])
-                                    else:
-                                        ticker = exchange.fetch_ticker(symbol)
-                                        current_price = ticker['last']
-                                    
-                                    market_order = exchange.create_order(
-                                        symbol=symbol,
-                                        type='market',
-                                        side=side,
-                                        amount=remaining,
-                                        price=current_price
-                                    )
-                                    print(f"  {symbol}: ✓ Market order placed - ID: {market_order.get('id')}")
-                                    filled_symbols.add(symbol)
-                                    unfilled_symbols.discard(symbol)
-                                except Exception as e:
-                                    print(f"  {symbol}: ✗ Error placing market order: {e}")
-                            else:
-                                print(f"\n{symbol}: ✓ Order filled")
-                                filled_symbols.add(symbol)
-                                unfilled_symbols.discard(symbol)
+                    # Final status check
+                    if walked_symbols:
+                        print(f"\n⚠ {len(walked_symbols)} orders remain unfilled at max acceptable price")
+                        for symbol in walked_symbols:
+                            max_price = order_info_dict[symbol].get('max_price')
+                            print(f"  → {symbol}: Limit order at ${max_price:.4f} (max acceptable)")
             else:
-                print(f"[DRY RUN] Would cross spread for {len(unfilled_symbols)} unfilled orders:")
+                print(f"[DRY RUN] Would walk to max price for {len(unfilled_symbols)} unfilled orders:")
                 for symbol in unfilled_symbols:
-                    side = order_info_dict[symbol]['side']
-                    if symbol in bid_ask_dict:
-                        cross_price = bid_ask_dict[symbol]['ask'] if side == 'buy' else bid_ask_dict[symbol]['bid']
-                        print(f"  {symbol}: Would place limit order at ${cross_price:.4f} (crosses spread)")
-                    else:
-                        print(f"  {symbol}: Would cross spread")
-                print(f"\n[DRY RUN] Would then monitor for 15s and use market orders if still unfilled")
+                    max_price = order_info_dict[symbol].get('max_price')
+                    print(f"  {symbol}: Would walk to ${max_price:.4f} (max acceptable price)")
+                print(f"\n[DRY RUN] Would then monitor for 30s at max price")
         else:
             print(f"\n{len(unfilled_symbols)} orders still open (cross_spread_after=False)")
             for symbol in unfilled_symbols:
@@ -798,31 +768,32 @@ Examples:
   # Live: Buy $200 SOL with faster tick interval
   python3 aggressive_order_execution.py --trades "SOL/USDC:USDC:200" --live --tick-interval 1.0
   
-  # Multiple trades with longer monitoring period
+  # Multiple trades with longer monitoring period and custom max price factor
   python3 aggressive_order_execution.py --trades \\
     "BTC/USDC:USDC:100" \\
     "ETH/USDC:USDC:-50" \\
     "SOL/USDC:USDC:75" \\
-    --live --max-time 120 --tick-interval 2.0
+    --live --max-time 120 --tick-interval 2.0 --max-price-factor 2.5
   
-  # Keep limit orders open without crossing spread
+  # Keep limit orders open without walking to max price
   python3 aggressive_order_execution.py --trades "BTC/USDC:USDC:100" --live --no-cross-spread
 
-Strategy (Tick-Based Best Bid/Ask Tracking):
-  1. Sends limit orders at best bid (buy) or ask (sell)
-  2. Continuously monitors market every tick-interval seconds:
+Strategy (Notional Limit with Price Walking):
+  1. Calculates shares: notional / (last_price + spread * max_price_factor)
+  2. Sends limit orders at best bid (buy) or ask (sell)
+  3. Continuously monitors market every tick-interval seconds:
      - Polls current bid/ask prices
-     - If best bid/ask changed, moves orders to new best bid/ask
+     - Keeps orders at best bid/ask
      - Checks if orders are filled
-  3. Continues until orders filled or max-time reached
-  4. Optionally crosses spread with limit orders for remaining unfilled
-     - Buy orders: moved to ASK (crosses spread)
-     - Sell orders: moved to BID (crosses spread)
+  4. After max-time, walks price to max acceptable price
+     - Max acceptable = last + spread * max_price_factor (for buys)
+     - Max acceptable = last - spread * max_price_factor (for sells)
+  5. NEVER uses market orders - only limit orders up to max acceptable price
   
 Trade Format:
   SYMBOL:AMOUNT
-  - Positive amount = BUY
-  - Negative amount = SELL
+  - Positive amount = BUY (notional in USD)
+  - Negative amount = SELL (notional in USD)
   
 Environment Variables Required (for live trading):
   HL_API: Your Hyperliquid API key (wallet address)
@@ -917,4 +888,36 @@ Environment Variables Required (for live trading):
 
 
 if __name__ == "__main__":
+    main()
+1)
+
+
+if __name__ == "__main__":
+    main()
+# Execute orders
+        result = aggressive_execute_orders(
+            trades=trades,
+            tick_interval=args.tick_interval,
+            max_time=args.max_time,
+            cross_spread_after=not args.no_cross_spread,
+            dry_run=dry_run
+        )
+        
+        if not result.get('success'):
+            print(f"\n✗ Execution failed: {result.get('error', 'Unknown error')}")
+            exit(1)
+        
+        print("\n✓ Execution completed!")
+        
+    except Exception as e:
+        print(f"\n✗ Error: {e}")
+        if args.verbose:
+            import traceback
+            traceback.print_exc()
+        exit(1)
+
+
+if __name__ == "__main__":
+    main()
+:
     main()
