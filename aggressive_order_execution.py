@@ -322,12 +322,13 @@ def aggressive_execute_orders(
         dict: Summary of execution results
     """
     print("=" * 80)
-    print("AGGRESSIVE ORDER EXECUTION - TICK-BASED BID/ASK TRACKING")
+    print("AGGRESSIVE ORDER EXECUTION - NOTIONAL LIMIT WITH PRICE WALKING")
     print("=" * 80)
     print(f"Mode: {'DRY RUN' if dry_run else 'LIVE TRADING'}")
     print(f"Tick interval: {tick_interval}s")
     print(f"Max time: {max_time}s")
-    print(f"Cross spread after max time: {cross_spread_after}")
+    print(f"Max price factor: {max_price_factor}x spread")
+    print(f"Walk to max price after max time: {cross_spread_after}")
     print("=" * 80)
     
     if not trades:
@@ -359,24 +360,31 @@ def aggressive_execute_orders(
         print("\n✗ Error: Could not fetch bid/ask prices")
         return {'success': False, 'error': 'No bid/ask data'}
     
-    # Convert to dict for easy lookup
+    # Convert to dict for easy lookup and calculate last price
     bid_ask_dict = {}
     for _, row in bid_ask_df.iterrows():
+        bid = row['bid']
+        ask = row['ask']
+        last = (bid + ask) / 2  # Use mid price as last
+        spread = row['spread']
+        
         bid_ask_dict[row['symbol']] = {
-            'bid': row['bid'],
-            'ask': row['ask'],
-            'spread': row['spread'],
+            'bid': bid,
+            'ask': ask,
+            'last': last,
+            'spread': spread,
             'spread_pct': row['spread_pct']
         }
     
     print("✓ Initial bid/ask prices fetched")
     
-    # STEP 2: Send initial limit orders at best bid/ask
-    print(f"\n[2/4] Sending initial limit orders at best bid/ask...")
+    # STEP 2: Calculate shares and send initial limit orders
+    print(f"\n[2/4] Calculating shares and sending initial limit orders...")
     print("-" * 80)
     
     order_ids = {}  # Track order IDs for each symbol
     order_info_dict = {}  # Track full order info
+    max_prices = {}  # Track max acceptable prices
     
     for symbol, notional_amount in trades.items():
         if notional_amount == 0:
@@ -389,50 +397,70 @@ def aggressive_execute_orders(
         
         bid = bid_ask_dict[symbol]['bid']
         ask = bid_ask_dict[symbol]['ask']
+        last = bid_ask_dict[symbol]['last']
+        spread = bid_ask_dict[symbol]['spread']
+        
         side = 'buy' if notional_amount > 0 else 'sell'
-        price = bid if side == 'buy' else ask
-        abs_amount = abs(notional_amount)
+        abs_notional = abs(notional_amount)
+        
+        # Calculate max acceptable price
+        if side == 'buy':
+            max_price = last + (spread * max_price_factor)
+            initial_price = bid
+        else:
+            max_price = last - (spread * max_price_factor)
+            initial_price = ask
+        
+        # Calculate shares based on max acceptable price
+        shares = abs_notional / max_price
+        
+        # Store max price for later use
+        max_prices[symbol] = max_price
         
         print(f"\n{symbol}:")
-        print(f"  Side:        {side.upper()}")
-        print(f"  Notional:    ${abs_amount:,.2f}")
-        print(f"  Bid:         ${bid:,.4f}")
-        print(f"  Ask:         ${ask:,.4f}")
-        print(f"  Order Price: ${price:,.4f}")
+        print(f"  Side:           {side.upper()}")
+        print(f"  Notional:       ${abs_notional:,.2f}")
+        print(f"  Last (mid):     ${last:,.4f}")
+        print(f"  Spread:         ${spread:,.4f}")
+        print(f"  Max price:      ${max_price:,.4f} (last + spread * {max_price_factor})")
+        print(f"  Shares:         {shares:.6f} (notional / max_price)")
+        print(f"  Initial price:  ${initial_price:,.4f} ({'BID' if side == 'buy' else 'ASK'})")
         
         if dry_run:
-            print(f"  Status:      [DRY RUN] Would place {side.upper()} limit order")
+            print(f"  Status:         [DRY RUN] Would place {side.upper()} limit order")
             order_ids[symbol] = f"DRY_RUN_{symbol}"
             order_info_dict[symbol] = {
                 'id': f"DRY_RUN_{symbol}",
                 'side': side,
-                'price': price,
-                'amount': abs_amount / price,
-                'status': 'open'
+                'price': initial_price,
+                'amount': shares,
+                'status': 'open',
+                'max_price': max_price
             }
         else:
             try:
-                order = ccxt_make_order(
+                order = exchange.create_order(
                     symbol=symbol,
-                    notional_amount=abs_amount,
+                    type='limit',
                     side=side,
-                    order_type='limit',
-                    price=price
+                    amount=shares,
+                    price=initial_price
                 )
                 order_id = order.get('id')
                 order_ids[symbol] = order_id
                 order_info_dict[symbol] = {
                     'id': order_id,
                     'side': side,
-                    'price': price,
-                    'amount': order.get('amount', abs_amount / price),
+                    'price': initial_price,
+                    'amount': shares,
                     'filled': order.get('filled', 0),
-                    'remaining': order.get('remaining', order.get('amount', 0)),
-                    'status': order.get('status', 'open')
+                    'remaining': order.get('remaining', shares),
+                    'status': order.get('status', 'open'),
+                    'max_price': max_price
                 }
-                print(f"  Status:      ✓ Order placed - ID: {order_id}")
+                print(f"  Status:         ✓ Order placed - ID: {order_id}")
             except Exception as e:
-                print(f"  Status:      ✗ Error: {e}")
+                print(f"  Status:         ✗ Error: {e}")
     
     if not order_ids:
         print("\n✗ No orders were placed")
@@ -827,7 +855,13 @@ Environment Variables Required (for live trading):
     parser.add_argument(
         '--no-cross-spread',
         action='store_true',
-        help='Do not cross spread after max time (keep limit orders open)'
+        help='Do not walk to max price after max time (keep limit orders at best bid/ask)'
+    )
+    parser.add_argument(
+        '--max-price-factor',
+        type=float,
+        default=2.0,
+        help='Factor for max acceptable price (default: 2.0x spread from last)'
     )
     parser.add_argument(
         '--verbose',
@@ -870,6 +904,7 @@ Environment Variables Required (for live trading):
             tick_interval=args.tick_interval,
             max_time=args.max_time,
             cross_spread_after=not args.no_cross_spread,
+            max_price_factor=args.max_price_factor,
             dry_run=dry_run
         )
         
@@ -888,36 +923,4 @@ Environment Variables Required (for live trading):
 
 
 if __name__ == "__main__":
-    main()
-1)
-
-
-if __name__ == "__main__":
-    main()
-# Execute orders
-        result = aggressive_execute_orders(
-            trades=trades,
-            tick_interval=args.tick_interval,
-            max_time=args.max_time,
-            cross_spread_after=not args.no_cross_spread,
-            dry_run=dry_run
-        )
-        
-        if not result.get('success'):
-            print(f"\n✗ Execution failed: {result.get('error', 'Unknown error')}")
-            exit(1)
-        
-        print("\n✓ Execution completed!")
-        
-    except Exception as e:
-        print(f"\n✗ Error: {e}")
-        if args.verbose:
-            import traceback
-            traceback.print_exc()
-        exit(1)
-
-
-if __name__ == "__main__":
-    main()
-:
     main()
