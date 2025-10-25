@@ -23,9 +23,13 @@ def identify_top_coins(df, top_n=50):
     return top_coins
 
 def backtest_strategy(df, strategy_name, signal_column, long_pct=0.2, short_pct=0.2, 
-                      initial_capital=100000, rebalance_days=1):
+                      initial_capital=100000, rebalance_days=7):
     """
-    Backtest a long/short strategy.
+    Backtest a long/short strategy using next day's returns.
+    
+    Logic:
+    - Day T: Observe signals (dollar_volume, RVOL)
+    - Day T+1: Enter positions at open, calculate returns from open to close
     
     Parameters:
     - long_pct: percentile for long positions (low values = more illiquid/low RVOL)
@@ -35,39 +39,45 @@ def backtest_strategy(df, strategy_name, signal_column, long_pct=0.2, short_pct=
     print(f"Backtesting: {strategy_name}")
     print(f"Signal column: {signal_column}")
     print(f"Long: Bottom {int(long_pct*100)}% | Short: Top {int(short_pct*100)}%")
+    print(f"Rebalance frequency: Every {rebalance_days} days")
     print(f"{'='*80}")
     
+    # Create a dataframe with next day's return pre-calculated
+    df_sorted = df.sort_values(['symbol', 'date'])
+    df_sorted['next_day_return'] = df_sorted.groupby('symbol')['close'].pct_change()
+    
     # Get unique dates
-    dates = sorted(df['date'].unique())
+    dates = sorted(df_sorted['date'].unique())
     
     # Initialize portfolio tracking
     portfolio_values = []
     trades = []
     
     capital = initial_capital
-    last_rebalance_date = None
+    current_positions = None
+    days_since_rebalance = 0
     
-    for date in dates:
+    for i, date in enumerate(dates):
         # Get data for this date
-        day_data = df[df['date'] == date].copy()
+        day_data = df_sorted[df_sorted['date'] == date].copy()
         
         # Skip if insufficient data
         if len(day_data) < 10 or day_data[signal_column].isna().all():
             continue
         
-        # Rebalancing logic
-        if last_rebalance_date is None or (date - last_rebalance_date).days >= rebalance_days:
+        # Rebalancing logic: use today's signals to determine positions for tomorrow
+        if current_positions is None or days_since_rebalance >= rebalance_days:
             # Remove NaN values
             valid_data = day_data[day_data[signal_column].notna()].copy()
             
             if len(valid_data) < 10:
                 continue
             
-            # Calculate percentiles
+            # Calculate percentiles based on today's signals
             long_threshold = valid_data[signal_column].quantile(long_pct)
             short_threshold = valid_data[signal_column].quantile(1 - short_pct)
             
-            # Select long and short positions
+            # Select long and short positions for tomorrow
             long_positions = valid_data[valid_data[signal_column] <= long_threshold]['symbol'].tolist()
             short_positions = valid_data[valid_data[signal_column] >= short_threshold]['symbol'].tolist()
             
@@ -80,42 +90,43 @@ def backtest_strategy(df, strategy_name, signal_column, long_pct=0.2, short_pct=
                 short_weight = 0.5 / n_short  # 50% of capital in shorts
                 
                 trades.append({
-                    'date': date,
+                    'signal_date': date,
                     'n_long': n_long,
                     'n_short': n_short,
-                    'long_positions': ','.join(long_positions[:5]) + '...',
-                    'short_positions': ','.join(short_positions[:5]) + '...',
+                    'long_positions': ','.join(long_positions[:5]) + ('...' if n_long > 5 else ''),
+                    'short_positions': ','.join(short_positions[:5]) + ('...' if n_short > 5 else ''),
                     'long_threshold': long_threshold,
                     'short_threshold': short_threshold
                 })
                 
-                last_rebalance_date = date
                 current_positions = {
                     'long': long_positions,
                     'short': short_positions,
                     'long_weight': long_weight,
                     'short_weight': short_weight
                 }
+                days_since_rebalance = 0
         
-        # Calculate daily returns
-        if last_rebalance_date is not None and 'current_positions' in locals():
+        # Calculate returns using NEXT day's return (already calculated as pct_change of close)
+        if current_positions is not None:
             day_return = 0
             
             # Long positions
             for symbol in current_positions['long']:
                 symbol_data = day_data[day_data['symbol'] == symbol]
-                if not symbol_data.empty:
-                    daily_ret = (symbol_data['close'].values[0] / symbol_data['open'].values[0]) - 1
+                if not symbol_data.empty and not pd.isna(symbol_data['next_day_return'].values[0]):
+                    daily_ret = symbol_data['next_day_return'].values[0]
                     day_return += current_positions['long_weight'] * daily_ret
             
             # Short positions (negative returns)
             for symbol in current_positions['short']:
                 symbol_data = day_data[day_data['symbol'] == symbol]
-                if not symbol_data.empty:
-                    daily_ret = (symbol_data['close'].values[0] / symbol_data['open'].values[0]) - 1
+                if not symbol_data.empty and not pd.isna(symbol_data['next_day_return'].values[0]):
+                    daily_ret = symbol_data['next_day_return'].values[0]
                     day_return -= current_positions['short_weight'] * daily_ret
             
             capital *= (1 + day_return)
+            days_since_rebalance += 1
         
         portfolio_values.append({
             'date': date,
