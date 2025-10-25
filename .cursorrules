@@ -7,3 +7,7 @@
 ## Python Version
 - Always use `python3` command instead of `python`
 - Explicitly use Python 3 for all script executions
+
+## Backtesting Best Practices
+- When generating backtest, make sure to use next-day returns (`.shift(-1)`) to avoid lookahead bias
+- Signals generated on day T should be executed using returns from day T+1
