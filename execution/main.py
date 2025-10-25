@@ -1,13 +1,44 @@
 """
 Automated Trading Strategy Execution
-Main script for executing trading strategy combining:
-1. 20d from 200d high strategy (50% allocation)
-2. Breakout signal strategy (50% allocation)
 
-The two strategies are weighted 50/50 and combined into a single portfolio.
+This script now supports blending multiple signals with configurable weights.
+
+Supported signals (handlers implemented or stubbed):
+- days_from_high: Long-only instruments near 200d highs (inverse-vol weighted)
+- breakout: Long/short based on 50d breakout with 70d exits (inverse-vol weighted)
+- carry: Long negative-funding symbols, short positive-funding symbols (basic)
+- mean_reversion: Placeholder (prints notice if selected but not implemented)
+- size: Placeholder (prints notice if selected but not implemented)
+
+Weights can be provided via an external JSON config file so the backtesting suite
+can update them without code changes. Example config structure:
+
+{
+  "strategy_weights": {
+    "days_from_high": 0.2,
+    "breakout": 0.4,
+    "mean_reversion": 0.2,
+    "size": 0.1,
+    "carry": 0.1
+  },
+  "params": {
+    "days_from_high": {"max_days": 20},
+    "breakout": {"entry_lookback": 50, "exit_lookback": 70},
+    "mean_reversion": {"quantile": 0.2},
+    "size": {"top_n": 10, "bottom_n": 10},
+    "carry": {"exchange_id": "binance"}
+  }
+}
+
+If no config is provided, you can pass a list of signals via --signals and the
+script will assign equal weights across them. If neither is provided, it falls
+back to the original 50/50 blend of days_from_high and breakout.
 """
 
 import argparse
+import json
+import os
+from collections import defaultdict
 from ccxt_get_markets_by_volume import ccxt_get_markets_by_volume
 from ccxt_get_data import ccxt_fetch_hyperliquid_daily_data
 from ccxt_get_balance import ccxt_get_hyperliquid_balance
@@ -512,72 +543,249 @@ def calculate_breakout_signals_from_data(data):
     return target_positions
 
 
-def combine_strategies_50_50(weights_20d_high, weights_breakout_long, weights_breakout_short, 
-                              notional_value):
-    """
-    Combine 20d from high strategy (50%) with breakout signal strategy (50%).
-    
-    Strategy 1 (50%): 20d from 200d high - all LONG positions
-    Strategy 2 (50%): Breakout signals - can be LONG or SHORT
-    
-    Args:
-        weights_20d_high (dict): Weights from 20d from high strategy (all longs)
-        weights_breakout_long (dict): Long weights from breakout strategy
-        weights_breakout_short (dict): Short weights from breakout strategy
-        notional_value (float): Total account notional value
-        
-    Returns:
-        dict: Combined target positions (positive=long, negative=short)
-    """
+def _normalize_weights(weights_dict):
+    """Normalize a dict of strategy weights so they sum to 1.0 (if possible)."""
+    if not weights_dict:
+        return {}
+    total = sum(v for v in weights_dict.values() if v is not None and v >= 0)
+    if total <= 0:
+        return {}
+    return {k: (v / total if v is not None and v >= 0 else 0.0) for k, v in weights_dict.items()}
+
+
+def load_signal_config(config_path):
+    """Load strategy weights and params from a JSON config file if present."""
+    if not config_path:
+        return None
+    try:
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                cfg = json.load(f)
+            weights = cfg.get('strategy_weights', {}) or {}
+            params = cfg.get('params', {}) or {}
+            weights = _normalize_weights(weights)
+            print(f"\nLoaded signal blend config from: {config_path}")
+            print("Strategy weights:")
+            for name, w in weights.items():
+                print(f"  {name}: {w:.4f} ({w*100:.2f}%)")
+            return {"strategy_weights": weights, "params": params}
+        else:
+            print(f"\nSignal config not found at: {config_path}. Using CLI/defaults.")
+            return None
+    except Exception as e:
+        print(f"\nError loading signal config '{config_path}': {e}. Using CLI/defaults.")
+        return None
+
+
+def get_base_symbol(symbol):
+    """Extract base asset symbol from ccxt-style market symbol (e.g., 'BTC/USDC:USDC' -> 'BTC')."""
+    if not isinstance(symbol, str):
+        return symbol
+    return symbol.split('/')[0]
+
+
+def strategy_days_from_high(historical_data, notional, max_days=20):
+    """Compute long-only target notionals for instruments within max_days of 200d high."""
+    # Calculate days since 200d high
+    days_from_high = calculate_days_from_200d_high(historical_data)
+    selected_symbols = [s for s, d in days_from_high.items() if d <= max_days]
+    if not selected_symbols:
+        print("  No symbols selected for days_from_high.")
+        return {}
+
+    # Volatility and inverse-vol weights
+    volatilities = calculate_rolling_30d_volatility(historical_data, selected_symbols)
+    if not volatilities:
+        print("  No volatilities computed for days_from_high.")
+        return {}
+    weights = calc_weights(volatilities)
+    if not weights:
+        print("  No weights computed for days_from_high.")
+        return {}
+
+    # Allocate notional to longs
+    target_positions = {symbol: weight * notional for symbol, weight in weights.items()}
+    print(f"  Allocated ${notional:,.2f} to days_from_high (LONG-only) across {len(target_positions)} symbols")
+    return target_positions
+
+
+def strategy_breakout(historical_data, notional):
+    """Compute long/short target notionals based on breakout signals."""
+    signals = calculate_breakout_signals_from_data(historical_data)
+    longs = [s for s, d in signals.items() if d == 1]
+    shorts = [s for s, d in signals.items() if d == -1]
+
     target_positions = {}
-    
-    # Strategy 1: 20d from high (50% of notional, all longs)
-    strategy1_notional = notional_value * 0.5
-    print("\nStrategy 1: 20d from 200d high (50% allocation = ${:,.2f})".format(strategy1_notional))
-    for symbol, weight in weights_20d_high.items():
-        target_notional = weight * strategy1_notional
-        target_positions[symbol] = target_notional
-        print(f"  {symbol}: LONG weight={weight:.4f}, target=${target_notional:,.2f}")
-    
-    # Strategy 2: Breakout signals (50% of notional, can be long or short)
-    strategy2_notional = notional_value * 0.5
-    print("\nStrategy 2: Breakout signals (50% allocation = ${:,.2f})".format(strategy2_notional))
-    
-    # Add breakout longs
-    if weights_breakout_long:
-        print("  LONG positions:")
-        for symbol, weight in weights_breakout_long.items():
-            target_notional = weight * strategy2_notional
-            # If symbol already in target_positions (from strategy 1), add to it
-            if symbol in target_positions:
-                target_positions[symbol] += target_notional
-                print(f"    {symbol}: LONG weight={weight:.4f}, target=${target_notional:,.2f} (COMBINED with Strategy 1)")
-            else:
-                target_positions[symbol] = target_notional
-                print(f"    {symbol}: LONG weight={weight:.4f}, target=${target_notional:,.2f}")
-    
-    # Add breakout shorts
-    if weights_breakout_short:
-        print("  SHORT positions:")
-        for symbol, weight in weights_breakout_short.items():
-            target_notional = -1 * weight * strategy2_notional
-            # If symbol already in target_positions, this is a conflict
-            # (Strategy 1 wants long, Strategy 2 wants short)
-            # In this case, net them out
-            if symbol in target_positions:
-                print(f"    {symbol}: SHORT weight={weight:.4f}, target=-${abs(target_notional):,.2f} (CONFLICT: Strategy 1 has LONG, netting out)")
-                target_positions[symbol] += target_notional
-            else:
-                target_positions[symbol] = target_notional
-                print(f"    {symbol}: SHORT weight={weight:.4f}, target=-${abs(target_notional):,.2f}")
-    
-    # Print combined positions
-    print("\nCombined Target Positions:")
-    print("=" * 80)
-    for symbol, target in sorted(target_positions.items()):
-        side = "LONG" if target > 0 else "SHORT"
-        print(f"  {symbol}: {side} ${abs(target):,.2f}")
-    
+
+    # LONGS
+    if longs:
+        vola_long = calculate_rolling_30d_volatility(historical_data, longs)
+        w_long = calc_weights(vola_long) if vola_long else {}
+        for symbol, w in w_long.items():
+            target_positions[symbol] = target_positions.get(symbol, 0.0) + w * notional
+        print(f"  Allocated ${notional:,.2f} to breakout LONGS across {len(w_long)} symbols")
+    else:
+        print("  No breakout LONG signals.")
+
+    # SHORTS
+    if shorts:
+        vola_short = calculate_rolling_30d_volatility(historical_data, shorts)
+        w_short = calc_weights(vola_short) if vola_short else {}
+        for symbol, w in w_short.items():
+            target_positions[symbol] = target_positions.get(symbol, 0.0) - w * notional
+        print(f"  Allocated ${notional:,.2f} to breakout SHORTS across {len(w_short)} symbols")
+    else:
+        print("  No breakout SHORT signals.")
+
+    return target_positions
+
+
+def strategy_carry(historical_data, universe_symbols, notional, exchange_id="binance"):
+    """Basic carry strategy using funding rates: long negative funding, short positive funding.
+
+    Note: Uses Binance funding rates as proxy; maps by base asset symbol.
+    """
+    try:
+        from get_carry import fetch_binance_funding_rates
+    except Exception as e:
+        print(f"  Carry handler unavailable (import error): {e}")
+        return {}
+
+    df_rates = fetch_binance_funding_rates(symbols=None, exchange_id=exchange_id)
+    if df_rates is None or df_rates.empty:
+        print("  No funding rate data available for carry.")
+        return {}
+
+    # Map to our universe by base symbol
+    universe_bases = {get_base_symbol(s): s for s in universe_symbols}
+    df_rates = df_rates.copy()
+    df_rates['base'] = df_rates['symbol'].astype(str).str.split('/').str[0]
+    df_rates = df_rates[df_rates['base'].isin(universe_bases.keys())]
+    if df_rates.empty:
+        print("  No funding symbols matched our universe for carry.")
+        return {}
+
+    # Partition by funding sign
+    df_rates = df_rates.dropna(subset=['funding_rate'])
+    long_bases = df_rates[df_rates['funding_rate'] < 0]['base'].unique().tolist()  # long collect
+    short_bases = df_rates[df_rates['funding_rate'] > 0]['base'].unique().tolist() # short collect
+
+    long_symbols = [universe_bases[b] for b in long_bases if b in universe_bases]
+    short_symbols = [universe_bases[b] for b in short_bases if b in universe_bases]
+
+    target_positions = {}
+
+    if long_symbols:
+        vola_long = calculate_rolling_30d_volatility(historical_data, long_symbols)
+        w_long = calc_weights(vola_long) if vola_long else {}
+        for symbol, w in w_long.items():
+            target_positions[symbol] = target_positions.get(symbol, 0.0) + w * notional
+        print(f"  Allocated ${notional:,.2f} to carry LONGS across {len(w_long)} symbols")
+    else:
+        print("  No carry LONG candidates (negative funding).")
+
+    if short_symbols:
+        vola_short = calculate_rolling_30d_volatility(historical_data, short_symbols)
+        w_short = calc_weights(vola_short) if vola_short else {}
+        for symbol, w in w_short.items():
+            target_positions[symbol] = target_positions.get(symbol, 0.0) - w * notional
+        print(f"  Allocated ${notional:,.2f} to carry SHORTS across {len(w_short)} symbols")
+    else:
+        print("  No carry SHORT candidates (positive funding).")
+
+    return target_positions
+
+
+def strategy_mean_reversion(historical_data, notional, quantile=0.2):
+    """Simple mean reversion: long bottom quantile of 1-day returns, short top quantile."""
+    # Build latest 1d returns per symbol
+    latest_returns = []
+    for symbol, df in historical_data.items():
+        s = df.sort_values('date').copy()
+        if 'close' not in s.columns:
+            continue
+        s['ret'] = s['close'].pct_change()
+        last_ret = s['ret'].iloc[-1] if len(s) > 1 else None
+        if last_ret is not None and pd.notna(last_ret):
+            latest_returns.append((symbol, float(last_ret)))
+
+    if not latest_returns:
+        print("  No returns computed for mean_reversion.")
+        return {}
+
+    sr = pd.Series({sym: r for sym, r in latest_returns})
+    low_thresh = sr.quantile(quantile)
+    high_thresh = sr.quantile(1 - quantile)
+    long_symbols = sr[sr <= low_thresh].index.tolist()
+    short_symbols = sr[sr >= high_thresh].index.tolist()
+
+    target_positions = {}
+    if long_symbols:
+        vola_long = calculate_rolling_30d_volatility(historical_data, long_symbols)
+        w_long = calc_weights(vola_long) if vola_long else {}
+        for symbol, w in w_long.items():
+            target_positions[symbol] = target_positions.get(symbol, 0.0) + w * notional
+        print(f"  Allocated ${notional:,.2f} to mean_reversion LONGS across {len(w_long)} symbols")
+    else:
+        print("  No mean_reversion LONG candidates.")
+
+    if short_symbols:
+        vola_short = calculate_rolling_30d_volatility(historical_data, short_symbols)
+        w_short = calc_weights(vola_short) if vola_short else {}
+        for symbol, w in w_short.items():
+            target_positions[symbol] = target_positions.get(symbol, 0.0) - w * notional
+        print(f"  Allocated ${notional:,.2f} to mean_reversion SHORTS across {len(w_short)} symbols")
+    else:
+        print("  No mean_reversion SHORT candidates.")
+
+    return target_positions
+
+
+def strategy_size(historical_data, universe_symbols, notional, top_n=10, bottom_n=10):
+    """Simple size proxy using 24h notional volume as a surrogate for size.
+
+    Long top_n largest by 24h notional volume; short bottom_n among the universe.
+    """
+    try:
+        df_markets = ccxt_get_markets_by_volume()
+    except Exception as e:
+        print(f"  Size handler unavailable (market data error): {e}")
+        return {}
+
+    if df_markets is None or df_markets.empty:
+        print("  No market volume data for size factor.")
+        return {}
+
+    # Filter to our universe
+    df = df_markets.copy()
+    df = df[df['symbol'].isin(universe_symbols)]
+    if df.empty:
+        print("  Market volume data did not match our universe for size factor.")
+        return {}
+
+    df = df.sort_values('notional_volume_24h', ascending=False)
+    long_symbols = df.head(max(0, int(top_n)))['symbol'].tolist()
+    short_symbols = df.tail(max(0, int(bottom_n)))['symbol'].tolist()
+
+    target_positions = {}
+    if long_symbols:
+        vola_long = calculate_rolling_30d_volatility(historical_data, long_symbols)
+        w_long = calc_weights(vola_long) if vola_long else {}
+        for symbol, w in w_long.items():
+            target_positions[symbol] = target_positions.get(symbol, 0.0) + w * notional
+        print(f"  Allocated ${notional:,.2f} to size LONGS across {len(w_long)} symbols")
+    else:
+        print("  No size LONG candidates.")
+
+    if short_symbols:
+        vola_short = calculate_rolling_30d_volatility(historical_data, short_symbols)
+        w_short = calc_weights(vola_short) if vola_short else {}
+        for symbol, w in w_short.items():
+            target_positions[symbol] = target_positions.get(symbol, 0.0) - w * notional
+        print(f"  Allocated ${notional:,.2f} to size SHORTS across {len(w_short)} symbols")
+    else:
+        print("  No size SHORT candidates.")
+
     return target_positions
 
 
@@ -647,24 +855,12 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive
 
 def main():
     """
-    Main execution function combining two strategies (50/50 weighting):
+    Main execution function supporting multi-signal blending with external weights.
     
-    Strategy 1 (50%): 20d from 200d high
-    Strategy 2 (50%): Breakout signals (50d high/low entry, 70d exit)
-    
-    Workflow:
-    1. Request markets by volume (>$100k/day)
-    2. Get 200d daily data
-    3. Strategy 1: Select instruments <= 20d from 200d high
-    4. Strategy 2: Calculate breakout signals (LONG/SHORT)
-    5. Calculate rolling 30d volatility for all selected instruments
-    6. Calculate weights for Strategy 1 (20d from high)
-    7. Calculate weights for Strategy 2 (breakout longs and shorts separately)
-    8. Get account notional value from balance + positions
-    9. Combine strategies 50/50 to get target positions
-    10. Get current positions
-    11. Calculate trade amounts where difference > threshold
-    12. Execute orders
+    Modes:
+    - If --signal-config provided and found, use weights from config
+    - Else if --signals provided, use equal weights across listed signals
+    - Else fallback to legacy 50/50 (days_from_high + breakout)
     """
     # Parse command line arguments
     parser = argparse.ArgumentParser(
@@ -701,24 +897,55 @@ def main():
         default=False,
         help='Use aggressive order execution strategy (tick-based: continuously move limit orders to best bid/ask)'
     )
+    parser.add_argument(
+        '--signals',
+        type=str,
+        default=None,
+        help='Comma-separated list of signals to blend (e.g., days_from_high,breakout,mean_reversion,size,carry)'
+    )
+    parser.add_argument(
+        '--signal-config',
+        type=str,
+        default=None,
+        help='Path to JSON config file with strategy_weights and optional params'
+    )
     args = parser.parse_args()
     
+    # Decide blending mode
+    config = load_signal_config(args.signal_config) if args.signal_config else None
+    configured_weights = (config or {}).get('strategy_weights') if config else None
+    params = (config or {}).get('params', {}) if config else {}
+
+    if configured_weights:
+        blend_weights = configured_weights
+        selected_signals = list(blend_weights.keys())
+        title = "MULTI-SIGNAL BLEND (config-driven)"
+    else:
+        selected_signals = []
+        if args.signals:
+            selected_signals = [s.strip() for s in args.signals.split(',') if s.strip()]
+        blend_weights = _normalize_weights({s: 1.0 for s in selected_signals}) if selected_signals else None
+        title = "MULTI-SIGNAL BLEND (CLI)" if blend_weights else "COMBINED 50/50 (legacy)"
+
     print("="*80)
-    print("AUTOMATED TRADING STRATEGY EXECUTION - COMBINED 50/50")
+    print(f"AUTOMATED TRADING STRATEGY EXECUTION - {title}")
     print("="*80)
-    print("\nStrategy Allocation:")
-    print("  50% - 20d from 200d high (LONG only)")
-    print("  50% - Breakout signals (LONG/SHORT)")
     print(f"\nParameters:")
-    print(f"  Days since high (Strategy 1): {args.days_since_high}")
+    print(f"  Days since high (Strategy 1 default): {args.days_since_high}")
     print(f"  Rebalance threshold: {args.rebalance_threshold*100:.1f}%")
     print(f"  Leverage: {args.leverage}x")
     print(f"  Aggressive execution: {args.aggressive}")
     print(f"  Dry run: {args.dry_run}")
+    if blend_weights:
+        print("\nSelected signals and weights:")
+        for name, w in blend_weights.items():
+            print(f"  {name}: {w:.4f} ({w*100:.2f}%)")
+    else:
+        print("\nSelected signals: days_from_high + breakout (50/50 legacy)")
     print("="*80)
-    
+
     # Step 1: Request markets by volume
-    print("\n[1/13] Requesting markets by volume (>$100k/day)...")
+    print("\n[1/7] Requesting markets by volume (>$100k/day)...")
     symbols = request_markets_by_volume(min_volume=100000)
     print(f"Selected {len(symbols)} markets")
     
@@ -727,7 +954,7 @@ def main():
         return
     
     # Step 2: Get 200d daily data
-    print("\n[2/13] Fetching 200 days of daily data...")
+    print("\n[2/7] Fetching 200 days of daily data...")
     historical_data = get_200d_daily_data(symbols)
     print(f"Retrieved data for {len(historical_data)} symbols")
     
@@ -735,128 +962,103 @@ def main():
         print("No historical data available. Exiting.")
         return
     
-    # === STRATEGY 1: 20d from 200d high ===
-    print("\n" + "="*80)
-    print("STRATEGY 1: 20d from 200d high")
-    print("="*80)
-    
-    # Step 3: Calculate days from 200d high
-    print("\n[3/13] Calculating days from 200d high...")
-    days_from_high = calculate_days_from_200d_high(historical_data)
-    print(f"Calculated days from high for {len(days_from_high)} symbols")
-    
-    # Step 4: Select instruments <= days_since_high from high
-    print(f"\n[4/13] Selecting instruments <= {args.days_since_high} days from high...")
-    selected_symbols_20d = [symbol for symbol, days in days_from_high.items() if days <= args.days_since_high]
-    print(f"Selected {len(selected_symbols_20d)} instruments near their 200d high:")
-    for symbol in selected_symbols_20d:
-        print(f"  {symbol}: {days_from_high[symbol]} days from high")
-    
-    # Step 5: Calculate rolling 30d volatility for Strategy 1
-    print("\n[5/13] Calculating rolling 30d volatility for Strategy 1...")
-    volatilities_20d = {}
-    if selected_symbols_20d:
-        volatilities_20d = calculate_rolling_30d_volatility(historical_data, selected_symbols_20d)
-        print(f"Calculated volatility for {len(volatilities_20d)} symbols:")
-        for symbol, vol in volatilities_20d.items():
-            print(f"  {symbol}: {vol:.6f}")
-    
-    # Step 6: Calculate weights for Strategy 1
-    print("\n[6/13] Calculating weights for Strategy 1 (inverse volatility)...")
-    weights_20d = {}
-    if volatilities_20d:
-        weights_20d = calc_weights(volatilities_20d)
-        print(f"Calculated weights for {len(weights_20d)} symbols:")
-        for symbol, weight in weights_20d.items():
-            print(f"  {symbol}: {weight:.4f} ({weight*100:.2f}%)")
-    
-    # === STRATEGY 2: Breakout signals ===
-    print("\n" + "="*80)
-    print("STRATEGY 2: Breakout signals (50d high/low, 70d exit)")
-    print("="*80)
-    
-    # Step 7: Calculate breakout signals
-    print("\n[7/13] Calculating breakout signals...")
-    breakout_signals = calculate_breakout_signals_from_data(historical_data)
-    
-    # Separate longs and shorts
-    longs_breakout = [symbol for symbol, direction in breakout_signals.items() if direction == 1]
-    shorts_breakout = [symbol for symbol, direction in breakout_signals.items() if direction == -1]
-    
-    print(f"LONG signals: {len(longs_breakout)} symbols")
-    for symbol in longs_breakout:
-        print(f"  {symbol}")
-    
-    print(f"\nSHORT signals: {len(shorts_breakout)} symbols")
-    for symbol in shorts_breakout:
-        print(f"  {symbol}")
-    
-    # Step 8: Calculate rolling 30d volatility for breakout LONGS
-    print("\n[8/13] Calculating rolling 30d volatility for breakout LONGS...")
-    volatilities_breakout_long = {}
-    if longs_breakout:
-        volatilities_breakout_long = calculate_rolling_30d_volatility(historical_data, longs_breakout)
-        print(f"Calculated volatility for {len(volatilities_breakout_long)} LONG symbols:")
-        for symbol, vol in volatilities_breakout_long.items():
-            print(f"  {symbol}: {vol:.6f}")
-    
-    # Step 9: Calculate rolling 30d volatility for breakout SHORTS
-    print("\n[9/13] Calculating rolling 30d volatility for breakout SHORTS...")
-    volatilities_breakout_short = {}
-    if shorts_breakout:
-        volatilities_breakout_short = calculate_rolling_30d_volatility(historical_data, shorts_breakout)
-        print(f"Calculated volatility for {len(volatilities_breakout_short)} SHORT symbols:")
-        for symbol, vol in volatilities_breakout_short.items():
-            print(f"  {symbol}: {vol:.6f}")
-    
-    # Step 10: Calculate weights for breakout LONGS
-    print("\n[10/13] Calculating weights for breakout LONGS (inverse volatility)...")
-    weights_breakout_long = {}
-    if volatilities_breakout_long:
-        weights_breakout_long = calc_weights(volatilities_breakout_long)
-        print(f"Calculated weights for {len(weights_breakout_long)} LONG symbols:")
-        for symbol, weight in weights_breakout_long.items():
-            print(f"  {symbol}: {weight:.4f} ({weight*100:.2f}%)")
-    
-    # Step 11: Calculate weights for breakout SHORTS
-    print("\n[11/13] Calculating weights for breakout SHORTS (inverse volatility)...")
-    weights_breakout_short = {}
-    if volatilities_breakout_short:
-        weights_breakout_short = calc_weights(volatilities_breakout_short)
-        print(f"Calculated weights for {len(weights_breakout_short)} SHORT symbols:")
-        for symbol, weight in weights_breakout_short.items():
-            print(f"  {symbol}: {weight:.4f} ({weight*100:.2f}%)")
-    
-    # === COMBINE STRATEGIES ===
-    print("\n" + "="*80)
-    print("COMBINING STRATEGIES (50/50)")
-    print("="*80)
-    
-    # Step 12: Get account notional value and combine strategies
-    print("\n[12/13] Getting account notional value and combining strategies...")
+    # Step 3: Get account notional and apply leverage
+    print("\n[3/7] Getting account notional and applying leverage...")
     base_notional_value = get_account_notional_value()
-    
-    # Apply leverage multiplier
     notional_value = base_notional_value * args.leverage
     if args.leverage != 1.0:
         print(f"Applying {args.leverage}x leverage: ${base_notional_value:,.2f} → ${notional_value:,.2f}")
-    
-    # Combine strategies 50/50
-    target_positions = combine_strategies_50_50(
-        weights_20d, 
-        weights_breakout_long, 
-        weights_breakout_short, 
-        notional_value
-    )
-    
-    # Step 13: Get current positions
-    print("\n[13/13] Getting current positions...")
+
+    # Step 4: Build target positions either via blend or legacy 50/50
+    print("\n[4/7] Building target positions from selected signals...")
+    target_positions = defaultdict(float)
+
+    if blend_weights:
+        # Use multi-signal blend
+        for strategy_name, weight in blend_weights.items():
+            if weight <= 0:
+                continue
+            strategy_notional = notional_value * weight
+            print("\n" + "-"*80)
+            print(f"Strategy: {strategy_name} | Allocation: ${strategy_notional:,.2f} ({weight*100:.2f}%)")
+            p = params.get(strategy_name, {}) if isinstance(params, dict) else {}
+
+            if strategy_name == 'days_from_high':
+                max_days = int(p.get('max_days', args.days_since_high)) if p else args.days_since_high
+                contrib = strategy_days_from_high(historical_data, strategy_notional, max_days=max_days)
+            elif strategy_name == 'breakout':
+                contrib = strategy_breakout(historical_data, strategy_notional)
+            elif strategy_name == 'carry':
+                exchange_id = p.get('exchange_id', 'binance') if isinstance(p, dict) else 'binance'
+                contrib = strategy_carry(historical_data, list(historical_data.keys()), strategy_notional, exchange_id=exchange_id)
+            elif strategy_name == 'mean_reversion':
+                quantile = float(p.get('quantile', 0.2)) if isinstance(p, dict) else 0.2
+                contrib = strategy_mean_reversion(historical_data, strategy_notional, quantile=quantile)
+            elif strategy_name == 'size':
+                top_n = int(p.get('top_n', 10)) if isinstance(p, dict) else 10
+                bottom_n = int(p.get('bottom_n', 10)) if isinstance(p, dict) else 10
+                contrib = strategy_size(historical_data, list(historical_data.keys()), strategy_notional, top_n=top_n, bottom_n=bottom_n)
+            else:
+                print(f"  WARNING: Unknown strategy '{strategy_name}', skipping.")
+                contrib = {}
+
+            for sym, ntl in contrib.items():
+                target_positions[sym] += ntl
+
+        # Print combined positions
+        if target_positions:
+            print("\nCombined Target Positions (from multi-signal blend):")
+            print("=" * 80)
+            for symbol, target in sorted(target_positions.items()):
+                side = "LONG" if target > 0 else ("SHORT" if target < 0 else "FLAT")
+                print(f"  {symbol}: {side} ${abs(target):,.2f}")
+        else:
+            print("\nNo target positions generated from selected signals.")
+
+    else:
+        # Legacy 50/50 pipeline (days_from_high + breakout)
+        print("\nUsing legacy 50/50 blend: days_from_high + breakout")
+
+        # Days from high path
+        days_from_high = calculate_days_from_200d_high(historical_data)
+        selected_symbols_20d = [symbol for symbol, days in days_from_high.items() if days <= args.days_since_high]
+        volatilities_20d = calculate_rolling_30d_volatility(historical_data, selected_symbols_20d) if selected_symbols_20d else {}
+        weights_20d = calc_weights(volatilities_20d) if volatilities_20d else {}
+
+        # Breakout path
+        breakout_signals = calculate_breakout_signals_from_data(historical_data)
+        longs_breakout = [symbol for symbol, direction in breakout_signals.items() if direction == 1]
+        shorts_breakout = [symbol for symbol, direction in breakout_signals.items() if direction == -1]
+        vol_long = calculate_rolling_30d_volatility(historical_data, longs_breakout) if longs_breakout else {}
+        vol_short = calculate_rolling_30d_volatility(historical_data, shorts_breakout) if shorts_breakout else {}
+        w_long = calc_weights(vol_long) if vol_long else {}
+        w_short = calc_weights(vol_short) if vol_short else {}
+
+        # Combine as before
+        strat1_notional = notional_value * 0.5
+        strat2_notional = notional_value * 0.5
+        for sym, w in weights_20d.items():
+            target_positions[sym] += w * strat1_notional
+        for sym, w in w_long.items():
+            target_positions[sym] += w * strat2_notional
+        for sym, w in w_short.items():
+            target_positions[sym] -= w * strat2_notional
+
+        if target_positions:
+            print("\nCombined Target Positions (legacy 50/50):")
+            print("=" * 80)
+            for symbol, target in sorted(target_positions.items()):
+                side = "LONG" if target > 0 else ("SHORT" if target < 0 else "FLAT")
+                print(f"  {symbol}: {side} ${abs(target):,.2f}")
+
+    # Step 5: Get current positions
+    print("\n[5/7] Getting current positions...")
     current_positions = get_current_positions()
     print(f"Currently holding {current_positions['total_positions']} positions")
     print(f"Total unrealized PnL: ${current_positions['total_unrealized_pnl']:,.2f}")
     
-    # Calculate trade amounts
-    print(f"\nCalculating trade amounts (>{args.rebalance_threshold*100:.0f}% threshold)...")
+    # Step 6: Calculate trade amounts
+    print(f"\n[6/7] Calculating trade amounts (>{args.rebalance_threshold*100:.0f}% threshold)...")
     trades = calculate_trade_amounts(
         target_positions, 
         current_positions, 
@@ -864,7 +1066,7 @@ def main():
         threshold=args.rebalance_threshold
     )
     
-    # Execute orders (dry run by default)
+    # Step 7: Execute orders (dry run by default)
     print("\n" + "="*80)
     print("TRADE EXECUTION")
     print("="*80)
