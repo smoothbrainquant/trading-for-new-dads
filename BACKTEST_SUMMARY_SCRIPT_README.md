@@ -82,8 +82,9 @@ Breakout Signal      -45.74%   46.62%       -0.613      -30.26%   $6,973.87     
 
 ## Output Files
 
-The script generates a CSV file with all metrics:
+The script generates multiple files:
 
+### 1. Backtest Summary CSV
 **Output Location:** `backtests/results/all_backtests_summary.csv` (or custom path)
 
 **CSV Format:**
@@ -91,6 +92,52 @@ The script generates a CSV file with all metrics:
 Strategy,Description,Avg Return,Avg Drawdown,Stdev Return,Stdev Downside Return,Sharpe Ratio,Sortino Ratio,Information Coefficient,Max Drawdown,Win Rate,Calmar Ratio,Total Return,Final Value,Num Days
 Breakout Signal,"Entry: 50d, Exit: 70d",-0.255,-0.236,0.268,0.194,-1.047,-1.446,0.108,-0.457,0.466,-0.613,-0.303,6973.87,400
 ...
+```
+
+### 2. Sharpe Weights CSV
+**Output Location:** `backtests/results/sharpe_weights_2024.csv`
+
+Contains portfolio allocation weights based on Sharpe ratios:
+```csv
+Strategy,Description,Sharpe Ratio,Weight,Weight_Pct
+Mean Reversion,Best category: up_move_low_volume,6.382710069292282,0.7654504865255429,76.5450486525543
+Size Factor,Strategy: long_small_short_large,1.0343980229916634,0.1240508281535999,12.40508281535999
+Carry Factor,"Top 10 short, Bottom 10 long",0.921393458958184,0.11049868532085726,11.049868532085725
+```
+
+### 3. Strategy Configuration JSON
+**Output Location:** `config.json` (workspace root)
+
+JSON configuration file with strategy weights for production use:
+```json
+{
+  "strategy_weights": {
+    "mean_reversion": {
+      "weight": 0.7654504865255429,
+      "weight_pct": 76.5450486525543,
+      "sharpe_ratio": 6.382710069292282,
+      "description": "Best category: up_move_low_volume"
+    },
+    "size_factor": {
+      "weight": 0.1240508281535999,
+      "weight_pct": 12.40508281535999,
+      "sharpe_ratio": 1.0343980229916634,
+      "description": "Strategy: long_small_short_large"
+    },
+    "carry_factor": {
+      "weight": 0.1104986853208572,
+      "weight_pct": 11.049868532085725,
+      "sharpe_ratio": 0.921393458958184,
+      "description": "Top 10 short, Bottom 10 long"
+    }
+  },
+  "metadata": {
+    "source_file": "backtests/results/sharpe_weights_2024.csv",
+    "generated_date": "2025-10-26",
+    "total_weight": 1.0,
+    "weighting_method": "Sharpe ratio based allocation"
+  }
+}
 ```
 
 ## Metric Interpretation Guide
@@ -157,15 +204,17 @@ python3 backtests/scripts/run_all_backtests.py \
    - Comprehensive backtest runner
    - Calculates all requested metrics
    - Outputs formatted summary
+   - **NEW:** Automatically generates Sharpe weights and config.json
 
 2. **Documentation:** `backtests/scripts/README_RUN_ALL_BACKTESTS.md`
    - Detailed usage guide
    - Parameter descriptions
    - Metric explanations
 
-3. **Output:** `backtests/results/all_backtests_summary.csv`
-   - CSV file with all metrics
-   - Easy to import into Excel/Python for further analysis
+3. **Output Files:**
+   - `backtests/results/all_backtests_summary.csv` - All backtest metrics
+   - `backtests/results/sharpe_weights_2024.csv` - Portfolio weights
+   - `config.json` - Strategy configuration for production
 
 ## Next Steps
 
@@ -174,8 +223,9 @@ You can now:
 1. **Run the script** to get comprehensive performance metrics
 2. **Compare strategies** side-by-side using the output table
 3. **Analyze results** in Excel or Python using the CSV output
-4. **Customize parameters** to test different scenarios
-5. **Add new strategies** by extending the script
+4. **Use the generated config.json** for production strategy allocation
+5. **Customize parameters** to test different scenarios
+6. **Add new strategies** by extending the script
 
 ## Support
 

@@ -20,6 +20,7 @@ import sys
 import os
 from datetime import datetime
 import argparse
+import json
 
 # Add parent directories to path for imports
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
@@ -469,6 +470,105 @@ def print_summary_table(summary_df):
     print("\n" + "="*120)
 
 
+def generate_sharpe_weights(summary_df, output_file):
+    """
+    Generate Sharpe-based weights CSV from summary results.
+    
+    Args:
+        summary_df (pd.DataFrame): Summary table with backtest results
+        output_file (str): Path to save weights CSV
+        
+    Returns:
+        pd.DataFrame: DataFrame with strategy weights
+    """
+    print("\n" + "="*120)
+    print("GENERATING SHARPE-BASED WEIGHTS")
+    print("="*120)
+    
+    # Filter for positive Sharpe ratios
+    positive_sharpe = summary_df[summary_df['Sharpe Ratio'] > 0].copy()
+    
+    if len(positive_sharpe) == 0:
+        print("\nWARNING: No strategies have positive Sharpe ratios!")
+        return None
+    
+    # Calculate weights proportional to Sharpe ratios
+    total_sharpe = positive_sharpe['Sharpe Ratio'].sum()
+    positive_sharpe['Weight'] = positive_sharpe['Sharpe Ratio'] / total_sharpe
+    positive_sharpe['Weight_Pct'] = positive_sharpe['Weight'] * 100
+    
+    # Create output DataFrame
+    weights_df = positive_sharpe[['Strategy', 'Description', 'Sharpe Ratio', 'Weight', 'Weight_Pct']].copy()
+    
+    print(f"\nStrategies with positive Sharpe: {len(weights_df)}")
+    print("\nStrategy Weights:")
+    for idx, row in weights_df.iterrows():
+        print(f"  {row['Strategy']:<20} | Weight: {row['Weight']:>8.4f} ({row['Weight_Pct']:>6.2f}%)")
+    
+    # Save weights
+    os.makedirs(os.path.dirname(output_file), exist_ok=True)
+    weights_df.to_csv(output_file, index=False)
+    print(f"\nWeights saved to: {output_file}")
+    
+    return weights_df
+
+
+def generate_config_json(weights_csv_file, output_file):
+    """
+    Generate config.json from Sharpe weights CSV.
+    
+    Args:
+        weights_csv_file (str): Path to Sharpe weights CSV
+        output_file (str): Path to save config.json
+    """
+    print("\n" + "="*120)
+    print("GENERATING CONFIG.JSON")
+    print("="*120)
+    
+    if not os.path.exists(weights_csv_file):
+        print(f"\nWARNING: Weights file not found: {weights_csv_file}")
+        return
+    
+    # Load weights
+    weights_df = pd.read_csv(weights_csv_file)
+    
+    # Convert strategy names to snake_case
+    def to_snake_case(name):
+        return name.lower().replace(' ', '_')
+    
+    # Build config structure
+    config = {
+        "strategy_weights": {},
+        "metadata": {
+            "source_file": weights_csv_file,
+            "generated_date": datetime.now().strftime("%Y-%m-%d"),
+            "total_weight": 1.0,
+            "weighting_method": "Sharpe ratio based allocation"
+        }
+    }
+    
+    # Add each strategy
+    for idx, row in weights_df.iterrows():
+        strategy_key = to_snake_case(row['Strategy'])
+        config["strategy_weights"][strategy_key] = {
+            "weight": float(row['Weight']),
+            "weight_pct": float(row['Weight_Pct']),
+            "sharpe_ratio": float(row['Sharpe Ratio']),
+            "description": str(row['Description'])
+        }
+    
+    # Save config.json
+    with open(output_file, 'w') as f:
+        json.dump(config, f, indent=2)
+    
+    print(f"\nConfig saved to: {output_file}")
+    print("\nStrategy weights in config:")
+    for strategy, data in config["strategy_weights"].items():
+        print(f"  {strategy:<25} | {data['weight_pct']:>6.2f}%")
+    
+    print("="*120)
+
+
 def main():
     """Main execution function."""
     parser = argparse.ArgumentParser(
@@ -632,6 +732,21 @@ def main():
         # Save with original numeric values (not formatted)
         summary_df.to_csv(args.output_file, index=False)
         print(f"\nSummary table saved to: {args.output_file}")
+        
+        # Generate Sharpe-based weights
+        weights_file = os.path.join(
+            os.path.dirname(args.output_file),
+            'sharpe_weights_2024.csv'
+        )
+        weights_df = generate_sharpe_weights(summary_df, weights_file)
+        
+        # Generate config.json
+        if weights_df is not None:
+            config_file = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.dirname(args.output_file))),
+                'config.json'
+            )
+            generate_config_json(weights_file, config_file)
     
     print("\n" + "="*120)
     print("ALL BACKTESTS COMPLETE")

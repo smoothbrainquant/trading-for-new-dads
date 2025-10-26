@@ -13,7 +13,7 @@
       "description": "Strategy: long_small_short_large"
     },
     "carry_factor": {
-      "weight": 0.11049868532085726,
+      "weight": 0.1104986853208572,
       "weight_pct": 11.049868532085725,
       "sharpe_ratio": 0.921393458958184,
       "description": "Top 10 short, Bottom 10 long"
