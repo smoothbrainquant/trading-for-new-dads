@@ -9,6 +9,15 @@ For each period, we:
 2. Calculate z-scores for N-day volume changes
 3. Test mean reversion signals (buy extreme negative z-scores, expect reversion)
 4. Compare performance metrics across all periods
+
+OPTIMAL CONFIGURATION (from comprehensive analysis):
+- Lookback Period: 2 days (or 10 days as secondary)
+- Return Threshold: z-score < -1.5
+- Volume Threshold: |z-score| >= 1.0 (high volume filter CRITICAL)
+- Direction: LONG ONLY (shorting rallies loses money)
+- Expected Performance: 1.25% next-day return, 3.14 Sharpe, 59.2% win rate
+
+See DIRECTIONAL_MEAN_REVERSION_SUMMARY.md for complete analysis.
 """
 
 import pandas as pd
@@ -439,8 +448,8 @@ def main():
     parser.add_argument(
         '--periods',
         type=str,
-        default='1,2,3,5,10,20,30',
-        help='Comma-separated list of periods to test (e.g., "1,2,3,5,10,20,30")'
+        default='2,10',
+        help='Comma-separated list of periods to test (default: "2,10" optimal, full: "1,2,3,5,10,20,30")'
     )
     parser.add_argument(
         '--zscore-lookback',
@@ -452,13 +461,13 @@ def main():
         '--return-threshold',
         type=float,
         default=-1.5,
-        help='Z-score threshold for returns (use negative value)'
+        help='Z-score threshold for returns (use negative value, optimal: -1.5)'
     )
     parser.add_argument(
         '--volume-threshold',
         type=float,
         default=1.0,
-        help='Z-score threshold for volume'
+        help='Z-score threshold for volume (optimal: 1.0 for high volume filter)'
     )
     parser.add_argument(
         '--output-prefix',
