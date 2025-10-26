@@ -871,20 +871,27 @@ def main():
                     'market_cap': market_cap_val if market_cap_val is not None else float('nan'),
                     'funding_rate_pct': funding_pct_val if funding_pct_val is not None else float('nan'),
                 }
+                # Add per-strategy weight columns (contribution as fraction of total portfolio notional)
+                # and final blended portfolio weight for this symbol
+                final_weight = (target / notional_value) if notional_value > 0 else 0.0
+                row['final_blended_weight'] = final_weight
                 for name in signal_names:
                     contrib_val = per_signal_contribs.get(name, {}).get(symbol, 0.0)
                     pct = (abs(contrib_val) / abs_sum * 100.0) if abs_sum > 0 else 0.0
                     row[f'{name}_pct'] = pct
+                    # Strategy-specific portfolio weight contribution (signed), relative to total notional
+                    row[f'{name}_weight'] = (contrib_val / notional_value) if notional_value > 0 else 0.0
                 rows.append(row)
 
             df = pd.DataFrame(rows)
             # Order columns
             pct_cols = [f'{n}_pct' for n in signal_names]
+            weight_cols = [f'{n}_weight' for n in signal_names]
             base_cols = [
-                'symbol', 'action', 'trade_notional', 'target_side', 'target_notional',
+                'symbol', 'action', 'trade_notional', 'target_side', 'target_notional', 'final_blended_weight',
                 'pct_change_1d', 'market_cap', 'funding_rate_pct'
             ]
-            df = df[base_cols + pct_cols]
+            df = df[base_cols + weight_cols + pct_cols]
 
             # Pretty print
             with pd.option_context('display.max_columns', None, 'display.width', 140, 'display.float_format', '{:,.2f}'.format):
