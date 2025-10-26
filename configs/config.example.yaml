@@ -1,0 +1,77 @@
+# Example configuration for crypto trading system
+# Copy to configs/config.yaml and customize
+
+run:
+  id: "example-run"
+  start_date: "2023-01-01"
+  end_date: "2025-10-01"
+  seed: 42
+
+universe:
+  base_exchange: "coinbase"
+  quote_currency: "USD"
+  symbols:
+    - "BTC/USD"
+    - "ETH/USD"
+    - "SOL/USD"
+  exclude:
+    - "USDT"
+    - "USDC"
+
+signals:
+  # Relative weights for blended signal; normalized internally
+  blend:
+    breakout: 0.25
+    mean_reversion: 0.25
+    carry: 0.25
+    size: 0.25
+  params:
+    breakout:
+      lookback_days: 200
+      threshold_pct: 0.0
+    mean_reversion:
+      zscore_lookback: 20
+      entry_z: -1.0
+      exit_z: 0.0
+      use_market_cap_weighting: true
+    carry:
+      lookback_days: 7
+      top_n: 10
+      bottom_n: 0
+    size:
+      limit: 20
+      invert: false
+
+risk:
+  leverage: 1.5
+  max_notional_usd: 100000
+  per_asset_max_notional_usd: 10000
+  rebalance_threshold: 0.05
+
+execution:
+  dry_run: true
+  aggressive: true
+  tick_wait_seconds: 10
+  cross_spread_on_timeout: true
+
+filters:
+  exclude_stablecoins: true
+  perps_only: true
+
+outputs:
+  results_dir: "backtests/results"
+  save_equity_curve: true
+  save_trade_allocation: true
+  save_metrics: true
+
+integrations:
+  coinalyze:
+    enabled: true
+    api_key_env: "COINALYZE_API"
+  coinmarketcap:
+    enabled: true
+    api_key_env: "CMC_API"
+  hyperliquid:
+    enabled: false
+    api_key_env: "HL_API"
+    api_secret_env: "HL_SECRET"
