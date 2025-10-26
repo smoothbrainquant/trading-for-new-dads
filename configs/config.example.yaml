@@ -30,10 +30,14 @@ signals:
       lookback_days: 200
       threshold_pct: 0.0
     mean_reversion:
-      zscore_lookback: 20
-      entry_z: -1.0
-      exit_z: 0.0
-      use_market_cap_weighting: true
+      # Optimal parameters per backtest (DIRECTIONAL_MEAN_REVERSION_SUMMARY.md)
+      # Expected: 1.25% next-day return, 3.14 Sharpe, 59.2% win rate
+      zscore_threshold: 1.5      # Entry threshold for return z-score (negative)
+      volume_threshold: 1.0      # Minimum volume z-score (absolute value)
+      lookback_window: 30        # Window for calculating z-score statistics
+      period_days: 2             # Lookback period for returns (2-day optimal)
+      limit: 100                 # Number of symbols from CoinMarketCap
+      long_only: true            # Long-only (shorting rallies loses money)
     carry:
       lookback_days: 7
       top_n: 10

@@ -7,7 +7,7 @@ Supported signals (handlers implemented or stubbed):
 - days_from_high: Long-only instruments near 200d highs (inverse-vol weighted)
 - breakout: Long/short based on 50d breakout with 70d exits (inverse-vol weighted)
 - carry: Long negative-funding symbols, short positive-funding symbols (basic)
-- mean_reversion: Placeholder (prints notice if selected but not implemented)
+- mean_reversion: Long-only extreme dips with high volume (2d lookback, optimal per backtest)
 - size: Placeholder (prints notice if selected but not implemented)
 
 Weights can be provided via an external JSON config file so the backtesting suite
@@ -24,7 +24,7 @@ can update them without code changes. Example config structure:
   "params": {
     "days_from_high": {"max_days": 20},
     "breakout": {"entry_lookback": 50, "exit_lookback": 70},
-    "mean_reversion": {"quantile": 0.2},
+    "mean_reversion": {"zscore_threshold": 1.5, "volume_threshold": 1.0, "period_days": 2},
     "size": {"top_n": 10, "bottom_n": 10},
       "carry": {"exchange_id": "hyperliquid"}
   }
@@ -655,19 +655,22 @@ def main():
                     bottom_n=bottom_n,
                 )
             elif strategy_name == 'mean_reversion':
-                zscore_threshold = float(p.get('zscore_threshold', 2.0)) if isinstance(p, dict) else 2.0
+                # Optimal parameters from backtest (see DIRECTIONAL_MEAN_REVERSION_SUMMARY.md)
+                zscore_threshold = float(p.get('zscore_threshold', 1.5)) if isinstance(p, dict) else 1.5
+                volume_threshold = float(p.get('volume_threshold', 1.0)) if isinstance(p, dict) else 1.0
                 lookback_window = int(p.get('lookback_window', 30)) if isinstance(p, dict) else 30
+                period_days = int(p.get('period_days', 2)) if isinstance(p, dict) else 2
                 limit = int(p.get('limit', 100)) if isinstance(p, dict) else 100
-                large_n = p.get('large_n', None) if isinstance(p, dict) else None
-                small_n = p.get('small_n', None) if isinstance(p, dict) else None
+                long_only = bool(p.get('long_only', True)) if isinstance(p, dict) else True
                 contrib = strategy_mean_reversion(
                     historical_data,
                     strategy_notional,
                     zscore_threshold=zscore_threshold,
+                    volume_threshold=volume_threshold,
                     lookback_window=lookback_window,
+                    period_days=period_days,
                     limit=limit,
-                    large_n=large_n,
-                    small_n=small_n,
+                    long_only=long_only,
                 )
             elif strategy_name == 'oi_divergence':
                 mode = p.get('mode', 'trend') if isinstance(p, dict) else 'trend'
