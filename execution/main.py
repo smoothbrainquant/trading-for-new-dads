@@ -898,7 +898,8 @@ def main():
                 row['final_blended_weight'] = final_weight
                 for name in signal_names:
                     contrib_val = per_signal_contribs.get(name, {}).get(symbol, 0.0)
-                    pct = (abs(contrib_val) / abs_sum * 100.0) if abs_sum > 0 else 0.0
+                    # Show short signals as negative by preserving the sign of contrib_val
+                    pct = (contrib_val / abs_sum * 100.0) if abs_sum > 0 else 0.0
                     row[f'{name}_pct'] = pct
                     # Strategy-specific portfolio weight contribution (signed), relative to total notional
                     row[f'{name}_weight'] = (contrib_val / notional_value) if notional_value > 0 else 0.0
