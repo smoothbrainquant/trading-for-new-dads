@@ -142,6 +142,7 @@ def strategy_oi_divergence(
 ) -> Dict[str, float]:
     """Open Interest divergence/trend strategy using recent OI history from Coinalyze.
 
+    - Filters universe to top 150 by market cap to reduce API calls
     - Builds OI z-score vs price returns over a rolling window
     - Selects top/bottom by score
     - Allocates risk-parity within each side using recent price volatility
@@ -160,13 +161,52 @@ def strategy_oi_divergence(
     for tsym in universe_symbols:
         base = get_base_symbol(tsym)
         base_to_trading[base] = tsym
+    
+    # Filter to top 150 by market cap to reduce Coinalyze API calls
+    print(f"    Filtering universe from {len(universe_symbols)} to top 150 by market cap...")
+    try:
+        from data.scripts.fetch_coinmarketcap_data import (
+            fetch_coinmarketcap_data,
+            map_symbols_to_trading_pairs,
+        )
+        df_mc = fetch_coinmarketcap_data(limit=300)
+        if df_mc is not None and not df_mc.empty:
+            df_mc_mapped = map_symbols_to_trading_pairs(df_mc, trading_suffix='/USDC:USDC')
+            # Get trading symbols that are in our universe
+            valid_mc_symbols = set(df_mc_mapped['trading_symbol'].dropna().tolist())
+            filtered_universe = [s for s in universe_symbols if s in valid_mc_symbols]
+            
+            # Sort by market cap and take top 150
+            df_mc_filtered = df_mc_mapped[df_mc_mapped['trading_symbol'].isin(filtered_universe)]
+            df_mc_filtered = df_mc_filtered.sort_values('market_cap', ascending=False).head(150)
+            top_150_symbols = df_mc_filtered['trading_symbol'].tolist()
+            
+            if top_150_symbols:
+                print(f"    Filtered to {len(top_150_symbols)} symbols with top market caps")
+                universe_symbols = top_150_symbols
+                # Update base_to_trading for filtered universe
+                base_to_trading = {}
+                for tsym in universe_symbols:
+                    base = get_base_symbol(tsym)
+                    base_to_trading[base] = tsym
+            else:
+                print(f"    Warning: Market cap filtering produced no symbols, using full universe")
+        else:
+            print(f"    Warning: Could not fetch market cap data, using full universe")
+    except Exception as e:
+        print(f"    Warning: Market cap filtering failed ({e}), using full universe")
 
     # Fetch OI history for last ~200 days
     oi_df = _fetch_oi_history_for_universe(universe_symbols, exchange_code=exchange_code, days=max(lookback * 4, 120))
     if oi_df is None or oi_df.empty:
         print("  ⚠️  OI DIVERGENCE STRATEGY: No OI data available from Coinalyze!")
-        print(f"       Check: 1) COINALYZE_API key is set, 2) symbols exist on exchange {exchange_code}")
-        print(f"       This strategy requires {max(lookback * 4, 120)} days of OI history")
+        if exchange_code == 'H':
+            print(f"       NOTE: Coinalyze does NOT provide Open Interest history for Hyperliquid")
+            print(f"       OI Divergence strategy is NOT AVAILABLE for Hyperliquid")
+            print(f"       Consider using exchange_code='A' (Binance) or disabling this strategy")
+        else:
+            print(f"       Check: 1) COINALYZE_API key is set, 2) symbols exist on exchange {exchange_code}")
+            print(f"       This strategy requires {max(lookback * 4, 120)} days of OI history")
         return {}
 
     # Compute scores
