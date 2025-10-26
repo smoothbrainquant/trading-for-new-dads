@@ -460,6 +460,88 @@ def create_summary_table(all_results):
     return summary_df
 
 
+def calculate_sharpe_weights_with_floor(summary_df, min_weight=0.05):
+    """
+    Calculate portfolio weights based on Sharpe ratios with a minimum weight floor.
+    
+    Args:
+        summary_df (pd.DataFrame): Summary DataFrame with backtest results
+        min_weight (float): Minimum weight per strategy (default 5%)
+        
+    Returns:
+        pd.DataFrame: DataFrame with strategies and their weights
+    """
+    if summary_df.empty:
+        return None
+    
+    # Filter for positive Sharpe ratios
+    positive_sharpe = summary_df[summary_df['Sharpe Ratio'] > 0].copy()
+    
+    if len(positive_sharpe) == 0:
+        print("\nWARNING: No strategies have positive Sharpe ratios!")
+        return None
+    
+    # Calculate initial weights proportional to Sharpe ratios
+    total_sharpe = positive_sharpe['Sharpe Ratio'].sum()
+    positive_sharpe['Initial_Weight'] = positive_sharpe['Sharpe Ratio'] / total_sharpe
+    
+    # Apply floor: strategies below min_weight get min_weight
+    positive_sharpe['Weight'] = positive_sharpe['Initial_Weight'].apply(
+        lambda x: max(x, min_weight)
+    )
+    
+    # Renormalize to sum to 1.0
+    weight_sum = positive_sharpe['Weight'].sum()
+    positive_sharpe['Weight'] = positive_sharpe['Weight'] / weight_sum
+    
+    # Create output DataFrame
+    weights_df = positive_sharpe[['Strategy', 'Description', 'Sharpe Ratio', 'Weight']].copy()
+    weights_df['Weight_Pct'] = weights_df['Weight'] * 100
+    
+    return weights_df
+
+
+def print_sharpe_weights(weights_df, summary_df, min_weight=0.05):
+    """Print formatted Sharpe-based weights table."""
+    print("\n" + "="*120)
+    print("SHARPE-BASED PORTFOLIO WEIGHTS")
+    print("="*120)
+    
+    if weights_df is None or weights_df.empty:
+        print("\nNo weights to display (no strategies with positive Sharpe ratios)")
+        return
+    
+    weight_sum = weights_df['Weight'].sum()
+    
+    print(f"\nWeighting Method: Proportional to Sharpe Ratio with {min_weight*100:.0f}% floor")
+    print(f"Strategies included: {len(weights_df)} out of {len(summary_df)} total")
+    print(f"Total weight: {weight_sum:.6f} (should be 1.0)")
+    
+    print("\nPortfolio Allocation:")
+    print("-"*120)
+    for idx, row in weights_df.iterrows():
+        print(f"  {row['Strategy']:<20} | Sharpe: {row['Sharpe Ratio']:>8.3f} | Weight: {row['Weight']:>8.4f} ({row['Weight_Pct']:>6.2f}%)")
+    
+    print("\n" + "-"*120)
+    print(f"  {'TOTAL':<20} | {'':>8} | Weight: {weight_sum:>8.4f} ({weight_sum*100:>6.2f}%)")
+    
+    # Calculate expected portfolio metrics (weighted average)
+    merged = summary_df.merge(weights_df[['Strategy', 'Weight']], on='Strategy', how='inner')
+    
+    expected_return = (merged['Avg Return'] * merged['Weight']).sum()
+    expected_sharpe = (merged['Sharpe Ratio'] * merged['Weight']).sum()
+    expected_sortino = (merged['Sortino Ratio'] * merged['Weight']).sum()
+    expected_max_dd = (merged['Max Drawdown'] * merged['Weight']).sum()
+    
+    print("\nExpected Portfolio Metrics (Weighted Average):")
+    print("-"*120)
+    print(f"  Expected Return:        {expected_return:>8.2%}")
+    print(f"  Expected Sharpe Ratio:  {expected_sharpe:>8.3f}")
+    print(f"  Expected Sortino Ratio: {expected_sortino:>8.3f}")
+    print(f"  Expected Max Drawdown:  {expected_max_dd:>8.2%}")
+    print("="*120)
+
+
 def print_summary_table(summary_df):
     """Print formatted summary table."""
     print("\n" + "="*120)
@@ -687,6 +769,21 @@ def main():
         # Save with original numeric values (not formatted)
         summary_df.to_csv(args.output_file, index=False)
         print(f"\nSummary table saved to: {args.output_file}")
+        
+        # Generate and save Sharpe-based weights with 5% floor
+        weights_df = calculate_sharpe_weights_with_floor(summary_df, min_weight=0.05)
+        
+        if weights_df is not None and not weights_df.empty:
+            # Print weights table
+            print_sharpe_weights(weights_df, summary_df, min_weight=0.05)
+            
+            # Save weights to CSV
+            weights_file = args.output_file.replace('_summary.csv', '_sharpe_weights.csv')
+            if weights_file == args.output_file:
+                weights_file = args.output_file.replace('.csv', '_sharpe_weights.csv')
+            
+            weights_df.to_csv(weights_file, index=False)
+            print(f"\nSharpe-based weights saved to: {weights_file}")
     
     print("\n" + "="*120)
     print("ALL BACKTESTS COMPLETE")

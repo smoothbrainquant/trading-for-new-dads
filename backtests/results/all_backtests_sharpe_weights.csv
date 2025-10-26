@@ -1,0 +1,4 @@
+Strategy,Description,Sharpe Ratio,Weight,Weight_Pct
+Mean Reversion,Best category: up_move_low_volume,6.382710069292282,0.7654504865255429,76.5450486525543
+Size Factor,Strategy: long_small_short_large,1.0343980229916634,0.1240508281535999,12.40508281535999
+Carry Factor,"Top 10 short, Bottom 10 long",0.9213934589581839,0.11049868532085724,11.049868532085725
