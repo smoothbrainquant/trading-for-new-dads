@@ -22,6 +22,35 @@ def strategy_carry(
     We are trading the funding rate signal (market sentiment), not the actual
     funding payments themselves.
     """
+    # Filter to top 50 by market cap to reduce API calls
+    print(f"  Filtering universe from {len(universe_symbols)} to top 50 by market cap...")
+    try:
+        from data.scripts.fetch_coinmarketcap_data import (
+            fetch_coinmarketcap_data,
+            map_symbols_to_trading_pairs,
+        )
+        df_mc = fetch_coinmarketcap_data(limit=200)
+        if df_mc is not None and not df_mc.empty:
+            df_mc_mapped = map_symbols_to_trading_pairs(df_mc, trading_suffix='/USDC:USDC')
+            # Get trading symbols that are in our universe
+            valid_mc_symbols = set(df_mc_mapped['trading_symbol'].dropna().tolist())
+            filtered_universe = [s for s in universe_symbols if s in valid_mc_symbols]
+            
+            # Sort by market cap and take top 50
+            df_mc_filtered = df_mc_mapped[df_mc_mapped['trading_symbol'].isin(filtered_universe)]
+            df_mc_filtered = df_mc_filtered.sort_values('market_cap', ascending=False).head(50)
+            top_50_symbols = df_mc_filtered['trading_symbol'].tolist()
+            
+            if top_50_symbols:
+                print(f"  Filtered to {len(top_50_symbols)} symbols with top market caps")
+                universe_symbols = top_50_symbols
+            else:
+                print(f"  Warning: Market cap filtering produced no symbols, using full universe")
+        else:
+            print(f"  Warning: Could not fetch market cap data, using full universe")
+    except Exception as e:
+        print(f"  Warning: Market cap filtering failed ({e}), using full universe")
+    
     df_rates = None
     # Use Coinalyze to get aggregated market-wide funding rates
     try:
