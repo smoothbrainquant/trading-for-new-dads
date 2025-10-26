@@ -3,6 +3,7 @@ from .breakout import strategy_breakout
 from .carry import strategy_carry
 from .mean_reversion import strategy_mean_reversion
 from .size import strategy_size
+from .open_interest_divergence import strategy_oi_divergence
 
 __all__ = [
     "strategy_days_from_high",
@@ -10,4 +11,5 @@ __all__ = [
     "strategy_carry",
     "strategy_mean_reversion",
     "strategy_size",
+    "strategy_oi_divergence",
 ]
