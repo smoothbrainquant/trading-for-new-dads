@@ -1,0 +1,44 @@
+{
+  "strategy_weights": {
+    "mean_reversion": 0.6370925523838878,
+    "size": 0.1032488189960471,
+    "carry": 0.0919692268871264,
+    "oi_divergence": 0.0676894017329385,
+    "breakout": 0.0499999999999999,
+    "days_from_high": 0.0499999999999999
+  },
+  "params": {
+    "days_from_high": {
+      "max_days": 20
+    },
+    "breakout": {
+      "entry_lookback": 50,
+      "exit_lookback": 70
+    },
+    "mean_reversion": {
+      "zscore_threshold": 1.5,
+      "volume_threshold": 1.0,
+      "lookback_window": 30,
+      "period_days": 2,
+      "limit": 100,
+      "long_only": true
+    },
+    "size": {
+      "top_n": 10,
+      "bottom_n": 10,
+      "limit": 100
+    },
+    "carry": {
+      "exchange_id": "hyperliquid",
+      "top_n": 10,
+      "bottom_n": 10
+    },
+    "oi_divergence": {
+      "mode": "divergence",
+      "lookback": 30,
+      "top_n": 10,
+      "bottom_n": 10,
+      "exchange_code": "H"
+    }
+  }
+}
