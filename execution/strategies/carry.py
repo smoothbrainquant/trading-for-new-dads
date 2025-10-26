@@ -63,7 +63,7 @@ def strategy_carry(
         print(f"  (If cache miss: Rate limited to 40 calls/min, ~{estimated_time:.0f}s total)")
         df_rates = fetch_coinalyze_aggregated_funding_cached(
             universe_symbols=universe_symbols,
-            cache_ttl_hours=6,  # 6 hour cache for funding rates
+            cache_ttl_hours=8,  # 8 hour cache for funding rates
         )
         if df_rates is not None and not df_rates.empty:
             print(f"  Got funding rates for {len(df_rates)} symbols from Binance (market proxy)")

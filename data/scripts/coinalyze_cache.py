@@ -266,18 +266,18 @@ def fetch_oi_history_cached(
     universe_symbols: List[str],
     exchange_code: str = 'H',
     days: int = 200,
-    cache_ttl_hours: int = 6,
+    cache_ttl_hours: int = 8,
 ) -> Optional[pd.DataFrame]:
     """
     Fetch OI history with caching
     
-    Note: Historical data has longer TTL (6 hours) since it changes less frequently
+    Note: Historical data has longer TTL (8 hours) since it changes less frequently
     
     Args:
         universe_symbols: List of trading symbols
         exchange_code: Coinalyze exchange code
         days: Number of days of history
-        cache_ttl_hours: Cache time-to-live in hours (default 6 for historical data)
+        cache_ttl_hours: Cache time-to-live in hours (default 8 for historical data)
     
     Returns:
         DataFrame with OI history or None
