@@ -72,10 +72,14 @@ def _fetch_oi_history_for_universe(
         base_to_csym.setdefault(base, c_sym)
 
     if not base_to_csym:
+        print(f"    No base_to_csym mapping created from universe")
         return pd.DataFrame()
 
     end_ts = int(datetime.now().timestamp())
     start_ts = int((datetime.now() - timedelta(days=days)).timestamp())
+    
+    print(f"    Fetching OI for {len(base_to_csym)} symbols (exchange={exchange_code}, days={days})")
+    print(f"    Sample mappings: {list(base_to_csym.items())[:3]}")
 
     rows: List[dict] = []
     # Coinalyze allows up to 20 symbols per request
@@ -92,7 +96,12 @@ def _fetch_oi_history_for_universe(
                 to_ts=end_ts,
                 convert_to_usd=True,
             )
-        except Exception:
+            if data:
+                print(f"      Batch {i//chunk + 1}: Got data for {len(data)} symbols")
+            else:
+                print(f"      Batch {i//chunk + 1}: No data returned")
+        except Exception as e:
+            print(f"    Error fetching OI history: {e}")
             data = None
         if not data:
             continue
@@ -112,8 +121,10 @@ def _fetch_oi_history_for_universe(
                     'oi_close': pt.get('c'),
                 })
     if not rows:
+        print(f"    No OI history rows collected")
         return pd.DataFrame()
 
+    print(f"    Collected {len(rows)} OI history rows")
     df = pd.DataFrame(rows)
     df['date'] = pd.to_datetime(df['date'])
     df = df.sort_values(['coin_symbol', 'date']).reset_index(drop=True)
