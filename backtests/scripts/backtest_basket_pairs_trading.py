@@ -6,7 +6,7 @@ This script backtests cryptocurrency pairs trading strategies based on
 basket divergence signals. The core logic:
 
 1. Load historical divergence signals (z-scores, percentile ranks)
-2. Enter positions when signals trigger (LONG underperformers, SHORT outperformers)
+2. Enter positions when signals trigger (LONG outperformers, SHORT underperformers)
 3. Exit based on mean reversion, time-based exit, stop loss, or take profit
 4. Track performance metrics: Sharpe, drawdown, win rate, turnover
 
