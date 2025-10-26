@@ -200,8 +200,21 @@ def strategy_oi_divergence(
     except Exception as e:
         print(f"    Warning: Market cap filtering failed ({e}), using full universe")
 
-    # Fetch OI history for last ~200 days
-    oi_df = _fetch_oi_history_for_universe(universe_symbols, exchange_code=exchange_code, days=max(lookback * 4, 120))
+    # Fetch OI history for last ~200 days (with caching)
+    try:
+        from data.scripts.coinalyze_cache import fetch_oi_history_cached
+        
+        days_needed = max(lookback * 4, 120)
+        print(f"    Fetching OI history - checking cache first (TTL: 6 hours)...")
+        oi_df = fetch_oi_history_cached(
+            universe_symbols=universe_symbols,
+            exchange_code=exchange_code,
+            days=days_needed,
+            cache_ttl_hours=6,  # Longer TTL for historical data
+        )
+    except Exception as e:
+        print(f"    Cache fetch failed ({e}), falling back to direct API call...")
+        oi_df = _fetch_oi_history_for_universe(universe_symbols, exchange_code=exchange_code, days=max(lookback * 4, 120))
     if oi_df is None or oi_df.empty:
         print("  ⚠️  OI DIVERGENCE STRATEGY: No OI data available from Coinalyze!")
         if exchange_code == 'H':

@@ -52,16 +52,18 @@ def strategy_carry(
         print(f"  Warning: Market cap filtering failed ({e}), using full universe")
     
     df_rates = None
-    # Use Coinalyze to get aggregated market-wide funding rates
+    # Use Coinalyze to get aggregated market-wide funding rates (with caching)
     try:
-        from execution.get_carry import fetch_coinalyze_aggregated_funding_rates
+        from data.scripts.coinalyze_cache import fetch_coinalyze_aggregated_funding_cached
 
         num_symbols = len(universe_symbols)
         estimated_time = (num_symbols / 20 + 1) * 1.5  # chunks of 20, 1.5s per call
         print(f"  Fetching market-wide funding rates from Coinalyze (using Binance as primary)...")
-        print(f"  Processing {num_symbols} symbols - Rate limited to 40 calls/min (~{estimated_time:.0f}s total)")
-        df_rates = fetch_coinalyze_aggregated_funding_rates(
+        print(f"  Processing {num_symbols} symbols - checking cache first...")
+        print(f"  (If cache miss: Rate limited to 40 calls/min, ~{estimated_time:.0f}s total)")
+        df_rates = fetch_coinalyze_aggregated_funding_cached(
             universe_symbols=universe_symbols,
+            cache_ttl_hours=1,  # 1 hour cache for funding rates
         )
         if df_rates is not None and not df_rates.empty:
             print(f"  Got funding rates for {len(df_rates)} symbols from Binance (market proxy)")

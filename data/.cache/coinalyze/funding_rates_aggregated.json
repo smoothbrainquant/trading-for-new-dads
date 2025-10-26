@@ -1,0 +1,27 @@
+{
+  "timestamp": "2025-10-26T20:51:59.325894",
+  "exchange_code": "aggregated",
+  "data": [
+    {
+      "base": "ETH",
+      "quote": "USDT",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0,
+      "num_exchanges": 1
+    },
+    {
+      "base": "BTC",
+      "quote": "USDT",
+      "funding_rate": 0.006904,
+      "funding_rate_pct": 0.6904,
+      "num_exchanges": 1
+    },
+    {
+      "base": "SOL",
+      "quote": "USDT",
+      "funding_rate": 0.005882,
+      "funding_rate_pct": 0.5882000000000001,
+      "num_exchanges": 1
+    }
+  ]
+}
