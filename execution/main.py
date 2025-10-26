@@ -58,6 +58,7 @@ from execution.strategies import (
     strategy_carry,
     strategy_mean_reversion,
     strategy_size,
+    strategy_oi_divergence,
 )
 
 # Import shared strategy utilities for legacy path
@@ -667,6 +668,21 @@ def main():
                     limit=limit,
                     large_n=large_n,
                     small_n=small_n,
+                )
+            elif strategy_name == 'oi_divergence':
+                mode = p.get('mode', 'trend') if isinstance(p, dict) else 'trend'
+                lookback = int(p.get('lookback', 30)) if isinstance(p, dict) else 30
+                top_n = int(p.get('top_n', 10)) if isinstance(p, dict) else 10
+                bottom_n = int(p.get('bottom_n', 10)) if isinstance(p, dict) else 10
+                exchange_code = p.get('exchange_code', 'H') if isinstance(p, dict) else 'H'
+                contrib = strategy_oi_divergence(
+                    historical_data,
+                    strategy_notional,
+                    mode=mode,
+                    lookback=lookback,
+                    top_n=top_n,
+                    bottom_n=bottom_n,
+                    exchange_code=exchange_code,
                 )
             elif strategy_name == 'size':
                 top_n = int(p.get('top_n', 10)) if isinstance(p, dict) else 10
