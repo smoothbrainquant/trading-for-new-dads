@@ -9,9 +9,40 @@ import time
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timedelta
 import logging
+import threading
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+# Global rate limiter shared across all CoinalyzeClient instances
+class GlobalRateLimiter:
+    """
+    Global rate limiter to coordinate API calls across all CoinalyzeClient instances.
+    Rate Limit: 40 API calls per minute per API key
+    """
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._last_request_time = 0
+        self._min_request_interval = 1.5  # 40 calls/min = 1.5s per call
+        self._call_count = 0
+    
+    def wait(self):
+        """Wait if necessary to respect rate limit"""
+        with self._lock:
+            elapsed = time.time() - self._last_request_time
+            if elapsed < self._min_request_interval:
+                sleep_time = self._min_request_interval - elapsed
+                logger.debug(f"Rate limiting: waiting {sleep_time:.2f}s (call #{self._call_count + 1})")
+                time.sleep(sleep_time)
+            self._last_request_time = time.time()
+            self._call_count += 1
+            if self._call_count % 10 == 0:
+                logger.info(f"Coinalyze API calls made: {self._call_count}")
+
+
+# Global instance shared by all clients
+_global_rate_limiter = GlobalRateLimiter()
 
 
 class CoinalyzeClient:
@@ -23,6 +54,7 @@ class CoinalyzeClient:
     - Spot: BTCUSD.C (symbol.exchange_code)
     
     Rate Limit: 40 API calls per minute per API key
+    Note: Uses global rate limiter to coordinate across all instances
     """
     
     BASE_URL = "https://api.coinalyze.net/v1"
@@ -40,51 +72,65 @@ class CoinalyzeClient:
         
         self.session = requests.Session()
         self.session.headers.update({'api_key': self.api_key})
-        
-        self._last_request_time = 0
-        self._min_request_interval = 1.5  # Rate limit: 40/min = 1.5s per request
     
     def _rate_limit(self):
-        """Implement rate limiting between requests"""
-        elapsed = time.time() - self._last_request_time
-        if elapsed < self._min_request_interval:
-            time.sleep(self._min_request_interval - elapsed)
-        self._last_request_time = time.time()
+        """Implement rate limiting between requests using global rate limiter"""
+        _global_rate_limiter.wait()
     
-    def _request(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> tuple[bool, Any]:
-        """Make API request with rate limiting and error handling"""
-        self._rate_limit()
-        
+    def _request(self, endpoint: str, params: Optional[Dict[str, Any]] = None, max_retries: int = 3) -> tuple[bool, Any]:
+        """Make API request with rate limiting, error handling, and automatic retries"""
         url = f"{self.BASE_URL}/{endpoint}"
         
-        try:
-            response = self.session.get(url, params=params, timeout=10)
+        for attempt in range(max_retries):
+            self._rate_limit()
             
-            if response.status_code == 200:
-                return True, response.json()
-            elif response.status_code == 429:
-                retry_after = response.headers.get('Retry-After', 'unknown')
-                logger.warning(f"Rate limited. Retry after: {retry_after}s")
-                return False, {"error": "rate_limited", "retry_after": retry_after}
-            elif response.status_code == 400:
-                logger.error(f"Bad request: {response.text}")
-                return False, {"error": "bad_request", "message": response.text}
-            elif response.status_code == 401:
-                logger.error("Invalid/missing API key")
-                return False, {"error": "unauthorized", "message": "Invalid/missing API key"}
-            elif response.status_code == 404:
-                logger.error(f"Endpoint not found: {endpoint}")
-                return False, {"error": "not_found", "message": "Endpoint not found"}
-            else:
-                logger.error(f"API error {response.status_code}: {response.text}")
-                return False, {"error": f"http_{response.status_code}", "message": response.text}
+            try:
+                response = self.session.get(url, params=params, timeout=10)
                 
-        except requests.exceptions.Timeout:
-            logger.error("Request timeout")
-            return False, {"error": "timeout", "message": "Request timeout"}
-        except requests.exceptions.RequestException as e:
-            logger.error(f"Request failed: {str(e)}")
-            return False, {"error": "request_failed", "message": str(e)}
+                if response.status_code == 200:
+                    return True, response.json()
+                elif response.status_code == 429:
+                    # Rate limited - wait longer and retry
+                    retry_after = response.headers.get('Retry-After')
+                    if retry_after:
+                        wait_time = float(retry_after)
+                    else:
+                        # Exponential backoff: 2, 4, 8 seconds
+                        wait_time = 2 ** (attempt + 1)
+                    
+                    logger.warning(f"Rate limited (attempt {attempt + 1}/{max_retries}). Waiting {wait_time}s before retry...")
+                    time.sleep(wait_time)
+                    
+                    if attempt < max_retries - 1:
+                        continue  # Retry
+                    else:
+                        return False, {"error": "rate_limited", "message": "Max retries exceeded"}
+                        
+                elif response.status_code == 400:
+                    logger.error(f"Bad request: {response.text}")
+                    return False, {"error": "bad_request", "message": response.text}
+                elif response.status_code == 401:
+                    logger.error("Invalid/missing API key")
+                    return False, {"error": "unauthorized", "message": "Invalid/missing API key"}
+                elif response.status_code == 404:
+                    logger.error(f"Endpoint not found: {endpoint}")
+                    return False, {"error": "not_found", "message": "Endpoint not found"}
+                else:
+                    logger.error(f"API error {response.status_code}: {response.text}")
+                    return False, {"error": f"http_{response.status_code}", "message": response.text}
+                    
+            except requests.exceptions.Timeout:
+                logger.error("Request timeout")
+                if attempt < max_retries - 1:
+                    logger.info(f"Retrying after timeout (attempt {attempt + 1}/{max_retries})...")
+                    time.sleep(2)
+                    continue
+                return False, {"error": "timeout", "message": "Request timeout"}
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Request failed: {str(e)}")
+                return False, {"error": "request_failed", "message": str(e)}
+        
+        return False, {"error": "max_retries", "message": "Maximum retry attempts exceeded"}
     
     # ==================== MARKET INFORMATION ====================
     
