@@ -57,33 +57,39 @@ def get_all_perp_symbols(client: CoinalyzeClient) -> Dict[str, str]:
     return best
 
 
-def fetch_oi_daily_history(client: CoinalyzeClient, symbol: str, start_year: int = 2020) -> List[Dict]:
+def fetch_oi_daily_history_batch(client: CoinalyzeClient, symbols: List[str], start_year: int = 2020) -> List[Dict]:
+    """Fetch daily OI history for up to 20 coinalyze symbols in one call."""
     from datetime import datetime as _dt
+
+    if not symbols:
+        return []
 
     start_ts = int(_dt(start_year, 1, 1).timestamp())
     end_ts = int(_dt.now().timestamp())
 
     try:
         res = client.get_open_interest_history(
-            symbols=symbol,
+            symbols=','.join(symbols),
             interval='daily',
             from_ts=start_ts,
             to_ts=end_ts,
             convert_to_usd=True,
         )
         rows: List[Dict] = []
-        if res and len(res) > 0:
-            hist = res[0].get('history', [])
-            for pt in hist:
-                rows.append({
-                    'symbol': symbol,
-                    'timestamp': pt['t'],
-                    'date': _dt.fromtimestamp(pt['t']).strftime('%Y-%m-%d'),
-                    'oi_open': pt.get('o'),
-                    'oi_high': pt.get('h'),
-                    'oi_low': pt.get('l'),
-                    'oi_close': pt.get('c'),
-                })
+        if res:
+            for item in res:
+                sym = item.get('symbol')
+                history = item.get('history', [])
+                for pt in history:
+                    rows.append({
+                        'symbol': sym,
+                        'timestamp': pt['t'],
+                        'date': _dt.fromtimestamp(pt['t']).strftime('%Y-%m-%d'),
+                        'oi_open': pt.get('o'),
+                        'oi_high': pt.get('h'),
+                        'oi_low': pt.get('l'),
+                        'oi_close': pt.get('c'),
+                    })
         return rows
     except Exception:
         return []
@@ -106,15 +112,19 @@ def main():
     print(f"Bases with perps: {len(base_to_symbol)}")
 
     all_rows: List[Dict] = []
-    wait_s = 2
-    for i, (base, c_sym) in enumerate(sorted(base_to_symbol.items())):
-        print(f"[{i+1}/{len(base_to_symbol)}] {base}: {c_sym}")
-        rows = fetch_oi_daily_history(client, c_sym, start_year=2020)
+    items = sorted(base_to_symbol.items())
+    batch_size = 20  # Coinalyze allows up to 20 per request
+    for i in range(0, len(items), batch_size):
+        batch = items[i:i+batch_size]
+        csymbols = [cs for _, cs in batch]
+        rev = {cs: base for base, cs in batch}
+        print(f"Batch {i//batch_size + 1}/{(len(items)-1)//batch_size + 1}: {len(csymbols)} symbols")
+        rows = fetch_oi_daily_history_batch(client, csymbols, start_year=2020)
         if rows:
             for r in rows:
-                r['coin_symbol'] = base
+                # map coinalyze symbol back to base
+                r['coin_symbol'] = rev.get(r['symbol'], '')
             all_rows.extend(rows)
-        time.sleep(wait_s)
 
     if not all_rows:
         print("No data fetched.")
