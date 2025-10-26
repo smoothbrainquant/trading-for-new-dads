@@ -1,14 +1,19 @@
 import ccxt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import pandas as pd
 
-def ccxt_fetch_hyperliquid_daily_data(symbols=['BTC/USDC:USDC', 'ETH/USDC:USDC', 'SOL/USDC:USDC'], days=5):
+def ccxt_fetch_hyperliquid_daily_data(
+    symbols=['BTC/USDC:USDC', 'ETH/USDC:USDC', 'SOL/USDC:USDC'],
+    days=5,
+    drop_partial_daily: bool = True,
+):
     """
     Fetch daily OHLCV data from Hyperliquid for specified symbols.
     
     Args:
         symbols: List of trading pairs to fetch
         days: Number of days of historical data to retrieve
+        drop_partial_daily: If True, drop the current (potentially incomplete) UTC daily candle
     
     Returns:
         DataFrame with columns: date, symbol, open, high, low, close, volume
@@ -18,8 +23,10 @@ def ccxt_fetch_hyperliquid_daily_data(symbols=['BTC/USDC:USDC', 'ETH/USDC:USDC',
         'enableRateLimit': True,
     })
     
-    # Calculate timestamp for 'days' ago
-    since = exchange.parse8601((datetime.now() - timedelta(days=days)).isoformat())
+    # Calculate timestamp for 'days' ago (UTC)
+    now_utc = datetime.now(timezone.utc)
+    since_dt = now_utc - timedelta(days=days + (1 if drop_partial_daily else 0))
+    since = exchange.parse8601(since_dt.isoformat())
     
     all_data = []
     
@@ -32,7 +39,8 @@ def ccxt_fetch_hyperliquid_daily_data(symbols=['BTC/USDC:USDC', 'ETH/USDC:USDC',
                 symbol=symbol,
                 timeframe='1d',
                 since=since,
-                limit=days
+                # Fetch an extra bar in case we drop the partial day
+                limit=days + (1 if drop_partial_daily else 0)
             )
             
             # Convert to DataFrame
@@ -41,11 +49,16 @@ def ccxt_fetch_hyperliquid_daily_data(symbols=['BTC/USDC:USDC', 'ETH/USDC:USDC',
                 columns=['timestamp', 'open', 'high', 'low', 'close', 'volume']
             )
             
-            # Convert timestamp to readable date and add symbol column
-            df['date'] = pd.to_datetime(df['timestamp'], unit='ms')
+            # Convert timestamp to UTC date (naive UTC) and add symbol column
+            df['date'] = pd.to_datetime(df['timestamp'], unit='ms', utc=True).dt.tz_localize(None)
             df['symbol'] = symbol
             df = df[['date', 'symbol', 'open', 'high', 'low', 'close', 'volume']]
             
+            # Drop potential partial current UTC daily candle
+            if drop_partial_daily and not df.empty:
+                today_utc = datetime.utcnow().date()
+                df = df[df['date'].dt.date != today_utc]
+
             all_data.append(df)
             
             print(f"\n{symbol} - Last {len(df)} days:")

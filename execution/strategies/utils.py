@@ -52,10 +52,18 @@ def calculate_rolling_30d_volatility(data: Dict[str, pd.DataFrame], selected_sym
     result: Dict[str, float] = {}
     for symbol in selected_symbols:
         symbol_data = volatility_df[volatility_df['symbol'] == symbol]
-        if not symbol_data.empty:
-            latest = symbol_data['volatility_30d'].dropna()
-            if not latest.empty:
-                result[symbol] = float(latest.iloc[-1])
+        if symbol_data.empty:
+            continue
+        latest = symbol_data['volatility_30d'].dropna()
+        if not latest.empty:
+            result[symbol] = float(latest.iloc[-1])
+        else:
+            # Fallback: estimate simple volatility over available history if <30 days
+            closes = symbol_data['close'].dropna()
+            if len(closes) >= 2:
+                ret = closes.pct_change().dropna()
+                if len(ret) >= 5:  # require at least 5 returns for a rough estimate
+                    result[symbol] = float(ret.std() * (365 ** 0.5))
 
     return result
 

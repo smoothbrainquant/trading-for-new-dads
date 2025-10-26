@@ -34,13 +34,13 @@ def strategy_carry(
             exchange_code=coinalyze_code,
         )
         if df_rates is not None and not df_rates.empty:
-            # Ensure a 'base' column exists for downstream mapping
+            # Normalize expected columns
+            df_rates = df_rates.copy()
             if 'base' not in df_rates.columns:
-                df_rates = df_rates.copy()
                 if 'symbol' in df_rates.columns:
                     df_rates['base'] = df_rates['symbol'].astype(str).str.split('/').str[0]
-            # Align column naming with Binance helper
-            if 'fundingRate' in df_rates.columns and 'funding_rate' not in df_rates.columns:
+            # Coinalyze current helper uses 'funding_rate' already; ensure presence
+            if 'funding_rate' not in df_rates.columns and 'fundingRate' in df_rates.columns:
                 df_rates = df_rates.rename(columns={'fundingRate': 'funding_rate'})
     except Exception as e:
         print(f"  Coinalyze funding fetch failed ({e}); falling back to exchange API...")
@@ -73,12 +73,17 @@ def strategy_carry(
     df_rates = df_rates.copy()
     # 'base' may already exist (from Coinalyze). If not, derive from 'symbol'.
     if 'base' not in df_rates.columns:
-        df_rates['base'] = df_rates['symbol'].astype(str).str.split('/').str[0]
+        if 'symbol' in df_rates.columns:
+            df_rates['base'] = df_rates['symbol'].astype(str).str.split('/').str[0]
     df_rates = df_rates[df_rates['base'].isin(universe_bases.keys())]
     if df_rates.empty:
         print("  No funding symbols matched our universe for carry.")
         return {}
 
+    # Accept either 'funding_rate' or 'funding_rate_pct' (convert pct→rate if needed)
+    if 'funding_rate' not in df_rates.columns and 'funding_rate_pct' in df_rates.columns:
+        df_rates = df_rates.copy()
+        df_rates['funding_rate'] = df_rates['funding_rate_pct'] / 100.0
     df_rates = df_rates.dropna(subset=['funding_rate'])
 
     # Select bottom N (most negative) for LONG carry and top N (most positive) for SHORT carry

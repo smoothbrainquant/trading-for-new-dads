@@ -752,7 +752,12 @@ def main():
     try:
         current_positions = get_current_positions()
     except Exception as e:
-        if args.dry_run:
+        # Auto-enable dry-run if credentials missing, to avoid hard failure in normal runs
+        missing_creds = 'HL_API' in str(e) or 'HL_SECRET' in str(e) or 'must be set' in str(e)
+        if args.dry_run or missing_creds:
+            if missing_creds and not args.dry_run:
+                print("Credentials missing; switching to DRY RUN for this session.")
+                args.dry_run = True  # type: ignore
             print(f"Could not fetch positions ({e}). Assuming flat portfolio for DRY RUN.")
             current_positions = {
                 'total_positions': 0,
