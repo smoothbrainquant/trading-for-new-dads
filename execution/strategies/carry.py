@@ -19,7 +19,21 @@ def strategy_carry(
         print(f"  Carry handler unavailable (import error): {e}")
         return {}
 
-    df_rates = fetch_binance_funding_rates(symbols=None, exchange_id=exchange_id)
+    # Try to fetch funding rates; gracefully fallback if exchange is restricted
+    try:
+        df_rates = fetch_binance_funding_rates(symbols=None, exchange_id=exchange_id)
+    except Exception as e:
+        print(f"  Error fetching funding rates from {exchange_id}: {e}")
+        # Fallback to binanceus if primary is restricted
+        if exchange_id == "binance":
+            try:
+                print("  Trying fallback exchange_id='binanceus' ...")
+                df_rates = fetch_binance_funding_rates(symbols=None, exchange_id="binanceus")
+            except Exception as e2:
+                print(f"  Carry unavailable from both binance and binanceus: {e2}")
+                return {}
+        else:
+            return {}
     if df_rates is None or df_rates.empty:
         print("  No funding rate data available for carry.")
         return {}

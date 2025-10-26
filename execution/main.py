@@ -606,7 +606,14 @@ def main():
     
     # Step 3: Get account notional and apply leverage
     print("\n[3/7] Getting account notional and applying leverage...")
-    base_notional_value = get_account_notional_value()
+    try:
+        base_notional_value = get_account_notional_value()
+    except Exception as e:
+        if args.dry_run:
+            print(f"Could not fetch account value ({e}). Using mock $100,000 for DRY RUN.")
+            base_notional_value = 100000.0
+        else:
+            raise
     notional_value = base_notional_value * args.leverage
     if args.leverage != 1.0:
         print(f"Applying {args.leverage}x leverage: ${base_notional_value:,.2f} → ${notional_value:,.2f}")
@@ -742,7 +749,19 @@ def main():
 
     # Step 5: Get current positions
     print("\n[5/7] Getting current positions...")
-    current_positions = get_current_positions()
+    try:
+        current_positions = get_current_positions()
+    except Exception as e:
+        if args.dry_run:
+            print(f"Could not fetch positions ({e}). Assuming flat portfolio for DRY RUN.")
+            current_positions = {
+                'total_positions': 0,
+                'total_unrealized_pnl': 0.0,
+                'positions': [],
+                'symbols': []
+            }
+        else:
+            raise
     print(f"Currently holding {current_positions['total_positions']} positions")
     print(f"Total unrealized PnL: ${current_positions['total_unrealized_pnl']:,.2f}")
     

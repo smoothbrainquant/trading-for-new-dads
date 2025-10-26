@@ -89,7 +89,9 @@ def get_prices_with_last(symbols):
                     'max_price': max_price
                 })
         except Exception as e:
-            print(f\"  Warning: Could not fetch prices for {symbol}: {e}\")\n    \n    return pd.DataFrame(price_data) if price_data else None
+            print(f"  Warning: Could not fetch prices for {symbol}: {e}")
+
+    return pd.DataFrame(price_data) if price_data else None
 
 
 def get_all_open_orders(exchange):
