@@ -26,7 +26,7 @@ can update them without code changes. Example config structure:
     "breakout": {"entry_lookback": 50, "exit_lookback": 70},
     "mean_reversion": {"quantile": 0.2},
     "size": {"top_n": 10, "bottom_n": 10},
-    "carry": {"exchange_id": "binance"}
+      "carry": {"exchange_id": "hyperliquid"}
   }
 }
 
@@ -642,7 +642,7 @@ def main():
             elif strategy_name == 'breakout':
                 contrib = strategy_breakout(historical_data, strategy_notional)
             elif strategy_name == 'carry':
-                exchange_id = p.get('exchange_id', 'binance') if isinstance(p, dict) else 'binance'
+                exchange_id = p.get('exchange_id', 'hyperliquid') if isinstance(p, dict) else 'hyperliquid'
                 top_n = int(p.get('top_n', 10)) if isinstance(p, dict) else 10
                 bottom_n = int(p.get('bottom_n', 10)) if isinstance(p, dict) else 10
                 contrib = strategy_carry(
@@ -817,21 +817,32 @@ def main():
                 # If fetching fails, leave marketcap map empty
                 marketcap_by_trading_symbol = {}
 
-            # 3) Funding rate via Binance futures (map by base symbol)
+            # 3) Funding rate via Coinalyze (Hyperliquid) with fallback to Binance
             funding_by_base: dict[str, float] = {}
             try:
-                from execution.get_carry import fetch_binance_funding_rates
-
-                df_fr = fetch_binance_funding_rates(symbols=None, exchange_id='binance')
+                from execution.get_carry import fetch_coinalyze_funding_rates_for_universe
+                # Use traded symbols universe to minimize API usage; Hyperliquid exchange code 'H'
+                df_fr = fetch_coinalyze_funding_rates_for_universe(traded_symbols, exchange_code='H')
                 if df_fr is not None and not df_fr.empty:
                     df_tmp = df_fr.copy()
-                    df_tmp['base'] = df_tmp['symbol'].astype(str).str.split('/').str[0]
-                    # Average in case multiple contracts per base
+                    # Already has 'base', but ensure
+                    if 'base' not in df_tmp.columns:
+                        df_tmp['base'] = df_tmp['coinalyze_symbol'].astype(str).str.extract(r'^([A-Z0-9]+)')[0]
                     funding_by_base = (
                         df_tmp.groupby('base')['funding_rate_pct'].mean().to_dict()
                     )
             except Exception:
-                funding_by_base = {}
+                try:
+                    from execution.get_carry import fetch_binance_funding_rates
+                    df_fr = fetch_binance_funding_rates(symbols=None, exchange_id='binance')
+                    if df_fr is not None and not df_fr.empty:
+                        df_tmp = df_fr.copy()
+                        df_tmp['base'] = df_tmp['symbol'].astype(str).str.split('/').str[0]
+                        funding_by_base = (
+                            df_tmp.groupby('base')['funding_rate_pct'].mean().to_dict()
+                        )
+                except Exception:
+                    funding_by_base = {}
 
             rows = []
             for symbol in traded_symbols:

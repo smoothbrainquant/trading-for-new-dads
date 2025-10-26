@@ -9,38 +9,71 @@ def strategy_carry(
     historical_data: Dict[str, pd.DataFrame],
     universe_symbols: List[str],
     notional: float,
-    exchange_id: str = "binance",
+    exchange_id: str = "hyperliquid",
     top_n: int = 10,
     bottom_n: int = 10,
 ) -> Dict[str, float]:
-    try:
-        from execution.get_carry import fetch_binance_funding_rates
-    except Exception as e:
-        print(f"  Carry handler unavailable (import error): {e}")
-        return {}
+    """
+    Carry strategy using current funding rates. Prefers Coinalyze (live) and
+    falls back to Binance via CCXT if Coinalyze is unavailable.
+    """
+    # Resolve Coinalyze exchange code from exchange_id
+    exch_map = {
+        "hyperliquid": "H",
+        "binance": "A",
+    }
+    coinalyze_code = exch_map.get((exchange_id or "").lower(), "H")
 
-    # Try to fetch funding rates; gracefully fallback if exchange is restricted
+    df_rates = None
+    # Prefer Coinalyze current funding
     try:
-        df_rates = fetch_binance_funding_rates(symbols=None, exchange_id=exchange_id)
+        from execution.get_carry import fetch_coinalyze_funding_rates_for_universe
+
+        df_rates = fetch_coinalyze_funding_rates_for_universe(
+            universe_symbols=universe_symbols,
+            exchange_code=coinalyze_code,
+        )
+        if df_rates is not None and not df_rates.empty:
+            # Ensure a 'base' column exists for downstream mapping
+            if 'base' not in df_rates.columns:
+                df_rates = df_rates.copy()
+                if 'symbol' in df_rates.columns:
+                    df_rates['base'] = df_rates['symbol'].astype(str).str.split('/').str[0]
+            # Align column naming with Binance helper
+            if 'fundingRate' in df_rates.columns and 'funding_rate' not in df_rates.columns:
+                df_rates = df_rates.rename(columns={'fundingRate': 'funding_rate'})
     except Exception as e:
-        print(f"  Error fetching funding rates from {exchange_id}: {e}")
-        # Fallback to binanceus if primary is restricted
-        if exchange_id == "binance":
-            try:
-                print("  Trying fallback exchange_id='binanceus' ...")
-                df_rates = fetch_binance_funding_rates(symbols=None, exchange_id="binanceus")
-            except Exception as e2:
-                print(f"  Carry unavailable from both binance and binanceus: {e2}")
+        print(f"  Coinalyze funding fetch failed ({e}); falling back to exchange API...")
+        df_rates = None
+
+    # Fallback: Binance via CCXT
+    if df_rates is None or df_rates.empty:
+        try:
+            from execution.get_carry import fetch_binance_funding_rates
+            # If exchange_id unsupported, default to 'binance'
+            ex_id = exchange_id if exchange_id in ("binance", "binanceus") else "binance"
+            df_rates = fetch_binance_funding_rates(symbols=None, exchange_id=ex_id)
+        except Exception as e:
+            print(f"  Error fetching funding rates from {exchange_id}: {e}")
+            # Fallback to binanceus if primary is restricted
+            if exchange_id == "binance":
+                try:
+                    print("  Trying fallback exchange_id='binanceus' ...")
+                    df_rates = fetch_binance_funding_rates(symbols=None, exchange_id="binanceus")
+                except Exception as e2:
+                    print(f"  Carry unavailable from both binance and binanceus: {e2}")
+                    return {}
+            else:
                 return {}
-        else:
-            return {}
     if df_rates is None or df_rates.empty:
         print("  No funding rate data available for carry.")
         return {}
 
     universe_bases = {get_base_symbol(s): s for s in universe_symbols}
     df_rates = df_rates.copy()
-    df_rates['base'] = df_rates['symbol'].astype(str).str.split('/').str[0]
+    # 'base' may already exist (from Coinalyze). If not, derive from 'symbol'.
+    if 'base' not in df_rates.columns:
+        df_rates['base'] = df_rates['symbol'].astype(str).str.split('/').str[0]
     df_rates = df_rates[df_rates['base'].isin(universe_bases.keys())]
     if df_rates.empty:
         print("  No funding symbols matched our universe for carry.")
