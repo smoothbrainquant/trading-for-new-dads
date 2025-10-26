@@ -10,7 +10,7 @@
 ## 1. Executive Summary
 
 ### Objective
-Build a meta-strategy backtest that combines multiple individual strategies (Carry, Breakout, Mean Reversion, Days-from-High) using **Enhanced Risk Parity** weighting that accounts for correlation structure. This approach aims to maximize risk-adjusted returns through intelligent diversification across uncorrelated return streams.
+Build a meta-strategy backtest that combines **6 individual strategies** (Carry, Breakout, Mean Reversion, Days-from-High, Size Factor, OI Divergence) using **Enhanced Risk Parity** weighting that accounts for correlation structure. This approach aims to maximize risk-adjusted returns through intelligent diversification across uncorrelated return streams spanning multiple market regimes and signal types.
 
 ### Key Innovation
 Unlike simple risk parity (inverse volatility) which treats strategies independently, Enhanced Risk Parity explicitly accounts for correlation to:
@@ -23,6 +23,7 @@ Unlike simple risk parity (inverse volatility) which treats strategies independe
 - Lower maximum drawdown through better diversification
 - More stable returns across different market regimes
 - Clear performance attribution across constituent strategies
+- Reduced correlation to BTC through multi-factor diversification
 
 ---
 
@@ -36,19 +37,87 @@ Unlike simple risk parity (inverse volatility) which treats strategies independe
 | **Breakout** | Long 50d high, Short 50d low | Trend continuation | High | Trending |
 | **Mean Reversion** | Long oversold, Short overbought | Price mean reversion | Medium-High | Range-bound |
 | **Days-from-High** | Long coins near 200d high | Momentum | Medium | Trending |
+| **Size Factor** | Long small-cap, Short large-cap | Small cap premium | High | Bull markets |
+| **OI Divergence** | Contrarian OI/price signals | Mean reversion via OI | Medium-High | Volatile markets |
+
+**Notes:**
+- **Size Factor**: Long bottom quintile (small caps), short top quintile (large caps). Exploits size premium similar to equity markets.
+- **OI Divergence**: Uses "divergence mode" (contrarian) which historically outperforms trend mode. Signals based on open interest vs price divergence.
+
+**Why 6 Strategies?**
+This portfolio spans multiple dimensions of crypto market inefficiencies:
+1. **Time-series factors**: Breakout, Mean Reversion (technical price patterns)
+2. **Cross-sectional factors**: Days-from-High, Size (relative ranking)
+3. **Market microstructure**: Carry (funding rates), OI Divergence (positioning)
+4. **Regime diversity**: 3 trend-following + 3 mean-reverting strategies for balance
+
+The diversity across signal types, data sources, and market regimes provides robust diversification beyond simple correlation analysis.
 
 ### 2.2 Strategy Correlation Expectations
 
-Expected correlation structure:
+Expected correlation structure (6×6):
 ```
-                Carry    Breakout    MeanRev    Days-from-High
-Carry            1.00      -0.20      0.30          -0.15
-Breakout        -0.20       1.00     -0.40           0.60
-MeanRev          0.30      -0.40      1.00          -0.30
-Days-from-High  -0.15       0.60     -0.30           1.00
+                Carry    Breakout   MeanRev   Days-High   Size    OI-Div
+Carry            1.00      -0.20      0.30     -0.15      0.10     0.25
+Breakout        -0.20       1.00     -0.40      0.60      0.30    -0.30
+MeanRev          0.30      -0.40      1.00     -0.30      0.10     0.35
+Days-High       -0.15       0.60     -0.30      1.00      0.40    -0.20
+Size             0.10       0.30      0.10      0.40      1.00     0.15
+OI-Div           0.25      -0.30      0.35     -0.20      0.15     1.00
 ```
 
-**Note:** Actual correlations will be computed from realized returns and will vary over time.
+**Strategy Clusters:**
+- **Mean Reversion Cluster**: Carry, Mean Reversion, OI Divergence (positive correlations)
+- **Momentum Cluster**: Breakout, Days-from-High, Size (positive correlations)
+- **Cross-Cluster**: Negative correlations provide diversification benefit
+
+**Note:** Actual correlations will be computed from realized returns and will vary over time. These expectations help inform initial portfolio construction.
+
+### 2.3 Strategy Diversification Map
+
+```
+Portfolio Structure:
+
+┌─────────────────────────────────────────────────────────────┐
+│                    MEAN REVERSION CLUSTER                   │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │    CARRY     │──│ MEAN REVERT  │──│ OI DIVERGENCE│     │
+│  │ (Funding FR) │  │ (Price Mean) │  │  (OI/Price)  │     │
+│  └──────────────┘  └──────────────┘  └──────────────┘     │
+│   Range-bound       Range-bound       Volatile markets     │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                    NEGATIVE CORRELATION
+                              │
+┌─────────────────────────────────────────────────────────────┐
+│                     MOMENTUM CLUSTER                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │  BREAKOUT    │──│ DAYS-FROM-   │──│  SIZE FACTOR │     │
+│  │ (50d high/low│  │   HIGH       │  │ (Small-cap)  │     │
+│  └──────────────┘  └──────────────┘  └──────────────┘     │
+│   Trending          Trending          Bull markets         │
+└─────────────────────────────────────────────────────────────┘
+
+Legend:
+  ── Positive correlation (cluster members)
+  │  Negative correlation (across clusters)
+  
+Expected Behavior:
+- Mean Reversion cluster outperforms in choppy/ranging markets
+- Momentum cluster outperforms in trending/bull markets
+- Enhanced RP automatically shifts allocation based on regime
+- Cross-cluster negative correlations provide drawdown protection
+```
+
+### 2.4 Expected Benefits of 6-Strategy Diversification
+
+| Benefit | Description | Expected Impact |
+|---------|-------------|-----------------|
+| **Regime Coverage** | 3 strategies per regime type | ±30% Sharpe improvement |
+| **Signal Diversity** | Price, FR, OI, Size data sources | Lower correlation to BTC |
+| **Drawdown Protection** | Negative cross-cluster correlation | 20-30% DD reduction |
+| **Capacity** | Spread across 6 different universes | Higher AUM capacity |
+| **Robustness** | No single strategy dominates | Stable through market cycles |
 
 ---
 
@@ -139,6 +208,32 @@ def calculate_enhanced_rp_weights(strategy_returns_df,
 - If strategy lacks sufficient history, exclude temporarily
 - Redistribute weights among available strategies
 
+### 3.5 Special Considerations for 6-Strategy Portfolio
+
+**Higher Dimensional Covariance:**
+- 6×6 covariance matrix = 21 unique correlations to estimate
+- Shrinkage becomes more important with higher dimensions
+- Consider increasing shrinkage intensity (0.30-0.40) vs 4-strategy portfolio
+
+**Weight Concentration Risk:**
+- With `min_weight=0.05`, `max_weight=0.50`, theoretical range is 5-50% per strategy
+- In practice, expect 10-25% per strategy with ERP
+- Monitor for excessive concentration (>40% in any single strategy)
+
+**Cluster Analysis:**
+- Mean Reversion cluster (3 strategies): May receive 40-50% combined weight in range-bound markets
+- Momentum cluster (3 strategies): May receive 40-50% combined weight in trending markets
+- Enhanced RP naturally adjusts allocation based on regime
+
+**Optimization Stability:**
+- 6 strategies more sensitive to estimation error than 4
+- Use longer lookback (60-90 days) for more stable estimates
+- Consider monthly rebalancing to reduce turnover
+
+**Computation:**
+- 6×6 optimization still very fast (<1ms per rebalance)
+- Memory and runtime not a concern
+
 ---
 
 ## 4. Backtest Design
@@ -148,7 +243,7 @@ def calculate_enhanced_rp_weights(strategy_returns_df,
 **Input Data:**
 1. **Individual Strategy Returns**
    - Pre-computed daily returns for each strategy
-   - Source: Run individual backtests first (carry, breakout, mean reversion, days-from-high)
+   - Source: Run individual backtests first (all 6 strategies)
    - Format: CSV with columns `[date, strategy_name, daily_return, positions, exposure]`
 
 2. **Price Data** (for performance verification)
@@ -157,18 +252,28 @@ def calculate_enhanced_rp_weights(strategy_returns_df,
 
 **Data Structure:**
 ```
-strategy_returns/
-  ├── carry_daily_returns.csv
-  ├── breakout_daily_returns.csv
-  ├── mean_reversion_daily_returns.csv
-  └── days_from_high_daily_returns.csv
+backtests/results/
+  ├── backtest_carry_factor_portfolio_values.csv
+  ├── backtest_breakout_signals_portfolio_values.csv
+  ├── backtest_mean_reversion_portfolio_values.csv
+  ├── backtest_20d_200d_high_portfolio_values.csv
+  ├── backtest_size_factor_portfolio_values.csv
+  └── backtest_open_interest_divergence_portfolio_values.csv
 
-Format of each file:
-date,daily_return,num_positions,gross_exposure,net_exposure
-2025-01-01,0.0123,8,1.0,0.2
-2025-01-02,-0.0045,8,1.0,0.15
+Format of each file (standard backtest output):
+date,portfolio_value,daily_return,num_long_positions,num_short_positions,...
+2025-01-01,10123.45,0.0123,5,5,...
+2025-01-02,10078.32,-0.0045,5,5,...
 ...
 ```
+
+**Strategy Naming Convention:**
+- `carry` - Carry Factor (funding rate arbitrage)
+- `breakout` - Breakout Signals (trend following)
+- `mean_reversion` - Mean Reversion (contrarian price)
+- `days_from_high` - Days from 200d High (momentum)
+- `size` - Size Factor (small cap premium)
+- `oi_divergence` - OI Divergence (contrarian OI/price)
 
 ### 4.2 Backtest Parameters
 
@@ -275,10 +380,12 @@ For each rebalancing date:
 ### 5.3 Comparative Analysis
 
 **Benchmarks:**
-1. **Equal Weight:** 25% allocation to each strategy
+1. **Equal Weight:** ~16.67% allocation to each of 6 strategies
 2. **Simple Risk Parity:** Inverse volatility, no correlation
 3. **Best Single Strategy:** Performance of top individual strategy
 4. **60/40 BTC/Stablecoin:** Traditional crypto allocation
+5. **Momentum-Only Portfolio:** Equal weight of Breakout + Days-from-High + Size
+6. **Mean Reversion Portfolio:** Equal weight of Carry + Mean Reversion + OI Divergence
 
 **Comparison Dimensions:**
 - Sharpe Ratio improvement
@@ -574,8 +681,10 @@ This script combines multiple individual strategies with correlation-aware weigh
 Strategies combined:
   1. Carry Factor (funding rate arbitrage)
   2. Breakout (trend following)
-  3. Mean Reversion (contrarian)
+  3. Mean Reversion (contrarian price)
   4. Days-from-High (momentum)
+  5. Size Factor (small cap premium)
+  6. OI Divergence (contrarian OI/price)
 
 Weighting: Enhanced Risk Parity with correlation adjustment
 """
@@ -770,7 +879,8 @@ def main():
     parser.add_argument('--results-dir', default='../results',
                        help='Directory with individual strategy results')
     parser.add_argument('--strategies', nargs='+',
-                       default=['carry', 'breakout', 'mean_reversion', 'days_from_high'],
+                       default=['carry', 'breakout', 'mean_reversion', 'days_from_high', 
+                                'size', 'oi_divergence'],
                        help='Strategies to combine')
     parser.add_argument('--initial-capital', type=float, default=100000)
     parser.add_argument('--rebalance-frequency', choices=['daily', 'weekly', 'monthly'],
@@ -930,8 +1040,9 @@ def test_fallback_to_simple_rp():
 **Stretch Goals:**
 - Sharpe ratio improvement of 30%+ vs simple RP
 - Drawdown reduction of 20%+ vs equal weight
-- Diversification ratio > 1.5
+- Diversification ratio > 1.5 (6 strategies with mixed correlations)
 - Correlation to BTC < 0.5
+- At least 3 strategies with positive weights at all times
 
 ### 9.3 Insights Gained
 
@@ -1049,6 +1160,8 @@ portfolio:
     - breakout  
     - mean_reversion
     - days_from_high
+    - size
+    - oi_divergence
 
 weighting:
   method: enhanced_risk_parity
