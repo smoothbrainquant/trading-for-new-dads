@@ -884,6 +884,8 @@ def main():
             try:
                 from execution.get_carry import fetch_coinalyze_funding_rates_for_universe
                 # Use traded symbols universe to minimize API usage; Hyperliquid exchange code 'H'
+                print(f"\n  Fetching funding rates from Coinalyze for {len(traded_symbols)} symbols...")
+                print(f"  Note: Rate limited to 40 calls/min (1.5s between calls)")
                 df_fr = fetch_coinalyze_funding_rates_for_universe(traded_symbols, exchange_code='H')
                 if df_fr is not None and not df_fr.empty:
                     df_tmp = df_fr.copy()

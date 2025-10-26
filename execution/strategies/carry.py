@@ -56,7 +56,10 @@ def strategy_carry(
     try:
         from execution.get_carry import fetch_coinalyze_aggregated_funding_rates
 
+        num_symbols = len(universe_symbols)
+        estimated_time = (num_symbols / 20 + 1) * 1.5  # chunks of 20, 1.5s per call
         print(f"  Fetching market-wide funding rates from Coinalyze (using Binance as primary)...")
+        print(f"  Processing {num_symbols} symbols - Rate limited to 40 calls/min (~{estimated_time:.0f}s total)")
         df_rates = fetch_coinalyze_aggregated_funding_rates(
             universe_symbols=universe_symbols,
         )

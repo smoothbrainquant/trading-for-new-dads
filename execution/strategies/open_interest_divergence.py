@@ -85,6 +85,10 @@ def _fetch_oi_history_for_universe(
     # Coinalyze allows up to 20 symbols per request
     items = list(base_to_csym.items())
     chunk = 20
+    num_chunks = (len(items) + chunk - 1) // chunk
+    estimated_time = num_chunks * 1.5
+    print(f"    Rate limited to 40 calls/min: {num_chunks} API calls required (~{estimated_time:.0f}s total)")
+    
     for i in range(0, len(items), chunk):
         batch = items[i:i+chunk]
         symbols_param = ','.join(cs for _, cs in batch)
