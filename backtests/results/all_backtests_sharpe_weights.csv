@@ -1,4 +1,6 @@
 Strategy,Description,Sharpe Ratio,Weight,Weight_Pct
-Mean Reversion,Best category: up_move_low_volume,6.382710069292282,0.7654504865255429,76.5450486525543
-Size Factor,Strategy: long_small_short_large,1.0343980229916634,0.1240508281535999,12.40508281535999
-Carry Factor,"Top 10 short, Bottom 10 long",0.9213934589581839,0.11049868532085724,11.049868532085725
+Mean Reversion,Best category: up_move_low_volume,6.382710069292282,0.6889054378729886,68.89054378729887
+Size Factor,Strategy: long_small_short_large,1.0343980229916634,0.11164574533823991,11.164574533823991
+Carry Factor,"Top 10 short, Bottom 10 long",0.9213934589581839,0.09944881678877152,9.944881678877152
+Breakout Signal,"Entry: 50d, Exit: 70d",-1.0474871563647228,0.05,5.0
+Days from High,Max 20 days from 200d high,-0.3897090970162249,0.05,5.0

@@ -463,6 +463,7 @@ def create_summary_table(all_results):
 def calculate_sharpe_weights_with_floor(summary_df, min_weight=0.05):
     """
     Calculate portfolio weights based on Sharpe ratios with a minimum weight floor.
+    ALL strategies receive at least min_weight allocation (including negative Sharpe).
     
     Args:
         summary_df (pd.DataFrame): Summary DataFrame with backtest results
@@ -474,29 +475,48 @@ def calculate_sharpe_weights_with_floor(summary_df, min_weight=0.05):
     if summary_df.empty:
         return None
     
-    # Filter for positive Sharpe ratios
-    positive_sharpe = summary_df[summary_df['Sharpe Ratio'] > 0].copy()
+    # Include ALL strategies (both positive and negative Sharpe)
+    all_strategies = summary_df.copy()
     
-    if len(positive_sharpe) == 0:
-        print("\nWARNING: No strategies have positive Sharpe ratios!")
-        return None
+    # Separate positive and negative Sharpe strategies
+    positive_sharpe = all_strategies[all_strategies['Sharpe Ratio'] > 0].copy()
+    negative_sharpe = all_strategies[all_strategies['Sharpe Ratio'] <= 0].copy()
     
-    # Calculate initial weights proportional to Sharpe ratios
-    total_sharpe = positive_sharpe['Sharpe Ratio'].sum()
-    positive_sharpe['Initial_Weight'] = positive_sharpe['Sharpe Ratio'] / total_sharpe
+    # Calculate initial weights for positive Sharpe strategies
+    if len(positive_sharpe) > 0:
+        total_sharpe = positive_sharpe['Sharpe Ratio'].sum()
+        positive_sharpe['Initial_Weight'] = positive_sharpe['Sharpe Ratio'] / total_sharpe
+        
+        # Scale positive weights to leave room for negative strategies
+        # Reserve min_weight for each negative strategy
+        reserved_weight = len(negative_sharpe) * min_weight
+        available_weight = 1.0 - reserved_weight
+        positive_sharpe['Initial_Weight'] = positive_sharpe['Initial_Weight'] * available_weight
+    else:
+        # If no positive Sharpe strategies, distribute equally
+        positive_sharpe['Initial_Weight'] = 0
     
-    # Apply floor: strategies below min_weight get min_weight
-    positive_sharpe['Weight'] = positive_sharpe['Initial_Weight'].apply(
+    # Assign min_weight to negative Sharpe strategies
+    negative_sharpe['Initial_Weight'] = min_weight
+    
+    # Combine both groups
+    all_weights = pd.concat([positive_sharpe, negative_sharpe])
+    
+    # Apply floor to all strategies
+    all_weights['Weight'] = all_weights['Initial_Weight'].apply(
         lambda x: max(x, min_weight)
     )
     
     # Renormalize to sum to 1.0
-    weight_sum = positive_sharpe['Weight'].sum()
-    positive_sharpe['Weight'] = positive_sharpe['Weight'] / weight_sum
+    weight_sum = all_weights['Weight'].sum()
+    all_weights['Weight'] = all_weights['Weight'] / weight_sum
     
     # Create output DataFrame
-    weights_df = positive_sharpe[['Strategy', 'Description', 'Sharpe Ratio', 'Weight']].copy()
+    weights_df = all_weights[['Strategy', 'Description', 'Sharpe Ratio', 'Weight']].copy()
     weights_df['Weight_Pct'] = weights_df['Weight'] * 100
+    
+    # Sort by weight descending
+    weights_df = weights_df.sort_values('Weight', ascending=False)
     
     return weights_df
 
@@ -508,19 +528,26 @@ def print_sharpe_weights(weights_df, summary_df, min_weight=0.05):
     print("="*120)
     
     if weights_df is None or weights_df.empty:
-        print("\nNo weights to display (no strategies with positive Sharpe ratios)")
+        print("\nNo weights to display")
         return
     
     weight_sum = weights_df['Weight'].sum()
     
-    print(f"\nWeighting Method: Proportional to Sharpe Ratio with {min_weight*100:.0f}% floor")
-    print(f"Strategies included: {len(weights_df)} out of {len(summary_df)} total")
+    print(f"\nWeighting Method: All strategies with {min_weight*100:.0f}% minimum floor")
+    print(f"Strategies included: {len(weights_df)} (ALL strategies)")
     print(f"Total weight: {weight_sum:.6f} (should be 1.0)")
+    
+    # Count positive and negative Sharpe strategies
+    positive_count = (weights_df['Sharpe Ratio'] > 0).sum()
+    negative_count = (weights_df['Sharpe Ratio'] <= 0).sum()
+    print(f"  - Positive Sharpe: {positive_count} strategies")
+    print(f"  - Negative Sharpe: {negative_count} strategies (minimum {min_weight*100:.0f}% each)")
     
     print("\nPortfolio Allocation:")
     print("-"*120)
     for idx, row in weights_df.iterrows():
-        print(f"  {row['Strategy']:<20} | Sharpe: {row['Sharpe Ratio']:>8.3f} | Weight: {row['Weight']:>8.4f} ({row['Weight_Pct']:>6.2f}%)")
+        sharpe_indicator = "✓" if row['Sharpe Ratio'] > 0 else "✗"
+        print(f"  {sharpe_indicator} {row['Strategy']:<18} | Sharpe: {row['Sharpe Ratio']:>8.3f} | Weight: {row['Weight']:>8.4f} ({row['Weight_Pct']:>6.2f}%)")
     
     print("\n" + "-"*120)
     print(f"  {'TOTAL':<20} | {'':>8} | Weight: {weight_sum:>8.4f} ({weight_sum*100:>6.2f}%)")
