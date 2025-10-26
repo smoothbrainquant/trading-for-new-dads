@@ -43,7 +43,8 @@ def strategy_carry(
             if 'funding_rate' not in df_rates.columns and 'fundingRate' in df_rates.columns:
                 df_rates = df_rates.rename(columns={'fundingRate': 'funding_rate'})
     except Exception as e:
-        print(f"  Coinalyze funding fetch failed ({e}); falling back to exchange API...")
+        print(f"  ⚠️  CARRY STRATEGY: Coinalyze funding fetch failed ({e})")
+        print(f"      Falling back to exchange API...")
         df_rates = None
 
     # Fallback: Binance via CCXT
@@ -66,7 +67,9 @@ def strategy_carry(
             else:
                 return {}
     if df_rates is None or df_rates.empty:
-        print("  No funding rate data available for carry.")
+        print("  ⚠️  CARRY STRATEGY: No funding rate data available!")
+        print(f"      Check: 1) COINALYZE_API key for exchange {exchange_id}")
+        print(f"      Check: 2) Exchange API access (Binance may be geo-restricted)")
         return {}
 
     universe_bases = {get_base_symbol(s): s for s in universe_symbols}

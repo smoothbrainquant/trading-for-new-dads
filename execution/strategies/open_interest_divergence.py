@@ -17,7 +17,15 @@ def _parse_trading_symbol(symbol: str) -> Tuple[str, str]:
 
 
 def _build_coinalyze_symbol(base: str, quote: str, exchange_code: str) -> str:
-    return f"{base}{quote}_PERP.{exchange_code}"
+    """
+    Build Coinalyze symbol. Format varies by exchange:
+    - Hyperliquid (H): {BASE}.H  (e.g., BTC.H)
+    - Binance (A): {BASE}{QUOTE}_PERP.A (e.g., BTCUSDT_PERP.A)
+    """
+    if exchange_code == 'H':
+        return f"{base}.{exchange_code}"
+    else:
+        return f"{base}{quote}_PERP.{exchange_code}"
 
 
 def _prepare_price_df(historical_data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
@@ -145,7 +153,9 @@ def strategy_oi_divergence(
     # Fetch OI history for last ~200 days
     oi_df = _fetch_oi_history_for_universe(universe_symbols, exchange_code=exchange_code, days=max(lookback * 4, 120))
     if oi_df is None or oi_df.empty:
-        print("  OI divergence: no OI data available (missing COINALYZE_API?).")
+        print("  ⚠️  OI DIVERGENCE STRATEGY: No OI data available from Coinalyze!")
+        print(f"       Check: 1) COINALYZE_API key is set, 2) symbols exist on exchange {exchange_code}")
+        print(f"       This strategy requires {max(lookback * 4, 120)} days of OI history")
         return {}
 
     # Compute scores

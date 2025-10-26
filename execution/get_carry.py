@@ -138,10 +138,16 @@ def _parse_trading_symbol(symbol: str) -> Tuple[str, str]:
 def _build_coinalyze_symbol(base: str, quote: str, exchange_code: str) -> str:
     """
     Build Coinalyze futures-perpetual symbol given components.
-    Format: {BASE}{QUOTE}_PERP.{EXCHANGE_CODE}
-    Example: BTCUSDC_PERP.H  (Hyperliquid), BTCUSDT_PERP.A (Binance)
+    Format varies by exchange:
+    - Hyperliquid (H): {BASE}.H  (e.g., BTC.H)
+    - Binance (A): {BASE}{QUOTE}_PERP.A (e.g., BTCUSDT_PERP.A)
     """
-    return f"{base}{quote}_PERP.{exchange_code}"
+    if exchange_code == 'H':
+        # Hyperliquid uses simple format: BTC.H
+        return f"{base}.{exchange_code}"
+    else:
+        # Other exchanges like Binance use full format: BTCUSDT_PERP.A
+        return f"{base}{quote}_PERP.{exchange_code}"
 
 
 def fetch_coinalyze_funding_rates_for_universe(
@@ -210,6 +216,12 @@ def fetch_coinalyze_funding_rates_for_universe(
     # Sort similar to Binance helper for consistency (descending by rate)
     if not df.empty and 'funding_rate' in df.columns:
         df = df.sort_values('funding_rate', ascending=False).reset_index(drop=True)
+    
+    # Warn if we got no data
+    if df.empty:
+        print(f"WARNING: Coinalyze returned no funding rate data for {len(symbols_list)} symbols (exchange={exchange_code})")
+        print(f"  Symbols requested: {symbols_list[:5]}..." if len(symbols_list) > 5 else f"  Symbols requested: {symbols_list}")
+    
     return df
 
 
