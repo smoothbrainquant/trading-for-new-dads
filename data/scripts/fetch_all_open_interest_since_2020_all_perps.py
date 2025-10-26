@@ -8,6 +8,7 @@ Fetch Historical Open Interest (OI) since 2020 for all perpetual bases
 Requires env: COINALYZE_API
 """
 import os
+import sys
 import time
 from datetime import datetime
 from pathlib import Path
@@ -15,6 +16,8 @@ from typing import Dict, List
 
 import pandas as pd
 
+# Add workspace to path for imports
+sys.path.insert(0, '/workspace')
 from data.scripts.coinalyze_client import CoinalyzeClient
 
 
@@ -33,19 +36,24 @@ def get_all_perp_symbols(client: CoinalyzeClient) -> Dict[str, str]:
     """
     futures = client.get_future_markets()
     if not futures:
+        print("  WARNING: No futures markets returned from API")
         return {}
+
+    print(f"  Total futures: {len(futures)}")
+    perps = [f for f in futures if f.get('is_perpetual')]
+    print(f"  Perpetual futures: {len(perps)}")
 
     preferred_exchanges = ['A', '6', '3', '0', '2']
     by_base: Dict[str, List[Dict]] = {}
-    for f in futures:
-        if not f.get('is_perpetual'):
-            continue
+    for f in perps:
         base = f.get('base_asset')
         quote = f.get('quote_asset')
         exch = f.get('exchange')
         if not base or quote not in {'USDT','USD','USDC'}:
             continue
         by_base.setdefault(base, []).append(f)
+
+    print(f"  Unique bases after filtering: {len(by_base)}")
 
     best: Dict[str, str] = {}
     for base, items in by_base.items():

@@ -38,8 +38,11 @@ class BacktestConfig:
 def load_price_data(path: str) -> pd.DataFrame:
     df = pd.read_csv(path)
     df['date'] = pd.to_datetime(df['date'])
-    if 'base' in df.columns and 'symbol' not in df.columns:
+    # Always use 'base' column if available (for OI matching)
+    if 'base' in df.columns:
         df['symbol'] = df['base']
+    elif 'base_symbol' in df.columns:
+        df['symbol'] = df['base_symbol']
     df = df[['date','symbol','close']].dropna().sort_values(['symbol','date']).reset_index(drop=True)
     return df
 
