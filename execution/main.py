@@ -39,6 +39,7 @@ import argparse
 import json
 import os
 from collections import defaultdict
+import pandas as pd
 from ccxt_get_markets_by_volume import ccxt_get_markets_by_volume
 from ccxt_get_data import ccxt_fetch_hyperliquid_daily_data
 from ccxt_get_balance import ccxt_get_hyperliquid_balance
@@ -609,9 +610,13 @@ def main():
     # Step 4: Build target positions either via blend or legacy 50/50
     print("\n[4/7] Building target positions from selected signals...")
     target_positions = defaultdict(float)
+    # Track per-signal contributions for allocation breakdown
+    per_signal_contribs: dict[str, dict[str, float]] = {}
+    signal_names: list[str] = []
 
     if blend_weights:
         # Use multi-signal blend
+        signal_names = list(blend_weights.keys())
         for strategy_name, weight in blend_weights.items():
             if weight <= 0:
                 continue
@@ -668,6 +673,9 @@ def main():
                 print(f"  WARNING: Unknown strategy '{strategy_name}', skipping.")
                 contrib = {}
 
+            # Track per-signal contributions
+            per_signal_contribs[strategy_name] = dict(contrib)
+
             for sym, ntl in contrib.items():
                 target_positions[sym] += ntl
 
@@ -703,12 +711,23 @@ def main():
         # Combine as before
         strat1_notional = notional_value * 0.5
         strat2_notional = notional_value * 0.5
-        for sym, w in weights_20d.items():
-            target_positions[sym] += w * strat1_notional
-        for sym, w in w_long.items():
-            target_positions[sym] += w * strat2_notional
-        for sym, w in w_short.items():
-            target_positions[sym] -= w * strat2_notional
+
+        # Per-signal contributions
+        signal_names = ['days_from_high', 'breakout']
+        contrib_days = {sym: w * strat1_notional for sym, w in (weights_20d or {}).items()}
+        contrib_breakout: dict[str, float] = {}
+        for sym, w in (w_long or {}).items():
+            contrib_breakout[sym] = contrib_breakout.get(sym, 0.0) + w * strat2_notional
+        for sym, w in (w_short or {}).items():
+            contrib_breakout[sym] = contrib_breakout.get(sym, 0.0) - w * strat2_notional
+        per_signal_contribs['days_from_high'] = contrib_days
+        per_signal_contribs['breakout'] = contrib_breakout
+
+        # Combined target positions
+        for sym, amt in contrib_days.items():
+            target_positions[sym] += amt
+        for sym, amt in contrib_breakout.items():
+            target_positions[sym] += amt
 
         if target_positions:
             print("\nCombined Target Positions (legacy 50/50):")
@@ -732,6 +751,60 @@ def main():
         threshold=args.rebalance_threshold
     )
     
+    # Build and print allocation breakdown by trade before executing orders
+    try:
+        traded_symbols = list(trades.keys()) if trades else []
+        if traded_symbols:
+            print("\n" + "-"*80)
+            print("TRADE ALLOCATION BREAKDOWN BY SIGNAL (% of symbol-level contribution)")
+            print("-"*80)
+
+            rows = []
+            for symbol in traded_symbols:
+                target = target_positions.get(symbol, 0.0)
+                action = 'BUY' if trades[symbol] > 0 else 'SELL'
+                target_side = 'LONG' if target > 0 else ('SHORT' if target < 0 else 'FLAT')
+                abs_sum = 0.0
+                for name in signal_names:
+                    abs_sum += abs(per_signal_contribs.get(name, {}).get(symbol, 0.0))
+                row = {
+                    'symbol': symbol,
+                    'action': action,
+                    'trade_notional': abs(trades[symbol]),
+                    'target_side': target_side,
+                    'target_notional': abs(target),
+                }
+                for name in signal_names:
+                    contrib_val = per_signal_contribs.get(name, {}).get(symbol, 0.0)
+                    pct = (abs(contrib_val) / abs_sum * 100.0) if abs_sum > 0 else 0.0
+                    row[f'{name}_pct'] = pct
+                rows.append(row)
+
+            df = pd.DataFrame(rows)
+            # Order columns
+            pct_cols = [f'{n}_pct' for n in signal_names]
+            base_cols = ['symbol', 'action', 'trade_notional', 'target_side', 'target_notional']
+            df = df[base_cols + pct_cols]
+
+            # Pretty print
+            with pd.option_context('display.max_columns', None, 'display.width', 140, 'display.float_format', '{:,.2f}'.format):
+                print(df.to_string(index=False))
+
+            # Also save to CSV under backtests/results for reference
+            try:
+                repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                out_dir = os.path.join(repo_root, 'backtests', 'results')
+                os.makedirs(out_dir, exist_ok=True)
+                out_path = os.path.join(out_dir, 'trade_allocation_breakdown.csv')
+                df.to_csv(out_path, index=False)
+                print(f"\nSaved allocation breakdown to: {out_path}")
+            except Exception as e:
+                print(f"Could not save allocation breakdown CSV: {e}")
+        else:
+            print("\nNo trades → no allocation breakdown table.")
+    except Exception as e:
+        print(f"\nAllocation breakdown generation error: {e}")
+
     # Step 7: Execute orders (dry run by default)
     print("\n" + "="*80)
     print("TRADE EXECUTION")
