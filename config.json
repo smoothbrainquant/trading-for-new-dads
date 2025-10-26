@@ -1,0 +1,28 @@
+{
+  "strategy_weights": {
+    "mean_reversion": {
+      "weight": 0.7654504865255429,
+      "weight_pct": 76.5450486525543,
+      "sharpe_ratio": 6.382710069292282,
+      "description": "Best category: up_move_low_volume"
+    },
+    "size_factor": {
+      "weight": 0.1240508281535999,
+      "weight_pct": 12.40508281535999,
+      "sharpe_ratio": 1.0343980229916634,
+      "description": "Strategy: long_small_short_large"
+    },
+    "carry_factor": {
+      "weight": 0.11049868532085726,
+      "weight_pct": 11.049868532085725,
+      "sharpe_ratio": 0.921393458958184,
+      "description": "Top 10 short, Bottom 10 long"
+    }
+  },
+  "metadata": {
+    "source_file": "backtests/results/sharpe_weights_2024.csv",
+    "generated_date": "2025-10-26",
+    "total_weight": 1.0,
+    "weighting_method": "Sharpe ratio based allocation"
+  }
+}
