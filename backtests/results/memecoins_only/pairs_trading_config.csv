@@ -1,0 +1,2 @@
+signal_file,price_file,long_entry_threshold,short_entry_threshold,holding_period,exit_z_threshold,stop_loss,take_profit,position_size_method,max_positions_per_category,max_total_positions,target_leverage,transaction_cost,slippage,initial_capital,market_neutral,start_date,end_date,categories
+signals/basket_divergence_signals_full.csv,data/raw/combined_coinbase_coinmarketcap_daily.csv,-1.5,1.5,10,0.5,0.1,0.15,equal_weight,3,20,1.0,0.001,0.0005,100000.0,True,,,['Meme Coins']
