@@ -14,26 +14,25 @@ def strategy_carry(
     bottom_n: int = 10,
 ) -> Dict[str, float]:
     """
-    Carry strategy using current funding rates. Prefers Coinalyze (live) and
-    falls back to Binance via CCXT if Coinalyze is unavailable.
+    Carry strategy using AGGREGATED market-wide funding rates from Coinalyze.
+    
+    The signal comes from Coinalyze's aggregated funding rates across all exchanges,
+    which we then trade on the specified exchange (e.g., Hyperliquid).
+    
+    We are trading the funding rate signal (market sentiment), not the actual
+    funding payments themselves.
     """
-    # Resolve Coinalyze exchange code from exchange_id
-    exch_map = {
-        "hyperliquid": "H",
-        "binance": "A",
-    }
-    coinalyze_code = exch_map.get((exchange_id or "").lower(), "H")
-
     df_rates = None
-    # Prefer Coinalyze current funding
+    # Use Coinalyze to get aggregated market-wide funding rates
     try:
-        from execution.get_carry import fetch_coinalyze_funding_rates_for_universe
+        from execution.get_carry import fetch_coinalyze_aggregated_funding_rates
 
-        df_rates = fetch_coinalyze_funding_rates_for_universe(
+        print(f"  Fetching aggregated market-wide funding rates from Coinalyze...")
+        df_rates = fetch_coinalyze_aggregated_funding_rates(
             universe_symbols=universe_symbols,
-            exchange_code=coinalyze_code,
         )
         if df_rates is not None and not df_rates.empty:
+            print(f"  Got funding rates for {len(df_rates)} symbols (aggregated across exchanges)")
             # Normalize expected columns
             df_rates = df_rates.copy()
             if 'base' not in df_rates.columns:
@@ -43,7 +42,7 @@ def strategy_carry(
             if 'funding_rate' not in df_rates.columns and 'fundingRate' in df_rates.columns:
                 df_rates = df_rates.rename(columns={'fundingRate': 'funding_rate'})
     except Exception as e:
-        print(f"  ⚠️  CARRY STRATEGY: Coinalyze funding fetch failed ({e})")
+        print(f"  ⚠️  CARRY STRATEGY: Coinalyze aggregated funding fetch failed ({e})")
         print(f"      Falling back to exchange API...")
         df_rates = None
 
