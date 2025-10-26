@@ -38,8 +38,21 @@ back to the original 50/50 blend of days_from_high and breakout.
 import argparse
 import json
 import os
+import sys
 from collections import defaultdict
 import pandas as pd
+
+# Add workspace root and necessary directories to Python path
+WORKSPACE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if WORKSPACE_ROOT not in sys.path:
+    sys.path.insert(0, WORKSPACE_ROOT)
+EXECUTION_DIR = os.path.join(WORKSPACE_ROOT, 'execution')
+if EXECUTION_DIR not in sys.path:
+    sys.path.insert(0, EXECUTION_DIR)
+DATA_SCRIPTS_DIR = os.path.join(WORKSPACE_ROOT, 'data', 'scripts')
+if DATA_SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, DATA_SCRIPTS_DIR)
+
 from ccxt_get_markets_by_volume import ccxt_get_markets_by_volume
 from ccxt_get_data import ccxt_fetch_hyperliquid_daily_data
 from ccxt_get_balance import ccxt_get_hyperliquid_balance
@@ -948,8 +961,7 @@ def main():
 
             # Also save to CSV under backtests/results for reference
             try:
-                repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                out_dir = os.path.join(repo_root, 'backtests', 'results')
+                out_dir = os.path.join(WORKSPACE_ROOT, 'backtests', 'results')
                 os.makedirs(out_dir, exist_ok=True)
                 out_path = os.path.join(out_dir, 'trade_allocation_breakdown.csv')
                 df.to_csv(out_path, index=False)
