@@ -142,7 +142,7 @@ def strategy_oi_divergence(
 ) -> Dict[str, float]:
     """Open Interest divergence/trend strategy using recent OI history from Coinalyze.
 
-    - Filters universe to top 150 by market cap to reduce API calls
+    - Filters universe to top 50 by market cap to reduce API calls
     - Builds OI z-score vs price returns over a rolling window
     - Selects top/bottom by score
     - Allocates risk-parity within each side using recent price volatility
@@ -162,28 +162,28 @@ def strategy_oi_divergence(
         base = get_base_symbol(tsym)
         base_to_trading[base] = tsym
     
-    # Filter to top 150 by market cap to reduce Coinalyze API calls
-    print(f"    Filtering universe from {len(universe_symbols)} to top 150 by market cap...")
+    # Filter to top 50 by market cap to reduce Coinalyze API calls
+    print(f"    Filtering universe from {len(universe_symbols)} to top 50 by market cap...")
     try:
         from data.scripts.fetch_coinmarketcap_data import (
             fetch_coinmarketcap_data,
             map_symbols_to_trading_pairs,
         )
-        df_mc = fetch_coinmarketcap_data(limit=300)
+        df_mc = fetch_coinmarketcap_data(limit=200)
         if df_mc is not None and not df_mc.empty:
             df_mc_mapped = map_symbols_to_trading_pairs(df_mc, trading_suffix='/USDC:USDC')
             # Get trading symbols that are in our universe
             valid_mc_symbols = set(df_mc_mapped['trading_symbol'].dropna().tolist())
             filtered_universe = [s for s in universe_symbols if s in valid_mc_symbols]
             
-            # Sort by market cap and take top 150
+            # Sort by market cap and take top 50
             df_mc_filtered = df_mc_mapped[df_mc_mapped['trading_symbol'].isin(filtered_universe)]
-            df_mc_filtered = df_mc_filtered.sort_values('market_cap', ascending=False).head(150)
-            top_150_symbols = df_mc_filtered['trading_symbol'].tolist()
+            df_mc_filtered = df_mc_filtered.sort_values('market_cap', ascending=False).head(50)
+            top_50_symbols = df_mc_filtered['trading_symbol'].tolist()
             
-            if top_150_symbols:
-                print(f"    Filtered to {len(top_150_symbols)} symbols with top market caps")
-                universe_symbols = top_150_symbols
+            if top_50_symbols:
+                print(f"    Filtered to {len(top_50_symbols)} symbols with top market caps")
+                universe_symbols = top_50_symbols
                 # Update base_to_trading for filtered universe
                 base_to_trading = {}
                 for tsym in universe_symbols:
