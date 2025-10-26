@@ -718,6 +718,31 @@ def main():
                 print(f"  {symbol}: {side} ${abs(target):,.2f}")
         else:
             print("\nNo target positions generated from selected signals.")
+        
+        # CRITICAL WARNING: Check capital utilization
+        total_allocated = sum(abs(v) for v in target_positions.values())
+        utilization_pct = (total_allocated / notional_value * 100) if notional_value > 0 else 0
+        print(f"\n{'='*80}")
+        print(f"CAPITAL UTILIZATION: ${total_allocated:,.2f} / ${notional_value:,.2f} ({utilization_pct:.1f}%)")
+        print(f"{'='*80}")
+        
+        # Warn if severely underallocated
+        if utilization_pct < 50:
+            print(f"\n⚠️  WARNING: LOW CAPITAL UTILIZATION ({utilization_pct:.1f}%)")
+            print(f"    Expected ~100% utilization with leverage, but only {utilization_pct:.1f}% is allocated.")
+            print(f"    This means most strategies are NOT finding signals:")
+            for strategy_name, weight in blend_weights.items():
+                expected_alloc = weight * notional_value
+                actual_alloc = sum(abs(per_signal_contribs.get(strategy_name, {}).get(sym, 0.0)) 
+                                 for sym in target_positions.keys())
+                strat_util = (actual_alloc / expected_alloc * 100) if expected_alloc > 0 else 0
+                status = "✓" if strat_util > 80 else "⚠️" if strat_util > 20 else "❌"
+                print(f"      {status} {strategy_name:20s}: {strat_util:>5.1f}% (${actual_alloc:>12,.2f} / ${expected_alloc:>12,.2f})")
+            print(f"\n    Possible causes:")
+            print(f"      1. Strategies require external data (Coinalyze API for carry/OI)")
+            print(f"      2. Current market conditions don't meet strategy criteria")
+            print(f"      3. Strategy parameters are too conservative")
+            print(f"{'='*80}\n")
 
     else:
         # Legacy 50/50 pipeline (days_from_high + breakout)
