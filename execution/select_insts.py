@@ -1,5 +1,5 @@
 import pandas as pd
-from calc_days_from_high import get_current_days_since_high
+from signals.calc_days_from_high import get_current_days_since_high
 
 
 def select_instruments_near_200d_high(data_source, max_days=20):
