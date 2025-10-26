@@ -38,9 +38,18 @@ class BacktestConfig:
 def load_price_data(path: str) -> pd.DataFrame:
     df = pd.read_csv(path)
     df['date'] = pd.to_datetime(df['date'])
-    if 'base' in df.columns and 'symbol' not in df.columns:
+
+    # Prefer base coin symbols for alignment with OI ('BTC', 'ETH', ...)
+    if 'base' in df.columns:
         df['symbol'] = df['base']
-    df = df[['date','symbol','close']].dropna().sort_values(['symbol','date']).reset_index(drop=True)
+    elif 'symbol' in df.columns:
+        # If trading pairs are present like 'BTC/USD', extract the base
+        if isinstance(df['symbol'].iloc[0], str) and '/' in str(df['symbol'].iloc[0]):
+            df['symbol'] = df['symbol'].astype(str).str.extract(r'^([^/]+)')[0]
+    else:
+        raise ValueError("price data must contain 'base' or 'symbol' column")
+
+    df = df[['date', 'symbol', 'close']].dropna().sort_values(['symbol', 'date']).reset_index(drop=True)
     return df
 
 
@@ -110,15 +119,24 @@ def backtest(price_df: pd.DataFrame, oi_df: pd.DataFrame, cfg: BacktestConfig):
     for i, dt in enumerate(tracking_dates):
         # Rebalance if needed
         if (last_rebalance is None) or (dt in rebalance_dates):
-            # Select portfolio
+            # Select portfolio (ensure we only use non-null score rows)
             df_day = scores[scores['date'] == dt]
             if df_day.empty:
                 longs, shorts = [], []
             else:
                 col = 'score_trend' if cfg.mode == 'trend' else 'score_divergence'
-                sel = df_day[['symbol', col]].dropna().sort_values(col, ascending=False)
+                sel = (
+                    df_day[['symbol', col]]
+                    .dropna()
+                    .drop_duplicates(subset=['symbol'], keep='first')
+                    .sort_values(col, ascending=False)
+                )
                 longs = sel.head(cfg.top_n)['symbol'].tolist()
                 shorts = sel.tail(cfg.bottom_n)['symbol'].tolist()
+                # Avoid overlapping symbols between longs and shorts which cancels exposure
+                overlap = set(longs) & set(shorts)
+                if overlap:
+                    shorts = [s for s in shorts if s not in overlap]
 
             # Build weights (risk parity within sides)
             weights = build_equal_or_risk_parity_weights(
@@ -130,6 +148,7 @@ def backtest(price_df: pd.DataFrame, oi_df: pd.DataFrame, cfg: BacktestConfig):
         # Apply NEXT day's returns
         if i < len(tracking_dates) - 1 and weights:
             next_dt = tracking_dates[i+1]
+            # Use next-day returns on the same set of symbols to avoid look-ahead
             ret_df = p[p['date'] == next_dt]
             port_log_ret = calculate_portfolio_returns(weights, ret_df)
             capital = capital * np.exp(port_log_ret)
