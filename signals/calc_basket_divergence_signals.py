@@ -3,7 +3,7 @@
 Cryptocurrency Basket Divergence Signal Generation
 Phase 3 of Pairs Trading Research Specification
 
-This script generates mean-reversion trading signals based on coin divergence
+This script generates momentum trading signals based on coin divergence
 from sector/category basket performance.
 
 Usage:
@@ -327,7 +327,10 @@ def generate_signals_for_category(
     min_correlation: float = MIN_CORRELATION
 ) -> pd.DataFrame:
     """
-    Generate divergence signals for a category.
+    Generate divergence signals for a category using momentum strategy.
+    
+    LONG: Coins that are outperforming the basket (momentum)
+    SHORT: Coins that are underperforming the basket (momentum)
     
     Returns:
     --------
@@ -433,18 +436,18 @@ def generate_signals_for_category(
         # Generate signals based on thresholds
         merged['signal'] = 'NONE'
         
-        # Long signal: underperformer
+        # Long signal: outperformer (momentum strategy)
         long_condition = (
-            (merged['z_score'] < -signal_threshold) &
-            (merged['percentile_rank'] < 25) &
+            (merged['z_score'] > signal_threshold) &
+            (merged['percentile_rank'] > 75) &
             (merged['basket_corr'] > min_correlation)
         )
         merged.loc[long_condition, 'signal'] = 'LONG'
         
-        # Short signal: outperformer
+        # Short signal: underperformer (momentum strategy)
         short_condition = (
-            (merged['z_score'] > signal_threshold) &
-            (merged['percentile_rank'] > 75) &
+            (merged['z_score'] < -signal_threshold) &
+            (merged['percentile_rank'] < 25) &
             (merged['basket_corr'] > min_correlation)
         )
         merged.loc[short_condition, 'signal'] = 'SHORT'
