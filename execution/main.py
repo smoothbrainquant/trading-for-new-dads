@@ -627,7 +627,16 @@ def main():
                 contrib = strategy_breakout(historical_data, strategy_notional)
             elif strategy_name == 'carry':
                 exchange_id = p.get('exchange_id', 'binance') if isinstance(p, dict) else 'binance'
-                contrib = strategy_carry(historical_data, list(historical_data.keys()), strategy_notional, exchange_id=exchange_id)
+                top_n = int(p.get('top_n', 10)) if isinstance(p, dict) else 10
+                bottom_n = int(p.get('bottom_n', 10)) if isinstance(p, dict) else 10
+                contrib = strategy_carry(
+                    historical_data,
+                    list(historical_data.keys()),
+                    strategy_notional,
+                    exchange_id=exchange_id,
+                    top_n=top_n,
+                    bottom_n=bottom_n,
+                )
             elif strategy_name == 'mean_reversion':
                 quantile = float(p.get('quantile', 0.2)) if isinstance(p, dict) else 0.2
                 contrib = strategy_mean_reversion(historical_data, strategy_notional, quantile=quantile)
