@@ -83,6 +83,120 @@ from execution.strategies.utils import (
     calculate_breakout_signals_from_data,
 )
 
+# Import cache management
+try:
+    from data.scripts.coinalyze_cache import CoinalyzeCache
+except ImportError:
+    CoinalyzeCache = None
+
+
+def update_market_data():
+    """
+    Update market cap data from CoinMarketCap.
+    
+    This function fetches the latest market cap data and saves it to the data/raw directory.
+    It runs automatically at the start of each execution to ensure fresh data.
+    
+    Returns:
+        pd.DataFrame: Latest market cap data or None if failed
+    """
+    print("\n" + "="*80)
+    print("UPDATING MARKET DATA")
+    print("="*80)
+    
+    try:
+        # Fetch latest market cap data
+        print("\nFetching latest market cap data from CoinMarketCap...")
+        df_marketcap = fetch_coinmarketcap_data(limit=300)
+        
+        if df_marketcap is not None and not df_marketcap.empty:
+            # Save to data/raw directory
+            out_dir = os.path.join(WORKSPACE_ROOT, 'data', 'raw')
+            os.makedirs(out_dir, exist_ok=True)
+            out_path = os.path.join(out_dir, 'crypto_marketcap_latest.csv')
+            df_marketcap.to_csv(out_path, index=False)
+            print(f"✓ Saved {len(df_marketcap)} market cap records to: {out_path}")
+            return df_marketcap
+        else:
+            print("⚠️  No market cap data available (using mock data)")
+            return None
+    except Exception as e:
+        print(f"⚠️  Error updating market cap data: {e}")
+        return None
+
+
+def check_cache_freshness():
+    """
+    Check the freshness of cached OI and carry (funding rate) data.
+    
+    This function inspects the Coinalyze cache directory and reports on the age
+    and validity of cached data files. It helps identify when data needs to be refreshed.
+    
+    Returns:
+        dict: Cache status information
+    """
+    print("\n" + "="*80)
+    print("CHECKING CACHE FRESHNESS")
+    print("="*80)
+    
+    if CoinalyzeCache is None:
+        print("⚠️  CoinalyzeCache not available - skipping cache check")
+        return {'status': 'unavailable'}
+    
+    try:
+        # Initialize cache with default TTL (1 hour for funding rates)
+        cache = CoinalyzeCache(ttl_hours=1)
+        
+        # Get cache info
+        info = cache.get_cache_info()
+        
+        print(f"\nCache directory: {info['cache_dir']}")
+        print(f"Cache TTL: {info['ttl_hours']} hour(s)")
+        
+        if not info['files']:
+            print("\n⚠️  No cached data found")
+            print("   Coinalyze data will be fetched from API when needed")
+            return {'status': 'empty', 'files': []}
+        
+        print(f"\nCached files: {len(info['files'])}")
+        print("\nCache Status:")
+        print("-" * 80)
+        
+        valid_count = 0
+        expired_count = 0
+        
+        for f in info['files']:
+            status = "✓ VALID" if f['is_valid'] else "✗ EXPIRED"
+            age_str = f"{f['age_hours']:.2f}h"
+            size_kb = f['size'] / 1024
+            
+            print(f"  {status:10s} {f['name']:40s} age={age_str:8s} size={size_kb:.1f}KB")
+            
+            if f['is_valid']:
+                valid_count += 1
+            else:
+                expired_count += 1
+        
+        print("-" * 80)
+        print(f"\nSummary: {valid_count} valid, {expired_count} expired")
+        
+        if expired_count > 0:
+            print("\n⚠️  Some cached data is expired and will be refreshed from API when needed")
+        else:
+            print("\n✓ All cached data is fresh and will be used")
+        
+        return {
+            'status': 'ok',
+            'total_files': len(info['files']),
+            'valid_count': valid_count,
+            'expired_count': expired_count,
+            'files': info['files']
+        }
+        
+    except Exception as e:
+        print(f"\n⚠️  Error checking cache: {e}")
+        return {'status': 'error', 'error': str(e)}
+
 
 def request_markets_by_volume(min_volume=100000):
     """
@@ -587,6 +701,12 @@ def main():
     print("="*80)
     print(f"AUTOMATED TRADING STRATEGY EXECUTION - {title}")
     print("="*80)
+    
+    # Update market data and check cache freshness
+    print("\n[Pre-flight checks]")
+    update_market_data()
+    check_cache_freshness()
+    
     print(f"\nParameters:")
     print(f"  Days since high (Strategy 1 default): {args.days_since_high}")
     print(f"  Rebalance threshold: {args.rebalance_threshold*100:.1f}%")
