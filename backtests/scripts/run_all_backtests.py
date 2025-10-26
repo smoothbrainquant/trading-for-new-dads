@@ -38,6 +38,9 @@ from backtests.scripts.backtest_size_factor import (
 from backtests.scripts.backtest_carry_factor import (
     backtest as backtest_carry, load_funding_rates, load_price_data
 )
+from backtests.scripts.backtest_20d_from_200d_high import (
+    backtest as backtest_days_from_high, load_data
+)
 
 
 def calculate_comprehensive_metrics(portfolio_df, initial_capital, benchmark_returns=None):
@@ -381,6 +384,42 @@ def run_carry_factor_backtest(data_file, funding_rates_file, **kwargs):
         return None
 
 
+def run_days_from_high_backtest(data_file, **kwargs):
+    """Run days from high backtest."""
+    print("\n" + "="*80)
+    print("Running Days from High Backtest")
+    print("="*80)
+    
+    try:
+        data = load_data(data_file)
+        results = backtest_days_from_high(
+            data=data,
+            days_threshold=kwargs.get('days_threshold', 20),
+            volatility_window=kwargs.get('volatility_window', 30),
+            initial_capital=kwargs.get('initial_capital', 10000),
+            start_date=kwargs.get('start_date'),
+            end_date=kwargs.get('end_date')
+        )
+        
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results['portfolio_values'],
+            kwargs.get('initial_capital', 10000)
+        )
+        
+        return {
+            'strategy': 'Days from High',
+            'description': f"Max {kwargs.get('days_threshold', 20)} days from 200d high",
+            'metrics': metrics,
+            'results': results
+        }
+    except Exception as e:
+        print(f"Error in Days from High backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 def create_summary_table(all_results):
     """
     Create summary table with all metrics.
@@ -541,6 +580,12 @@ def main():
         default=True,
         help='Run carry factor backtest'
     )
+    parser.add_argument(
+        '--run-days-from-high',
+        action='store_true',
+        default=True,
+        help='Run days from high backtest'
+    )
     
     args = parser.parse_args()
     
@@ -615,6 +660,16 @@ def main():
             top_n=10,
             bottom_n=10,
             rebalance_days=7,
+            **common_params
+        )
+        if result:
+            all_results.append(result)
+    
+    # 5. Days from High
+    if args.run_days_from_high:
+        result = run_days_from_high_backtest(
+            args.data_file,
+            days_threshold=20,
             **common_params
         )
         if result:
