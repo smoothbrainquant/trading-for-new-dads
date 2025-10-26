@@ -2,6 +2,14 @@ import ccxt
 import pandas as pd
 from datetime import datetime
 from pprint import pprint
+from typing import List, Dict, Tuple
+
+try:
+    # Lazy import; only needed when using Coinalyze
+    from data.scripts.coinalyze_client import CoinalyzeClient  # type: ignore
+except Exception:
+    # We will import inside functions to avoid hard failure on import
+    CoinalyzeClient = None  # type: ignore
 
 def fetch_binance_funding_rates(symbols=None, exchange_id='binance'):
     """
@@ -112,6 +120,99 @@ def fetch_binance_funding_history(symbol, limit=100):
         raise
 
 
+# -----------------------------
+# Coinalyze integration
+# -----------------------------
+
+def _parse_trading_symbol(symbol: str) -> Tuple[str, str]:
+    """
+    Parse a trading symbol like 'BTC/USDC:USDC' into base and quote (e.g., ('BTC', 'USDC')).
+    """
+    if not isinstance(symbol, str) or '/' not in symbol:
+        return symbol, ''
+    base, rhs = symbol.split('/', 1)
+    quote = rhs.split(':', 1)[0] if ':' in rhs else rhs
+    return base, quote
+
+
+def _build_coinalyze_symbol(base: str, quote: str, exchange_code: str) -> str:
+    """
+    Build Coinalyze futures-perpetual symbol given components.
+    Format: {BASE}{QUOTE}_PERP.{EXCHANGE_CODE}
+    Example: BTCUSDC_PERP.H  (Hyperliquid), BTCUSDT_PERP.A (Binance)
+    """
+    return f"{base}{quote}_PERP.{exchange_code}"
+
+
+def fetch_coinalyze_funding_rates_for_universe(
+    universe_symbols: List[str],
+    exchange_code: str = 'H',
+) -> pd.DataFrame:
+    """
+    Fetch current funding rates from Coinalyze for a given universe of trading symbols.
+
+    Args:
+        universe_symbols: List of trading symbols, e.g., ['BTC/USDC:USDC', 'ETH/USDC:USDC']
+        exchange_code: Coinalyze exchange code (e.g., 'H' Hyperliquid, 'A' Binance)
+
+    Returns:
+        DataFrame with at least columns: base, quote, funding_rate, funding_rate_pct,
+        update_timestamp, update_time, coinalyze_symbol
+    """
+    # Import here to avoid hard dependency when not used
+    from data.scripts.coinalyze_client import CoinalyzeClient  # type: ignore
+
+    if not universe_symbols:
+        return pd.DataFrame(columns=[
+            'base', 'quote', 'funding_rate', 'funding_rate_pct',
+            'update_timestamp', 'update_time', 'coinalyze_symbol'
+        ])
+
+    # Build unique Coinalyze symbols for the provided universe
+    pairs: Dict[str, Tuple[str, str]] = {}
+    for sym in universe_symbols:
+        base, quote = _parse_trading_symbol(sym)
+        # Default to USDC if quote missing
+        quote = quote or 'USDC'
+        c_symbol = _build_coinalyze_symbol(base, quote, exchange_code)
+        pairs[c_symbol] = (base, quote)
+
+    symbols_list = list(pairs.keys())
+    client = CoinalyzeClient()
+
+    # Coinalyze allows up to 20 symbols per request
+    chunk_size = 20
+    all_rows = []
+    for i in range(0, len(symbols_list), chunk_size):
+        chunk = symbols_list[i:i + chunk_size]
+        symbols_param = ','.join(chunk)
+        data = client.get_funding_rate(symbols_param)
+        if not data:
+            continue
+        for item in data:
+            c_sym = item.get('symbol')
+            value = item.get('value')  # decimal per-period rate
+            update = item.get('update')  # epoch ms
+            if c_sym is None or value is None:
+                continue
+            base, quote = pairs.get(c_sym, ('', ''))
+            all_rows.append({
+                'coinalyze_symbol': c_sym,
+                'base': base,
+                'quote': quote,
+                'funding_rate': float(value),
+                'funding_rate_pct': float(value) * 100.0,
+                'update_timestamp': int(update) if update is not None else None,
+                'update_time': pd.to_datetime(int(update), unit='ms') if update is not None else None,
+            })
+
+    df = pd.DataFrame(all_rows)
+    # Sort similar to Binance helper for consistency (descending by rate)
+    if not df.empty and 'funding_rate' in df.columns:
+        df = df.sort_values('funding_rate', ascending=False).reset_index(drop=True)
+    return df
+
+
 def print_funding_summary(df, top_n=20):
     """
     Print a formatted summary of funding rates.
@@ -210,6 +311,16 @@ if __name__ == "__main__":
         #     print(f"\nAverage funding rate (last 50): {avg_funding:.4f}%")
         #     print(f"Annualized (assuming 3x per day): {avg_funding * 3 * 365:.2f}%")
         
+        # Option 4: Fetch Coinalyze funding rates for a universe on Hyperliquid (if COINALYZE_API set)
+        try:
+            universe = ['BTC/USDC:USDC', 'ETH/USDC:USDC', 'SOL/USDC:USDC']
+            df_c = fetch_coinalyze_funding_rates_for_universe(universe_symbols=universe, exchange_code='H')
+            if not df_c.empty:
+                print("\nCoinalyze current funding (Hyperliquid):")
+                print(df_c[['base', 'funding_rate_pct', 'update_time']].head(10))
+        except Exception as _:
+            pass
+
     except ccxt.ExchangeNotAvailable as e:
         print("\n" + "!" * 100)
         print("ERROR: Binance API is not available from this location (geo-restricted)")
