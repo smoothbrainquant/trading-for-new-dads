@@ -45,6 +45,10 @@ from ccxt_get_data import ccxt_fetch_hyperliquid_daily_data
 from ccxt_get_balance import ccxt_get_hyperliquid_balance
 from ccxt_get_positions import ccxt_get_positions
 from check_positions import check_positions, get_position_weights
+from data.scripts.fetch_coinmarketcap_data import (
+    fetch_coinmarketcap_data,
+    map_symbols_to_trading_pairs,
+)
 from aggressive_order_execution import aggressive_execute_orders
 
 # Import strategies from dedicated package
@@ -759,6 +763,57 @@ def main():
             print("TRADE ALLOCATION BREAKDOWN BY SIGNAL (% of symbol-level contribution)")
             print("-"*80)
 
+            # --- Enrichments: % change (1d), market cap, funding rate ---
+            # 1) Latest 1d % change from historical_data
+            pct_change_map: dict[str, float] = {}
+            for symbol in traded_symbols:
+                try:
+                    df_sym = historical_data.get(symbol)
+                    if df_sym is not None and not df_sym.empty and 'close' in df_sym.columns:
+                        closes = df_sym['close'].dropna()
+                        if len(closes) >= 2:
+                            prev, last = float(closes.iloc[-2]), float(closes.iloc[-1])
+                            if prev != 0:
+                                pct_change_map[symbol] = (last / prev - 1.0) * 100.0
+                            else:
+                                pct_change_map[symbol] = 0.0
+                        else:
+                            pct_change_map[symbol] = 0.0
+                    else:
+                        pct_change_map[symbol] = 0.0
+                except Exception:
+                    pct_change_map[symbol] = 0.0
+
+            # 2) Market cap via CoinMarketCap (mocked if no API key)
+            marketcap_by_trading_symbol: dict[str, float] = {}
+            try:
+                df_mc = fetch_coinmarketcap_data(limit=300)
+                if df_mc is not None and not df_mc.empty:
+                    df_mc_map = map_symbols_to_trading_pairs(df_mc, trading_suffix='/USDC:USDC')
+                    # Use latest mapping; convert to dict trading_symbol->market_cap
+                    marketcap_by_trading_symbol = dict(
+                        zip(df_mc_map['trading_symbol'].astype(str), df_mc_map['market_cap'].astype(float))
+                    )
+            except Exception:
+                # If fetching fails, leave marketcap map empty
+                marketcap_by_trading_symbol = {}
+
+            # 3) Funding rate via Binance futures (map by base symbol)
+            funding_by_base: dict[str, float] = {}
+            try:
+                from execution.get_carry import fetch_binance_funding_rates
+
+                df_fr = fetch_binance_funding_rates(symbols=None, exchange_id='binance')
+                if df_fr is not None and not df_fr.empty:
+                    df_tmp = df_fr.copy()
+                    df_tmp['base'] = df_tmp['symbol'].astype(str).str.split('/').str[0]
+                    # Average in case multiple contracts per base
+                    funding_by_base = (
+                        df_tmp.groupby('base')['funding_rate_pct'].mean().to_dict()
+                    )
+            except Exception:
+                funding_by_base = {}
+
             rows = []
             for symbol in traded_symbols:
                 target = target_positions.get(symbol, 0.0)
@@ -767,12 +822,24 @@ def main():
                 abs_sum = 0.0
                 for name in signal_names:
                     abs_sum += abs(per_signal_contribs.get(name, {}).get(symbol, 0.0))
+                # Enrichments
+                market_cap_val = marketcap_by_trading_symbol.get(symbol)
+                # Map funding by base symbol
+                try:
+                    base_symbol = get_base_symbol(symbol)
+                except Exception:
+                    base_symbol = symbol.split('/')[0] if isinstance(symbol, str) else symbol
+                funding_pct_val = funding_by_base.get(base_symbol)
+
                 row = {
                     'symbol': symbol,
                     'action': action,
                     'trade_notional': abs(trades[symbol]),
                     'target_side': target_side,
                     'target_notional': abs(target),
+                    'pct_change_1d': pct_change_map.get(symbol, 0.0),
+                    'market_cap': market_cap_val if market_cap_val is not None else float('nan'),
+                    'funding_rate_pct': funding_pct_val if funding_pct_val is not None else float('nan'),
                 }
                 for name in signal_names:
                     contrib_val = per_signal_contribs.get(name, {}).get(symbol, 0.0)
@@ -783,7 +850,10 @@ def main():
             df = pd.DataFrame(rows)
             # Order columns
             pct_cols = [f'{n}_pct' for n in signal_names]
-            base_cols = ['symbol', 'action', 'trade_notional', 'target_side', 'target_notional']
+            base_cols = [
+                'symbol', 'action', 'trade_notional', 'target_side', 'target_notional',
+                'pct_change_1d', 'market_cap', 'funding_rate_pct'
+            ]
             df = df[base_cols + pct_cols]
 
             # Pretty print
