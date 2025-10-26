@@ -723,6 +723,41 @@ def main():
             # Store initial contributions
             initial_contributions[strategy_name] = dict(contrib)
 
+        # Print BEFORE reallocation weights
+        print("\n" + "="*80)
+        print("PORTFOLIO WEIGHTS BEFORE CAPITAL REALLOCATION")
+        print("="*80)
+        temp_positions_before = defaultdict(float)
+        for strategy_name, contrib in initial_contributions.items():
+            for sym, ntl in contrib.items():
+                temp_positions_before[sym] += ntl
+        
+        if temp_positions_before:
+            # Convert to weights
+            weights_before = {}
+            for symbol, notional in temp_positions_before.items():
+                weight = notional / notional_value if notional_value > 0 else 0.0
+                weights_before[symbol] = weight
+            
+            # Sort by absolute weight
+            sorted_weights = sorted(weights_before.items(), key=lambda x: abs(x[1]), reverse=True)
+            
+            print(f"\nTop 20 positions:")
+            for i, (symbol, weight) in enumerate(sorted_weights[:20], 1):
+                side = "LONG" if weight > 0 else ("SHORT" if weight < 0 else "FLAT")
+                print(f"  {i:2d}. {symbol:20s}: {weight:>8.4f} ({weight*100:>6.2f}%) {side:>5s}")
+            
+            total_weight = sum(abs(w) for w in weights_before.values())
+            total_long = sum(w for w in weights_before.values() if w > 0)
+            total_short = sum(abs(w) for w in weights_before.values() if w < 0)
+            print(f"\nTotal positions: {len(weights_before)}")
+            print(f"Total weight (abs): {total_weight:.4f}")
+            print(f"Long weight: {total_long:.4f}")
+            print(f"Short weight: {total_short:.4f}")
+        else:
+            print("\nNo positions before reallocation.")
+        print("="*80)
+
         # Check which strategies returned no positions and rebalance
         # Fixed weight strategies that should maintain their allocation
         FIXED_WEIGHT_STRATEGIES = {'breakout', 'days_from_high'}
@@ -826,6 +861,37 @@ def main():
             for sym, ntl in contrib.items():
                 target_positions[sym] += ntl
 
+        # Print AFTER reallocation weights
+        print("\n" + "="*80)
+        print("PORTFOLIO WEIGHTS AFTER CAPITAL REALLOCATION")
+        print("="*80)
+        
+        if target_positions:
+            # Convert to weights
+            weights_after = {}
+            for symbol, notional in target_positions.items():
+                weight = notional / notional_value if notional_value > 0 else 0.0
+                weights_after[symbol] = weight
+            
+            # Sort by absolute weight
+            sorted_weights = sorted(weights_after.items(), key=lambda x: abs(x[1]), reverse=True)
+            
+            print(f"\nTop 20 positions:")
+            for i, (symbol, weight) in enumerate(sorted_weights[:20], 1):
+                side = "LONG" if weight > 0 else ("SHORT" if weight < 0 else "FLAT")
+                print(f"  {i:2d}. {symbol:20s}: {weight:>8.4f} ({weight*100:>6.2f}%) {side:>5s}")
+            
+            total_weight = sum(abs(w) for w in weights_after.values())
+            total_long = sum(w for w in weights_after.values() if w > 0)
+            total_short = sum(abs(w) for w in weights_after.values() if w < 0)
+            print(f"\nTotal positions: {len(weights_after)}")
+            print(f"Total weight (abs): {total_weight:.4f}")
+            print(f"Long weight: {total_long:.4f}")
+            print(f"Short weight: {total_short:.4f}")
+        else:
+            print("\nNo positions after reallocation.")
+        print("="*80)
+
         # Print combined positions
         if target_positions:
             print("\nCombined Target Positions (from multi-signal blend):")
@@ -860,6 +926,51 @@ def main():
             print(f"      2. Current market conditions don't meet strategy criteria")
             print(f"      3. Strategy parameters are too conservative")
             print(f"{'='*80}\n")
+    
+    # Export portfolio weights to file after handling reallocation
+    try:
+        if target_positions:
+            # Convert target positions (notional) to portfolio weights
+            portfolio_weights = {}
+            for symbol, notional in target_positions.items():
+                weight = notional / notional_value if notional_value > 0 else 0.0
+                portfolio_weights[symbol] = weight
+            
+            # Create DataFrame with weights and per-strategy contributions
+            weight_rows = []
+            for symbol in portfolio_weights.keys():
+                row = {
+                    'symbol': symbol,
+                    'final_weight': portfolio_weights[symbol],
+                    'target_notional': target_positions[symbol],
+                    'target_side': 'LONG' if target_positions[symbol] > 0 else ('SHORT' if target_positions[symbol] < 0 else 'FLAT')
+                }
+                # Add per-strategy weight contributions
+                for name in signal_names:
+                    contrib_val = per_signal_contribs.get(name, {}).get(symbol, 0.0)
+                    row[f'{name}_weight'] = (contrib_val / notional_value) if notional_value > 0 else 0.0
+                weight_rows.append(row)
+            
+            df_weights = pd.DataFrame(weight_rows)
+            
+            # Sort by absolute weight (descending)
+            df_weights['abs_weight'] = df_weights['final_weight'].abs()
+            df_weights = df_weights.sort_values('abs_weight', ascending=False).drop('abs_weight', axis=1)
+            
+            # Save to file
+            out_dir = os.path.join(WORKSPACE_ROOT, 'backtests', 'results')
+            os.makedirs(out_dir, exist_ok=True)
+            out_path = os.path.join(out_dir, 'portfolio_weights.csv')
+            df_weights.to_csv(out_path, index=False)
+            print(f"\n{'='*80}")
+            print(f"PORTFOLIO WEIGHTS EXPORTED")
+            print(f"{'='*80}")
+            print(f"Saved portfolio weights to: {out_path}")
+            print(f"Total symbols: {len(portfolio_weights)}")
+            print(f"Total weight (abs): {sum(abs(w) for w in portfolio_weights.values()):.4f}")
+            print(f"{'='*80}\n")
+    except Exception as e:
+        print(f"\nWarning: Could not export portfolio weights: {e}")
 
     else:
         # Legacy 50/50 pipeline (days_from_high + breakout)
@@ -907,6 +1018,51 @@ def main():
             for symbol, target in sorted(target_positions.items()):
                 side = "LONG" if target > 0 else ("SHORT" if target < 0 else "FLAT")
                 print(f"  {symbol}: {side} ${abs(target):,.2f}")
+        
+        # Export portfolio weights to file for legacy mode
+        try:
+            if target_positions:
+                # Convert target positions (notional) to portfolio weights
+                portfolio_weights = {}
+                for symbol, notional in target_positions.items():
+                    weight = notional / notional_value if notional_value > 0 else 0.0
+                    portfolio_weights[symbol] = weight
+                
+                # Create DataFrame with weights and per-strategy contributions
+                weight_rows = []
+                for symbol in portfolio_weights.keys():
+                    row = {
+                        'symbol': symbol,
+                        'final_weight': portfolio_weights[symbol],
+                        'target_notional': target_positions[symbol],
+                        'target_side': 'LONG' if target_positions[symbol] > 0 else ('SHORT' if target_positions[symbol] < 0 else 'FLAT')
+                    }
+                    # Add per-strategy weight contributions
+                    for name in signal_names:
+                        contrib_val = per_signal_contribs.get(name, {}).get(symbol, 0.0)
+                        row[f'{name}_weight'] = (contrib_val / notional_value) if notional_value > 0 else 0.0
+                    weight_rows.append(row)
+                
+                df_weights = pd.DataFrame(weight_rows)
+                
+                # Sort by absolute weight (descending)
+                df_weights['abs_weight'] = df_weights['final_weight'].abs()
+                df_weights = df_weights.sort_values('abs_weight', ascending=False).drop('abs_weight', axis=1)
+                
+                # Save to file
+                out_dir = os.path.join(WORKSPACE_ROOT, 'backtests', 'results')
+                os.makedirs(out_dir, exist_ok=True)
+                out_path = os.path.join(out_dir, 'portfolio_weights.csv')
+                df_weights.to_csv(out_path, index=False)
+                print(f"\n{'='*80}")
+                print(f"PORTFOLIO WEIGHTS EXPORTED")
+                print(f"{'='*80}")
+                print(f"Saved portfolio weights to: {out_path}")
+                print(f"Total symbols: {len(portfolio_weights)}")
+                print(f"Total weight (abs): {sum(abs(w) for w in portfolio_weights.values()):.4f}")
+                print(f"{'='*80}\n")
+        except Exception as e:
+            print(f"\nWarning: Could not export portfolio weights: {e}")
 
     # Step 5: Get current positions
     print("\n[5/7] Getting current positions...")
