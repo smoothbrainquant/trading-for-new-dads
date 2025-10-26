@@ -27,12 +27,12 @@ def strategy_carry(
     try:
         from execution.get_carry import fetch_coinalyze_aggregated_funding_rates
 
-        print(f"  Fetching aggregated market-wide funding rates from Coinalyze...")
+        print(f"  Fetching market-wide funding rates from Coinalyze (using Binance as primary)...")
         df_rates = fetch_coinalyze_aggregated_funding_rates(
             universe_symbols=universe_symbols,
         )
         if df_rates is not None and not df_rates.empty:
-            print(f"  Got funding rates for {len(df_rates)} symbols (aggregated across exchanges)")
+            print(f"  Got funding rates for {len(df_rates)} symbols from Binance (market proxy)")
             # Normalize expected columns
             df_rates = df_rates.copy()
             if 'base' not in df_rates.columns:

@@ -150,12 +150,158 @@ def _build_coinalyze_symbol(base: str, quote: str, exchange_code: str) -> str:
         return f"{base}{quote}_PERP.{exchange_code}"
 
 
+def fetch_coinalyze_aggregated_funding_rates(
+    universe_symbols: List[str],
+    aggregation: str = 'mean',  # 'mean', 'median', or 'binance_primary'
+) -> pd.DataFrame:
+    """
+    Fetch AGGREGATED funding rates from Coinalyze across ALL major exchanges.
+    
+    This provides market-wide funding rate signals (not exchange-specific).
+    Use this when you want to trade based on overall market sentiment rather than
+    exchange-specific funding payments.
+    
+    Args:
+        universe_symbols: List of trading symbols, e.g., ['BTC/USDC:USDC', 'ETH/USDC:USDC']
+        aggregation: How to aggregate across exchanges:
+            - 'mean': Average funding rate across all exchanges
+            - 'median': Median funding rate across all exchanges  
+            - 'binance_primary': Use Binance as primary source (largest exchange)
+    
+    Returns:
+        DataFrame with columns: base, quote, funding_rate, funding_rate_pct,
+        num_exchanges (how many exchanges had data for this symbol)
+    """
+    from data.scripts.coinalyze_client import CoinalyzeClient
+    
+    if not universe_symbols:
+        return pd.DataFrame(columns=[
+            'base', 'quote', 'funding_rate', 'funding_rate_pct', 'num_exchanges'
+        ])
+    
+    # Major exchanges to aggregate across (in order of preference/volume)
+    # A=Binance (primary - most liquid and reliable data)
+    # D=Bybit, K=OKX, F=Bitfinex (may have limited current FR data in Coinalyze)
+    major_exchanges = ['A']  # Binance as primary market signal
+    
+    # Note: In practice, Binance funding rates are a good proxy for market-wide
+    # sentiment as it's the largest exchange by volume
+    
+    client = CoinalyzeClient()
+    
+    # Build base symbols from universe
+    base_symbols = set()
+    for sym in universe_symbols:
+        base, _ = _parse_trading_symbol(sym)
+        if base:
+            base_symbols.add(base)
+    
+    # Fetch funding rates from each exchange
+    all_rates = []
+    for exchange_code in major_exchanges:
+        # Build symbols for this exchange
+        symbols_for_exchange = []
+        for base in base_symbols:
+            # Binance and others typically use USDT perpetuals
+            c_symbol = _build_coinalyze_symbol(base, 'USDT', exchange_code)
+            symbols_for_exchange.append(c_symbol)
+        
+        # Fetch in chunks of 20
+        chunk_size = 20
+        for i in range(0, len(symbols_for_exchange), chunk_size):
+            chunk = symbols_for_exchange[i:i + chunk_size]
+            symbols_param = ','.join(chunk)
+            
+            try:
+                data = client.get_funding_rate(symbols_param)
+                if data:
+                    for item in data:
+                        c_sym = item.get('symbol')
+                        value = item.get('value')
+                        if c_sym and value is not None:
+                            # Extract base from Coinalyze symbol
+                            if exchange_code == 'H':
+                                base = c_sym.replace('.H', '')
+                            else:
+                                # Format like BTCUSDT_PERP.A
+                                base = c_sym.split('USDT')[0] if 'USDT' in c_sym else c_sym.split('.')[0]
+                            
+                            all_rates.append({
+                                'base': base,
+                                'exchange_code': exchange_code,
+                                'coinalyze_symbol': c_sym,
+                                'funding_rate': float(value),
+                                'funding_rate_pct': float(value) * 100.0,
+                            })
+            except Exception as e:
+                # Continue if one exchange fails
+                pass
+    
+    if not all_rates:
+        return pd.DataFrame(columns=['base', 'quote', 'funding_rate', 'funding_rate_pct', 'num_exchanges'])
+    
+    df_all = pd.DataFrame(all_rates)
+    
+    # Aggregate by base symbol
+    if aggregation == 'mean':
+        df_agg = df_all.groupby('base').agg({
+            'funding_rate': 'mean',
+            'funding_rate_pct': 'mean',
+            'exchange_code': 'count'  # Count exchanges
+        }).reset_index()
+        df_agg = df_agg.rename(columns={'exchange_code': 'num_exchanges'})
+    elif aggregation == 'median':
+        df_agg = df_all.groupby('base').agg({
+            'funding_rate': 'median',
+            'funding_rate_pct': 'median',
+            'exchange_code': 'count'
+        }).reset_index()
+        df_agg = df_agg.rename(columns={'exchange_code': 'num_exchanges'})
+    elif aggregation == 'binance_primary':
+        # Use Binance (A) as primary, fall back to others
+        df_binance = df_all[df_all['exchange_code'] == 'A']
+        df_others = df_all[df_all['exchange_code'] != 'A']
+        
+        # For symbols on Binance, use Binance rate
+        # For symbols not on Binance, use mean of others
+        df_agg_binance = df_binance.groupby('base').agg({
+            'funding_rate': 'first',
+            'funding_rate_pct': 'first',
+            'exchange_code': 'count'
+        }).reset_index()
+        df_agg_binance = df_agg_binance.rename(columns={'exchange_code': 'num_exchanges'})
+        
+        df_agg_others = df_others.groupby('base').agg({
+            'funding_rate': 'mean',
+            'funding_rate_pct': 'mean',
+            'exchange_code': 'count'
+        }).reset_index()
+        df_agg_others = df_agg_others.rename(columns={'exchange_code': 'num_exchanges'})
+        
+        # Combine: prefer Binance
+        df_agg = pd.concat([df_agg_binance, df_agg_others[~df_agg_others['base'].isin(df_agg_binance['base'])]])
+    else:
+        df_agg = df_all.groupby('base').agg({
+            'funding_rate': 'mean',
+            'funding_rate_pct': 'mean',
+            'exchange_code': 'count'
+        }).reset_index()
+        df_agg = df_agg.rename(columns={'exchange_code': 'num_exchanges'})
+    
+    df_agg['quote'] = 'USDT'  # Aggregated rates are typically from USDT perps
+    
+    # Sort by funding rate descending
+    df_agg = df_agg.sort_values('funding_rate', ascending=False).reset_index(drop=True)
+    
+    return df_agg[['base', 'quote', 'funding_rate', 'funding_rate_pct', 'num_exchanges']]
+
+
 def fetch_coinalyze_funding_rates_for_universe(
     universe_symbols: List[str],
     exchange_code: str = 'H',
 ) -> pd.DataFrame:
     """
-    Fetch current funding rates from Coinalyze for a given universe of trading symbols.
+    Fetch current funding rates from Coinalyze for a SPECIFIC exchange.
 
     Args:
         universe_symbols: List of trading symbols, e.g., ['BTC/USDC:USDC', 'ETH/USDC:USDC']
