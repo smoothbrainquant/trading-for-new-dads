@@ -643,7 +643,15 @@ def main():
             elif strategy_name == 'size':
                 top_n = int(p.get('top_n', 10)) if isinstance(p, dict) else 10
                 bottom_n = int(p.get('bottom_n', 10)) if isinstance(p, dict) else 10
-                contrib = strategy_size(historical_data, list(historical_data.keys()), strategy_notional, top_n=top_n, bottom_n=bottom_n)
+                limit = int(p.get('limit', 100)) if isinstance(p, dict) else 100
+                contrib = strategy_size(
+                    historical_data,
+                    list(historical_data.keys()),
+                    strategy_notional,
+                    top_n=top_n,
+                    bottom_n=bottom_n,
+                    limit=limit,
+                )
             else:
                 print(f"  WARNING: Unknown strategy '{strategy_name}', skipping.")
                 contrib = {}
