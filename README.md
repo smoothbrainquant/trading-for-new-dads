@@ -65,6 +65,7 @@ Documentation and strategy descriptions.
 - `BREAKOUT_SIGNAL_STRATEGY.md` - Breakout signal strategy guide
 - `COINALYZE_API_COMPLETE.md` - Complete Coinalyze API documentation
 - `COINALYZE_README.md` - Coinalyze integration guide
+- `RESEARCH_TODO.md` - Prioritized strategy research TODOs (reappraise after each session)
 
 ## Getting Started
 
