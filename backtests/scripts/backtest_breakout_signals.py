@@ -15,7 +15,22 @@ import pandas as pd
 import numpy as np
 from datetime import datetime
 import argparse
-from calc_breakout_signals import calculate_breakout_signals
+import os
+import sys
+
+# Ensure repo root and signals module are importable when running directly
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+REPO_ROOT = os.path.abspath(os.path.join(CURRENT_DIR, '..', '..'))
+if REPO_ROOT not in sys.path:
+    sys.path.insert(0, REPO_ROOT)
+SIGNALS_DIR = os.path.join(REPO_ROOT, 'signals')
+if SIGNALS_DIR not in sys.path:
+    sys.path.insert(0, SIGNALS_DIR)
+
+from signals.calc_breakout_signals import (
+    calculate_breakout_signals,
+    calculate_breakout_signals_param,
+)
 from calc_vola import calculate_rolling_30d_volatility
 from calc_weights import calculate_weights
 
@@ -165,7 +180,10 @@ def backtest(data, entry_window=50, exit_window=70, volatility_window=30,
         
         # Step 1: Calculate breakout signals
         try:
-            signals_df = calculate_breakout_signals(historical_data)
+            # Use parameterized windows for entry/exit
+            signals_df = calculate_breakout_signals_param(
+                historical_data, entry_window=entry_window, exit_window=exit_window
+            )
             current_signals = signals_df[signals_df['date'] == current_date]
         except Exception as e:
             print(f"Error calculating signals on {current_date}: {e}")

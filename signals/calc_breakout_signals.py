@@ -139,6 +139,102 @@ def calculate_breakout_signals(data_source):
     return output_df
 
 
+def calculate_breakout_signals_param(data_source, entry_window: int = 50, exit_window: int = 70):
+    """
+    Calculate breakout signals with configurable entry/exit windows.
+
+    Parameters:
+        data_source: str | pd.DataFrame
+            CSV path or DataFrame with columns: date, symbol, open, high, low, close, volume
+        entry_window: int
+            Lookback window for entry breakout (high/low)
+        exit_window: int
+            Lookback window for exit threshold (high/low)
+
+    Returns:
+        pd.DataFrame with columns:
+            date, symbol, close,
+            rolling_entry_high, rolling_entry_low,
+            rolling_exit_high, rolling_exit_low,
+            signal, position,
+            entry_window, exit_window
+    """
+    if isinstance(data_source, str):
+        df = pd.read_csv(data_source)
+    elif isinstance(data_source, pd.DataFrame):
+        df = data_source.copy()
+    else:
+        raise TypeError("data_source must be either a file path (str) or a pandas DataFrame")
+
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.sort_values(['symbol', 'date']).reset_index(drop=True)
+
+    results: list[pd.DataFrame] = []
+
+    for symbol, group in df.groupby('symbol'):
+        group = group.copy()
+        group['rolling_entry_high'] = group['high'].rolling(window=entry_window, min_periods=1).max()
+        group['rolling_entry_low'] = group['low'].rolling(window=entry_window, min_periods=1).min()
+        group['rolling_exit_high'] = group['high'].rolling(window=exit_window, min_periods=1).max()
+        group['rolling_exit_low'] = group['low'].rolling(window=exit_window, min_periods=1).min()
+
+        group['signal'] = 'NEUTRAL'
+        group['position'] = 'FLAT'
+
+        current_position = 'FLAT'
+        for idx in range(len(group)):
+            close = group.iloc[idx]['close']
+            if idx > 0:
+                prev_high_entry = group.iloc[idx - 1]['rolling_entry_high']
+                prev_low_entry = group.iloc[idx - 1]['rolling_entry_low']
+                prev_high_exit = group.iloc[idx - 1]['rolling_exit_high']
+                prev_low_exit = group.iloc[idx - 1]['rolling_exit_low']
+            else:
+                prev_high_entry = group.iloc[idx]['rolling_entry_high']
+                prev_low_entry = group.iloc[idx]['rolling_entry_low']
+                prev_high_exit = group.iloc[idx]['rolling_exit_high']
+                prev_low_exit = group.iloc[idx]['rolling_exit_low']
+
+            if current_position == 'FLAT':
+                if close > prev_high_entry:
+                    group.iloc[idx, group.columns.get_loc('signal')] = 'LONG'
+                    current_position = 'LONG'
+                elif close < prev_low_entry:
+                    group.iloc[idx, group.columns.get_loc('signal')] = 'SHORT'
+                    current_position = 'SHORT'
+                else:
+                    group.iloc[idx, group.columns.get_loc('signal')] = 'NEUTRAL'
+            elif current_position == 'LONG':
+                if close < prev_low_exit:
+                    group.iloc[idx, group.columns.get_loc('signal')] = 'EXIT_LONG'
+                    current_position = 'FLAT'
+                else:
+                    group.iloc[idx, group.columns.get_loc('signal')] = 'HOLD_LONG'
+            elif current_position == 'SHORT':
+                if close > prev_high_exit:
+                    group.iloc[idx, group.columns.get_loc('signal')] = 'EXIT_SHORT'
+                    current_position = 'FLAT'
+                else:
+                    group.iloc[idx, group.columns.get_loc('signal')] = 'HOLD_SHORT'
+
+            group.iloc[idx, group.columns.get_loc('position')] = current_position
+
+        group['entry_window'] = entry_window
+        group['exit_window'] = exit_window
+        results.append(group)
+
+    result_df = pd.concat(results, ignore_index=True)
+
+    output_df = result_df[[
+        'date', 'symbol', 'close',
+        'rolling_entry_high', 'rolling_entry_low',
+        'rolling_exit_high', 'rolling_exit_low',
+        'signal', 'position', 'entry_window', 'exit_window'
+    ]]
+
+    return output_df
+
+
 def get_current_signals(data_source):
     """
     Get the most recent breakout signals for each symbol.
