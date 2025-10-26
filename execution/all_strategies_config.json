@@ -38,7 +38,8 @@
       "lookback": 30,
       "top_n": 10,
       "bottom_n": 10,
-      "exchange_code": "H"
+      "exchange_code": "H",
+      "_comment": "exchange_code is ignored; strategy uses aggregated OI data from all exchanges"
     }
   }
 }

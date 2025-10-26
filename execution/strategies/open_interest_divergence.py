@@ -44,6 +44,73 @@ def _prepare_price_df(historical_data: Dict[str, pd.DataFrame]) -> pd.DataFrame:
     return out
 
 
+def _load_aggregated_oi_from_file(
+    universe_symbols: List[str],
+    days: int = 200,
+) -> pd.DataFrame:
+    """Load aggregated OI data from local file.
+    
+    Uses pre-downloaded aggregated OI data across all exchanges.
+    This avoids exchange-specific API calls and provides more robust signals.
+    
+    Returns columns: ['coin_symbol','coinalyze_symbol','date','oi_close']
+    """
+    import os
+    from glob import glob
+    
+    # Find the most recent aggregated OI file
+    workspace_root = os.getenv('WORKSPACE_ROOT', '/workspace')
+    oi_data_dir = os.path.join(workspace_root, 'data', 'raw')
+    
+    # Look for aggregated OI files
+    pattern = os.path.join(oi_data_dir, 'historical_open_interest_all_perps_since2020_*.csv')
+    oi_files = sorted(glob(pattern), reverse=True)
+    
+    if not oi_files:
+        print(f"    No aggregated OI data file found at: {pattern}")
+        return pd.DataFrame()
+    
+    oi_file = oi_files[0]
+    print(f"    Loading aggregated OI data from: {os.path.basename(oi_file)}")
+    
+    try:
+        df = pd.read_csv(oi_file)
+        df['date'] = pd.to_datetime(df['date'])
+        
+        # Filter to recent data (last N days)
+        cutoff_date = datetime.now() - timedelta(days=days)
+        df = df[df['date'] >= cutoff_date]
+        
+        # Extract base symbols from universe
+        base_symbols = set()
+        for tsym in universe_symbols:
+            base = get_base_symbol(tsym)
+            base_symbols.add(base)
+        
+        # Filter to universe base symbols
+        df = df[df['coin_symbol'].isin(base_symbols)]
+        
+        if df.empty:
+            print(f"    No OI data found for universe symbols")
+            return pd.DataFrame()
+        
+        # Rename columns to match expected format
+        df = df.rename(columns={'symbol': 'coinalyze_symbol'})
+        
+        # If coinalyze_symbol column doesn't exist, create it from coin_symbol
+        if 'coinalyze_symbol' not in df.columns:
+            df['coinalyze_symbol'] = df['coin_symbol']
+        
+        print(f"    Loaded {len(df)} OI records for {df['coin_symbol'].nunique()} symbols")
+        print(f"    Date range: {df['date'].min().date()} to {df['date'].max().date()}")
+        
+        return df[['coin_symbol', 'coinalyze_symbol', 'date', 'oi_close']].sort_values(['coin_symbol', 'date']).reset_index(drop=True)
+        
+    except Exception as e:
+        print(f"    Error loading aggregated OI data: {e}")
+        return pd.DataFrame()
+
+
 def _fetch_oi_history_for_universe(
     universe_symbols: List[str],
     exchange_code: str = 'H',
@@ -142,14 +209,18 @@ def strategy_oi_divergence(
     lookback: int = 30,
     top_n: int = 10,
     bottom_n: int = 10,
-    exchange_code: str = 'H',  # Hyperliquid by default
+    exchange_code: str = 'H',  # Ignored - uses aggregated data
 ) -> Dict[str, float]:
-    """Open Interest divergence/trend strategy using recent OI history from Coinalyze.
+    """Open Interest divergence/trend strategy using aggregated OI history.
 
-    - Filters universe to top 50 by market cap to reduce API calls
+    - Uses pre-downloaded aggregated OI data across all exchanges
+    - Filters universe to top 50 by market cap to optimize computation
     - Builds OI z-score vs price returns over a rolling window
     - Selects top/bottom by score
     - Allocates risk-parity within each side using recent price volatility
+    
+    Note: exchange_code parameter is ignored; strategy uses aggregated OI data
+    from all exchanges for more robust signals.
     """
     if not historical_data:
         return {}
@@ -200,30 +271,17 @@ def strategy_oi_divergence(
     except Exception as e:
         print(f"    Warning: Market cap filtering failed ({e}), using full universe")
 
-    # Fetch OI history for last ~200 days (with caching)
-    try:
-        from data.scripts.coinalyze_cache import fetch_oi_history_cached
-        
-        days_needed = max(lookback * 4, 120)
-        print(f"    Fetching OI history - checking cache first (TTL: 6 hours)...")
-        oi_df = fetch_oi_history_cached(
-            universe_symbols=universe_symbols,
-            exchange_code=exchange_code,
-            days=days_needed,
-            cache_ttl_hours=6,  # Longer TTL for historical data
-        )
-    except Exception as e:
-        print(f"    Cache fetch failed ({e}), falling back to direct API call...")
-        oi_df = _fetch_oi_history_for_universe(universe_symbols, exchange_code=exchange_code, days=max(lookback * 4, 120))
+    # Fetch OI history - use aggregated data from local file
+    # This provides a more robust signal across all exchanges and avoids API rate limits
+    days_needed = max(lookback * 4, 120)
+    print(f"    Using aggregated OI data (exchange-agnostic)")
+    oi_df = _load_aggregated_oi_from_file(universe_symbols, days=days_needed)
+    
     if oi_df is None or oi_df.empty:
-        print("  ⚠️  OI DIVERGENCE STRATEGY: No OI data available from Coinalyze!")
-        if exchange_code == 'H':
-            print(f"       NOTE: Coinalyze does NOT provide Open Interest history for Hyperliquid")
-            print(f"       OI Divergence strategy is NOT AVAILABLE for Hyperliquid")
-            print(f"       Consider using exchange_code='A' (Binance) or disabling this strategy")
-        else:
-            print(f"       Check: 1) COINALYZE_API key is set, 2) symbols exist on exchange {exchange_code}")
-            print(f"       This strategy requires {max(lookback * 4, 120)} days of OI history")
+        print("  ⚠️  OI DIVERGENCE STRATEGY: No aggregated OI data available!")
+        print(f"       Aggregated OI data provides signals across all exchanges")
+        print(f"       Make sure aggregated OI data file exists in data/raw/")
+        print(f"       File pattern: historical_open_interest_all_perps_since2020_*.csv")
         return {}
 
     # Compute scores

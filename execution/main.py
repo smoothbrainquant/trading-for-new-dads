@@ -26,7 +26,8 @@ can update them without code changes. Example config structure:
     "breakout": {"entry_lookback": 50, "exit_lookback": 70},
     "mean_reversion": {"zscore_threshold": 1.5, "volume_threshold": 1.0, "period_days": 2},
     "size": {"top_n": 10, "bottom_n": 10},
-      "carry": {"exchange_id": "hyperliquid"}
+    "carry": {"exchange_id": "hyperliquid"},
+    "oi_divergence": {"mode": "trend", "lookback": 30, "exchange_code": "H (ignored - uses aggregated data)"}
   }
 }
 
