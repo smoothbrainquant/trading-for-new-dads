@@ -41,6 +41,10 @@ from backtests.scripts.backtest_carry_factor import (
 from backtests.scripts.backtest_20d_from_200d_high import (
     backtest as backtest_days_from_high, load_data
 )
+from backtests.scripts.backtest_open_interest_divergence import (
+    backtest as backtest_oi_divergence, load_price_data as load_oi_price_data,
+    load_oi_data, BacktestConfig as OIBacktestConfig
+)
 
 
 def calculate_comprehensive_metrics(portfolio_df, initial_capital, benchmark_returns=None):
@@ -420,6 +424,56 @@ def run_days_from_high_backtest(data_file, **kwargs):
         return None
 
 
+def run_oi_divergence_backtest(data_file, oi_data_file, **kwargs):
+    """Run OI divergence backtest."""
+    print("\n" + "="*80)
+    print("Running OI Divergence Backtest")
+    print("="*80)
+    
+    try:
+        price_data = load_oi_price_data(data_file)
+        oi_data = load_oi_data(oi_data_file)
+        
+        if oi_data is None or len(oi_data) == 0:
+            print("No OI data available")
+            return None
+        
+        mode = kwargs.get('oi_mode', 'divergence')
+        cfg = OIBacktestConfig(
+            lookback=kwargs.get('lookback', 30),
+            volatility_window=kwargs.get('volatility_window', 30),
+            rebalance_days=kwargs.get('rebalance_days', 7),
+            top_n=kwargs.get('top_n', 10),
+            bottom_n=kwargs.get('bottom_n', 10),
+            mode=mode,
+            initial_capital=kwargs.get('initial_capital', 10000),
+        )
+        
+        results = backtest_oi_divergence(
+            price_df=price_data,
+            oi_df=oi_data,
+            cfg=cfg
+        )
+        
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results['portfolio_values'],
+            kwargs.get('initial_capital', 10000)
+        )
+        
+        return {
+            'strategy': f'OI Divergence ({mode})',
+            'description': f"Mode: {mode}, Top {kwargs.get('top_n', 10)}, Bottom {kwargs.get('bottom_n', 10)}",
+            'metrics': metrics,
+            'results': results
+        }
+    except Exception as e:
+        print(f"Error in OI Divergence backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 def create_summary_table(all_results):
     """
     Create summary table with all metrics.
@@ -642,6 +696,12 @@ def main():
         help='Path to funding rates data CSV file'
     )
     parser.add_argument(
+        '--oi-data-file',
+        type=str,
+        default='data/raw/historical_open_interest_all_perps_since2020_20251026_115907.csv',
+        help='Path to open interest data CSV file'
+    )
+    parser.add_argument(
         '--initial-capital',
         type=float,
         default=10000,
@@ -695,6 +755,19 @@ def main():
         default=True,
         help='Run days from high backtest'
     )
+    parser.add_argument(
+        '--run-oi-divergence',
+        action='store_true',
+        default=True,
+        help='Run OI divergence backtest'
+    )
+    parser.add_argument(
+        '--oi-mode',
+        type=str,
+        default='divergence',
+        choices=['divergence', 'trend'],
+        help='OI divergence mode: divergence (contrarian) or trend (momentum)'
+    )
     
     args = parser.parse_args()
     
@@ -705,10 +778,12 @@ def main():
     print(f"  Data file: {args.data_file}")
     print(f"  Market cap file: {args.marketcap_file}")
     print(f"  Funding rates file: {args.funding_rates_file}")
+    print(f"  OI data file: {args.oi_data_file}")
     print(f"  Initial capital: ${args.initial_capital:,.2f}")
     print(f"  Start date: {args.start_date or 'First available'}")
     print(f"  End date: {args.end_date or 'Last available'}")
     print(f"  Output file: {args.output_file}")
+    print(f"  OI mode: {args.oi_mode}")
     print("="*120)
     
     # Common parameters
@@ -779,6 +854,21 @@ def main():
         result = run_days_from_high_backtest(
             args.data_file,
             days_threshold=20,
+            **common_params
+        )
+        if result:
+            all_results.append(result)
+    
+    # 6. OI Divergence
+    if args.run_oi_divergence and os.path.exists(args.oi_data_file):
+        result = run_oi_divergence_backtest(
+            args.data_file,
+            args.oi_data_file,
+            oi_mode=args.oi_mode,
+            lookback=30,
+            top_n=10,
+            bottom_n=10,
+            rebalance_days=7,
             **common_params
         )
         if result:
