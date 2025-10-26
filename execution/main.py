@@ -642,6 +642,9 @@ def main():
     if blend_weights:
         # Use multi-signal blend
         signal_names = list(blend_weights.keys())
+        
+        # First pass: Call all strategies with their initial weights
+        initial_contributions = {}
         for strategy_name, weight in blend_weights.items():
             if weight <= 0:
                 continue
@@ -716,9 +719,62 @@ def main():
                 print(f"  WARNING: Unknown strategy '{strategy_name}', skipping.")
                 contrib = {}
 
-            # Track per-signal contributions
-            per_signal_contribs[strategy_name] = dict(contrib)
+            # Store initial contributions
+            initial_contributions[strategy_name] = dict(contrib)
 
+        # Check which strategies returned no positions and rebalance
+        active_strategies = {name: weight for name, weight in blend_weights.items() 
+                           if initial_contributions.get(name, {})}
+        inactive_strategies = {name: weight for name, weight in blend_weights.items() 
+                             if not initial_contributions.get(name, {})}
+        
+        if inactive_strategies:
+            print("\n" + "="*80)
+            print("CAPITAL REALLOCATION: Some strategies returned no positions")
+            print("="*80)
+            for name, orig_weight in inactive_strategies.items():
+                print(f"  ❌ {name}: No positions found (original weight: {orig_weight*100:.2f}%)")
+            
+            if active_strategies:
+                # Renormalize active strategy weights to 100%
+                rebalanced_weights = _normalize_weights(active_strategies)
+                print(f"\n  Reallocating {sum(inactive_strategies.values())*100:.2f}% capital to active strategies:")
+                
+                for name, new_weight in rebalanced_weights.items():
+                    orig_weight = blend_weights[name]
+                    print(f"    {name}: {orig_weight*100:.2f}% → {new_weight*100:.2f}% "
+                          f"(+{(new_weight - orig_weight)*100:.2f}pp)")
+                
+                # Recalculate positions with new weights
+                print("\n  Recalculating positions with adjusted weights...")
+                print("-"*80)
+                
+                for strategy_name, new_weight in rebalanced_weights.items():
+                    old_weight = blend_weights[strategy_name]
+                    old_notional = notional_value * old_weight
+                    new_notional = notional_value * new_weight
+                    
+                    print(f"\n  Strategy: {strategy_name}")
+                    print(f"    Allocation: ${old_notional:,.2f} → ${new_notional:,.2f}")
+                    
+                    # Scale the initial contributions by the weight ratio
+                    scale_factor = new_weight / old_weight if old_weight > 0 else 0
+                    old_contrib = initial_contributions[strategy_name]
+                    new_contrib = {sym: notional * scale_factor for sym, notional in old_contrib.items()}
+                    
+                    initial_contributions[strategy_name] = new_contrib
+                    print(f"    Positions scaled by {scale_factor:.4f}x")
+                
+                # Update blend_weights to reflect rebalancing
+                blend_weights = rebalanced_weights
+                print("="*80)
+            else:
+                print("\n  ⚠️  WARNING: No strategies returned any positions!")
+                print("="*80)
+        
+        # Build target positions from (potentially rebalanced) contributions
+        for strategy_name, contrib in initial_contributions.items():
+            per_signal_contribs[strategy_name] = dict(contrib)
             for sym, ntl in contrib.items():
                 target_positions[sym] += ntl
 
