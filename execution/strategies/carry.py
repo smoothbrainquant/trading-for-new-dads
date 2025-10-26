@@ -22,8 +22,8 @@ def strategy_carry(
     We are trading the funding rate signal (market sentiment), not the actual
     funding payments themselves.
     """
-    # Filter to top 50 by market cap to reduce API calls
-    print(f"  Filtering universe from {len(universe_symbols)} to top 50 by market cap...")
+    # Filter to top 150 by market cap to reduce API calls
+    print(f"  Filtering universe from {len(universe_symbols)} to top 150 by market cap...")
     try:
         from data.scripts.fetch_coinmarketcap_data import (
             fetch_coinmarketcap_data,
@@ -36,14 +36,14 @@ def strategy_carry(
             valid_mc_symbols = set(df_mc_mapped['trading_symbol'].dropna().tolist())
             filtered_universe = [s for s in universe_symbols if s in valid_mc_symbols]
             
-            # Sort by market cap and take top 50
+            # Sort by market cap and take top 150
             df_mc_filtered = df_mc_mapped[df_mc_mapped['trading_symbol'].isin(filtered_universe)]
-            df_mc_filtered = df_mc_filtered.sort_values('market_cap', ascending=False).head(50)
-            top_50_symbols = df_mc_filtered['trading_symbol'].tolist()
+            df_mc_filtered = df_mc_filtered.sort_values('market_cap', ascending=False).head(150)
+            top_150_symbols = df_mc_filtered['trading_symbol'].tolist()
             
-            if top_50_symbols:
-                print(f"  Filtered to {len(top_50_symbols)} symbols with top market caps")
-                universe_symbols = top_50_symbols
+            if top_150_symbols:
+                print(f"  Filtered to {len(top_150_symbols)} symbols with top market caps")
+                universe_symbols = top_150_symbols
             else:
                 print(f"  Warning: Market cap filtering produced no symbols, using full universe")
         else:
@@ -63,7 +63,7 @@ def strategy_carry(
         print(f"  (If cache miss: Rate limited to 40 calls/min, ~{estimated_time:.0f}s total)")
         df_rates = fetch_coinalyze_aggregated_funding_cached(
             universe_symbols=universe_symbols,
-            cache_ttl_hours=1,  # 1 hour cache for funding rates
+            cache_ttl_hours=8,  # 8 hour cache for funding rates
         )
         if df_rates is not None and not df_rates.empty:
             print(f"  Got funding rates for {len(df_rates)} symbols from Binance (market proxy)")
