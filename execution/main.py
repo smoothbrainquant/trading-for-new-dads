@@ -723,6 +723,9 @@ def main():
             initial_contributions[strategy_name] = dict(contrib)
 
         # Check which strategies returned no positions and rebalance
+        # Fixed weight strategies that should maintain their allocation
+        FIXED_WEIGHT_STRATEGIES = {'breakout', 'days_from_high'}
+        
         active_strategies = {name: weight for name, weight in blend_weights.items() 
                            if initial_contributions.get(name, {})}
         inactive_strategies = {name: weight for name, weight in blend_weights.items() 
@@ -736,38 +739,82 @@ def main():
                 print(f"  ❌ {name}: No positions found (original weight: {orig_weight*100:.2f}%)")
             
             if active_strategies:
-                # Renormalize active strategy weights to 100%
-                rebalanced_weights = _normalize_weights(active_strategies)
-                print(f"\n  Reallocating {sum(inactive_strategies.values())*100:.2f}% capital to active strategies:")
+                # Separate fixed and flexible strategies
+                fixed_active = {name: weight for name, weight in active_strategies.items() 
+                              if name in FIXED_WEIGHT_STRATEGIES}
+                flexible_active = {name: weight for name, weight in active_strategies.items() 
+                                 if name not in FIXED_WEIGHT_STRATEGIES}
                 
-                for name, new_weight in rebalanced_weights.items():
-                    orig_weight = blend_weights[name]
-                    print(f"    {name}: {orig_weight*100:.2f}% → {new_weight*100:.2f}% "
-                          f"(+{(new_weight - orig_weight)*100:.2f}pp)")
+                # Calculate capital to redistribute (from inactive strategies + inactive fixed strategies)
+                inactive_flexible = {name: weight for name, weight in inactive_strategies.items() 
+                                   if name not in FIXED_WEIGHT_STRATEGIES}
+                capital_to_redistribute = sum(inactive_flexible.values())
                 
-                # Recalculate positions with new weights
-                print("\n  Recalculating positions with adjusted weights...")
-                print("-"*80)
+                print(f"\n  Fixed allocations (maintaining original weights):")
+                for name, weight in fixed_active.items():
+                    print(f"    {name}: {weight*100:.2f}% (fixed)")
                 
-                for strategy_name, new_weight in rebalanced_weights.items():
-                    old_weight = blend_weights[strategy_name]
-                    old_notional = notional_value * old_weight
-                    new_notional = notional_value * new_weight
+                if flexible_active and capital_to_redistribute > 0:
+                    # Renormalize only flexible strategies with the additional capital
+                    # New weight = original weight * (1 + capital_to_redistribute / sum(original flexible weights))
+                    original_flexible_total = sum(flexible_active.values())
+                    scale_factor = (original_flexible_total + capital_to_redistribute) / original_flexible_total
                     
-                    print(f"\n  Strategy: {strategy_name}")
-                    print(f"    Allocation: ${old_notional:,.2f} → ${new_notional:,.2f}")
+                    print(f"\n  Reallocating {capital_to_redistribute*100:.2f}% capital among flexible strategies:")
                     
-                    # Scale the initial contributions by the weight ratio
-                    scale_factor = new_weight / old_weight if old_weight > 0 else 0
-                    old_contrib = initial_contributions[strategy_name]
-                    new_contrib = {sym: notional * scale_factor for sym, notional in old_contrib.items()}
+                    rebalanced_weights = {}
+                    # Keep fixed weights unchanged
+                    for name, weight in fixed_active.items():
+                        rebalanced_weights[name] = weight
                     
-                    initial_contributions[strategy_name] = new_contrib
-                    print(f"    Positions scaled by {scale_factor:.4f}x")
-                
-                # Update blend_weights to reflect rebalancing
-                blend_weights = rebalanced_weights
-                print("="*80)
+                    # Scale up flexible weights proportionally
+                    for name, weight in flexible_active.items():
+                        new_weight = weight * scale_factor
+                        rebalanced_weights[name] = new_weight
+                        print(f"    {name}: {weight*100:.2f}% → {new_weight*100:.2f}% "
+                              f"(+{(new_weight - weight)*100:.2f}pp)")
+                    
+                    # Verify total sums to 1.0
+                    total_weight = sum(rebalanced_weights.values())
+                    if abs(total_weight - 1.0) > 0.0001:
+                        print(f"\n  ⚠️  WARNING: Total weight = {total_weight*100:.2f}% (expected 100%)")
+                    
+                    # Recalculate positions with new weights
+                    print("\n  Recalculating positions with adjusted weights...")
+                    print("-"*80)
+                    
+                    for strategy_name, new_weight in rebalanced_weights.items():
+                        old_weight = blend_weights[strategy_name]
+                        old_notional = notional_value * old_weight
+                        new_notional = notional_value * new_weight
+                        
+                        if strategy_name in FIXED_WEIGHT_STRATEGIES:
+                            print(f"\n  Strategy: {strategy_name} (FIXED)")
+                            print(f"    Allocation: ${old_notional:,.2f} (unchanged)")
+                        else:
+                            print(f"\n  Strategy: {strategy_name}")
+                            print(f"    Allocation: ${old_notional:,.2f} → ${new_notional:,.2f}")
+                            
+                            # Scale the initial contributions by the weight ratio
+                            ratio = new_weight / old_weight if old_weight > 0 else 0
+                            old_contrib = initial_contributions[strategy_name]
+                            new_contrib = {sym: notional * ratio for sym, notional in old_contrib.items()}
+                            
+                            initial_contributions[strategy_name] = new_contrib
+                            print(f"    Positions scaled by {ratio:.4f}x")
+                    
+                    # Update blend_weights to reflect rebalancing
+                    blend_weights = rebalanced_weights
+                    print("="*80)
+                elif not flexible_active:
+                    print(f"\n  All active strategies have fixed weights (no flexible strategies to rebalance)")
+                    # Keep the fixed strategies at their original weights
+                    rebalanced_weights = fixed_active
+                    blend_weights = rebalanced_weights
+                    print("="*80)
+                else:
+                    print(f"\n  No capital to redistribute (all inactive strategies are fixed)")
+                    print("="*80)
             else:
                 print("\n  ⚠️  WARNING: No strategies returned any positions!")
                 print("="*80)
