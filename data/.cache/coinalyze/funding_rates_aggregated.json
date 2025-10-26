@@ -1,12 +1,82 @@
 {
-  "timestamp": "2025-10-26T20:51:59.325894",
+  "timestamp": "2025-10-26T22:07:37.686965",
   "exchange_code": "aggregated",
   "data": [
+    {
+      "base": "ALGO",
+      "quote": "USDT",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0,
+      "num_exchanges": 1
+    },
     {
       "base": "ETH",
       "quote": "USDT",
       "funding_rate": 0.01,
       "funding_rate_pct": 1.0,
+      "num_exchanges": 1
+    },
+    {
+      "base": "ARB",
+      "quote": "USDT",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0,
+      "num_exchanges": 1
+    },
+    {
+      "base": "DOGE",
+      "quote": "USDT",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0,
+      "num_exchanges": 1
+    },
+    {
+      "base": "FIL",
+      "quote": "USDT",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0,
+      "num_exchanges": 1
+    },
+    {
+      "base": "WLD",
+      "quote": "USDT",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0,
+      "num_exchanges": 1
+    },
+    {
+      "base": "NEAR",
+      "quote": "USDT",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0,
+      "num_exchanges": 1
+    },
+    {
+      "base": "LTC",
+      "quote": "USDT",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0,
+      "num_exchanges": 1
+    },
+    {
+      "base": "ADA",
+      "quote": "USDT",
+      "funding_rate": 0.009483,
+      "funding_rate_pct": 0.9483,
+      "num_exchanges": 1
+    },
+    {
+      "base": "UNI",
+      "quote": "USDT",
+      "funding_rate": 0.008649,
+      "funding_rate_pct": 0.8649,
+      "num_exchanges": 1
+    },
+    {
+      "base": "HBAR",
+      "quote": "USDT",
+      "funding_rate": 0.007515,
+      "funding_rate_pct": 0.7515,
       "num_exchanges": 1
     },
     {
@@ -17,10 +87,262 @@
       "num_exchanges": 1
     },
     {
+      "base": "LINK",
+      "quote": "USDT",
+      "funding_rate": 0.006822,
+      "funding_rate_pct": 0.6822,
+      "num_exchanges": 1
+    },
+    {
       "base": "SOL",
       "quote": "USDT",
       "funding_rate": 0.005882,
       "funding_rate_pct": 0.5882000000000001,
+      "num_exchanges": 1
+    },
+    {
+      "base": "CAKE",
+      "quote": "USDT",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5,
+      "num_exchanges": 1
+    },
+    {
+      "base": "ASTER",
+      "quote": "USDT",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5,
+      "num_exchanges": 1
+    },
+    {
+      "base": "PENGU",
+      "quote": "USDT",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5,
+      "num_exchanges": 1
+    },
+    {
+      "base": "TON",
+      "quote": "USDT",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5,
+      "num_exchanges": 1
+    },
+    {
+      "base": "WLFI",
+      "quote": "USDT",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5,
+      "num_exchanges": 1
+    },
+    {
+      "base": "SPX",
+      "quote": "USDT",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5,
+      "num_exchanges": 1
+    },
+    {
+      "base": "SKY",
+      "quote": "USDT",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5,
+      "num_exchanges": 1
+    },
+    {
+      "base": "TAO",
+      "quote": "USDT",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5,
+      "num_exchanges": 1
+    },
+    {
+      "base": "IP",
+      "quote": "USDT",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5,
+      "num_exchanges": 1
+    },
+    {
+      "base": "KAS",
+      "quote": "USDT",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5,
+      "num_exchanges": 1
+    },
+    {
+      "base": "HYPE",
+      "quote": "USDT",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5,
+      "num_exchanges": 1
+    },
+    {
+      "base": "RENDER",
+      "quote": "USDT",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5,
+      "num_exchanges": 1
+    },
+    {
+      "base": "PUMP",
+      "quote": "USDT",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5,
+      "num_exchanges": 1
+    },
+    {
+      "base": "ONDO",
+      "quote": "USDT",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5,
+      "num_exchanges": 1
+    },
+    {
+      "base": "PAXG",
+      "quote": "USDT",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5,
+      "num_exchanges": 1
+    },
+    {
+      "base": "DOT",
+      "quote": "USDT",
+      "funding_rate": 0.004983,
+      "funding_rate_pct": 0.49829999999999997,
+      "num_exchanges": 1
+    },
+    {
+      "base": "VIRTUAL",
+      "quote": "USDT",
+      "funding_rate": 0.004476,
+      "funding_rate_pct": 0.4476,
+      "num_exchanges": 1
+    },
+    {
+      "base": "AAVE",
+      "quote": "USDT",
+      "funding_rate": 0.003972,
+      "funding_rate_pct": 0.3972,
+      "num_exchanges": 1
+    },
+    {
+      "base": "XLM",
+      "quote": "USDT",
+      "funding_rate": 0.00326,
+      "funding_rate_pct": 0.326,
+      "num_exchanges": 1
+    },
+    {
+      "base": "IMX",
+      "quote": "USDT",
+      "funding_rate": 0.003158,
+      "funding_rate_pct": 0.3158,
+      "num_exchanges": 1
+    },
+    {
+      "base": "TRUMP",
+      "quote": "USDT",
+      "funding_rate": 0.00287,
+      "funding_rate_pct": 0.28700000000000003,
+      "num_exchanges": 1
+    },
+    {
+      "base": "ENA",
+      "quote": "USDT",
+      "funding_rate": 0.002742,
+      "funding_rate_pct": 0.2742,
+      "num_exchanges": 1
+    },
+    {
+      "base": "SEI",
+      "quote": "USDT",
+      "funding_rate": 0.002515,
+      "funding_rate_pct": 0.2515,
+      "num_exchanges": 1
+    },
+    {
+      "base": "AVAX",
+      "quote": "USDT",
+      "funding_rate": 0.002498,
+      "funding_rate_pct": 0.24979999999999997,
+      "num_exchanges": 1
+    },
+    {
+      "base": "SUI",
+      "quote": "USDT",
+      "funding_rate": 0.00239,
+      "funding_rate_pct": 0.23900000000000002,
+      "num_exchanges": 1
+    },
+    {
+      "base": "XRP",
+      "quote": "USDT",
+      "funding_rate": 0.000984,
+      "funding_rate_pct": 0.0984,
+      "num_exchanges": 1
+    },
+    {
+      "base": "BNB",
+      "quote": "USDT",
+      "funding_rate": 0.0,
+      "funding_rate_pct": 0.0,
+      "num_exchanges": 1
+    },
+    {
+      "base": "ETC",
+      "quote": "USDT",
+      "funding_rate": -0.001537,
+      "funding_rate_pct": -0.1537,
+      "num_exchanges": 1
+    },
+    {
+      "base": "BCH",
+      "quote": "USDT",
+      "funding_rate": -0.00343,
+      "funding_rate_pct": -0.34299999999999997,
+      "num_exchanges": 1
+    },
+    {
+      "base": "POL",
+      "quote": "USDT",
+      "funding_rate": -0.003962,
+      "funding_rate_pct": -0.3962,
+      "num_exchanges": 1
+    },
+    {
+      "base": "ZEC",
+      "quote": "USDT",
+      "funding_rate": -0.00578,
+      "funding_rate_pct": -0.5780000000000001,
+      "num_exchanges": 1
+    },
+    {
+      "base": "ATOM",
+      "quote": "USDT",
+      "funding_rate": -0.012551,
+      "funding_rate_pct": -1.2550999999999999,
+      "num_exchanges": 1
+    },
+    {
+      "base": "JUP",
+      "quote": "USDT",
+      "funding_rate": -0.023081,
+      "funding_rate_pct": -2.3081,
+      "num_exchanges": 1
+    },
+    {
+      "base": "TRX",
+      "quote": "USDT",
+      "funding_rate": -0.025494,
+      "funding_rate_pct": -2.5494,
+      "num_exchanges": 1
+    },
+    {
+      "base": "APT",
+      "quote": "USDT",
+      "funding_rate": -0.069602,
+      "funding_rate_pct": -6.9601999999999995,
       "num_exchanges": 1
     }
   ]
