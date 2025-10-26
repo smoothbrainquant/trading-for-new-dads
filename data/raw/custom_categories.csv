@@ -1,0 +1,238 @@
+symbol,category,priority,notes
+BTC,BTC Ecosystem,primary,Bitcoin
+STX,BTC Ecosystem,primary,Bitcoin Layer 2
+
+ETH,ETH Ecosystem,primary,Ethereum
+AAVE,ETH Ecosystem,secondary,ETH DeFi protocol
+BAL,ETH Ecosystem,secondary,ETH DeFi protocol
+COMP,ETH Ecosystem,secondary,ETH DeFi protocol
+CRV,ETH Ecosystem,secondary,ETH DeFi protocol
+CVX,ETH Ecosystem,secondary,ETH DeFi protocol
+ENS,ETH Ecosystem,secondary,ETH namespace service
+GNO,ETH Ecosystem,secondary,Gnosis Chain
+LDO,ETH Ecosystem,secondary,Liquid staking on ETH
+LINK,ETH Ecosystem,secondary,Oracle network
+MKR,ETH Ecosystem,secondary,ETH DeFi protocol
+RPL,ETH Ecosystem,secondary,Rocket Pool staking
+SNX,ETH Ecosystem,secondary,Synthetix on ETH
+SUSHI,ETH Ecosystem,secondary,ETH DEX
+UNI,ETH Ecosystem,secondary,ETH DEX
+PENDLE,ETH Ecosystem,secondary,Yield trading on ETH
+ETHFI,ETH Ecosystem,secondary,ETH liquid staking
+MORPHO,ETH Ecosystem,secondary,ETH lending optimizer
+EIGEN,ETH Ecosystem,secondary,EigenLayer restaking
+
+SOL,SOL Ecosystem,primary,Solana
+BONK,SOL Ecosystem,secondary,Solana meme
+JTO,SOL Ecosystem,secondary,Jito MEV on Solana
+PYTH,SOL Ecosystem,secondary,Oracle on Solana
+WIF,SOL Ecosystem,secondary,Solana meme
+DRIFT,SOL Ecosystem,secondary,Solana DEX
+
+BNB,BNB Ecosystem,primary,Binance Smart Chain
+CAKE,BNB Ecosystem,secondary,PancakeSwap on BSC
+
+ADA,L1 Smart Contract,primary,Cardano
+ALGO,L1 Smart Contract,primary,Algorand
+ATOM,L1 Smart Contract,primary,Cosmos Hub
+AVAX,L1 Smart Contract,primary,Avalanche
+DOT,L1 Smart Contract,primary,Polkadot
+EOS,L1 Smart Contract,primary,EOSIO
+FTM,L1 Smart Contract,primary,Fantom (via OP)
+ICP,L1 Smart Contract,primary,Internet Computer
+NEAR,L1 Smart Contract,primary,NEAR Protocol
+SOL,L1 Smart Contract,primary,Solana
+EGLD,L1 Smart Contract,primary,MultiversX (Elrond)
+FLOW,L1 Smart Contract,primary,Flow
+HBAR,L1 Smart Contract,primary,Hedera
+KSM,L1 Smart Contract,primary,Kusama
+OSMO,L1 Smart Contract,primary,Osmosis
+ROSE,L1 Smart Contract,primary,Oasis Network
+SEI,L1 Smart Contract,primary,Sei Network
+SUI,L1 Smart Contract,primary,Sui
+TIA,L1 Smart Contract,primary,Celestia
+CELO,L1 Smart Contract,secondary,Celo
+KAVA,L1 Smart Contract,secondary,Kava
+MINA,L1 Smart Contract,secondary,Mina Protocol
+AXL,L1 Smart Contract,secondary,Axelar
+FLR,L1 Smart Contract,secondary,Flare Network
+ZETA,L1 Smart Contract,secondary,ZetaChain
+
+ARB,L2 Scaling,primary,Arbitrum
+OP,L2 Scaling,primary,Optimism
+POL,L2 Scaling,primary,Polygon (MATIC)
+IMX,L2 Scaling,primary,Immutable X
+METIS,L2 Scaling,secondary,Metis
+STRK,L2 Scaling,secondary,Starknet
+ZK,L2 Scaling,secondary,zkSync
+ZRO,L2 Scaling,secondary,LayerZero
+
+AAVE,DeFi Blue Chips,primary,Lending protocol
+UNI,DeFi Blue Chips,primary,DEX
+MKR,DeFi Blue Chips,primary,Stablecoin protocol
+SNX,DeFi Blue Chips,primary,Synthetic assets
+CRV,DeFi Blue Chips,primary,Stablecoin DEX
+CVX,DeFi Blue Chips,secondary,Convex Finance
+LDO,DeFi Blue Chips,secondary,Lido staking
+COMP,DeFi Blue Chips,secondary,Compound lending
+BAL,DeFi Blue Chips,secondary,Balancer DEX
+SUSHI,DeFi Blue Chips,secondary,SushiSwap DEX
+1INCH,DeFi Blue Chips,secondary,DEX aggregator
+PENDLE,DeFi Blue Chips,secondary,Yield trading
+MORPHO,DeFi Blue Chips,secondary,Lending optimizer
+
+UNI,DEX Tokens,primary,Uniswap
+SUSHI,DEX Tokens,primary,SushiSwap
+CAKE,DEX Tokens,primary,PancakeSwap
+1INCH,DEX Tokens,primary,1inch
+DYDX,DEX Tokens,secondary,dYdX (derivatives)
+DRIFT,DEX Tokens,secondary,Drift Protocol
+JOE,DEX Tokens,secondary,Trader Joe (Avalanche)
+OSMO,DEX Tokens,secondary,Osmosis DEX
+
+DOGE,Meme Coins,primary,Original meme coin
+SHIB,Meme Coins,primary,Shiba Inu
+PEPE,Meme Coins,primary,Pepe
+BONK,Meme Coins,primary,Bonk (Solana)
+FLOKI,Meme Coins,primary,Floki Inu
+WIF,Meme Coins,primary,Dogwifhat (Solana)
+PNUT,Meme Coins,secondary,Peanut the Squirrel
+POPCAT,Meme Coins,secondary,Popcat
+SPX,Meme Coins,secondary,SPX6900
+MOG,Meme Coins,secondary,Mog Coin
+TURBO,Meme Coins,secondary,Turbo
+GIGA,Meme Coins,secondary,Giga Chad
+FARTCOIN,Meme Coins,secondary,Fartcoin
+
+LTC,Dino Coins,primary,Litecoin (2011)
+BCH,Dino Coins,primary,Bitcoin Cash fork
+DASH,Dino Coins,primary,Dash (2014)
+ETC,Dino Coins,primary,Ethereum Classic
+XRP,Dino Coins,primary,Ripple (2012)
+XLM,Dino Coins,primary,Stellar (2014)
+ZEC,Dino Coins,primary,Zcash (2016)
+EOS,Dino Coins,secondary,EOS (2017)
+XTZ,Dino Coins,secondary,Tezos (2017)
+ALGO,Dino Coins,secondary,Algorand (2019)
+
+ZEC,Privacy Coins,primary,Zcash
+DASH,Privacy Coins,secondary,Dash (optional privacy)
+ROSE,Privacy Coins,secondary,Oasis (privacy features)
+
+AXS,Gaming/Metaverse,primary,Axie Infinity
+SAND,Gaming/Metaverse,primary,The Sandbox
+MANA,Gaming/Metaverse,primary,Decentraland
+IMX,Gaming/Metaverse,primary,Immutable X
+GALA,Gaming/Metaverse,secondary,Gala Games
+ENJ,Gaming/Metaverse,secondary,Enjin Coin
+ALICE,Gaming/Metaverse,secondary,My Neighbor Alice
+ILV,Gaming/Metaverse,secondary,Illuvium
+MAGIC,Gaming/Metaverse,secondary,Treasure DAO
+SUPER,Gaming/Metaverse,secondary,SuperVerse
+PYR,Gaming/Metaverse,secondary,Vulcan Forged
+PRIME,Gaming/Metaverse,secondary,Echelon Prime
+
+FET,AI/Compute,primary,Fetch.ai
+RENDER,AI/Compute,primary,Render Network
+GRT,AI/Compute,primary,The Graph
+TAO,AI/Compute,primary,Bittensor
+WLD,AI/Compute,secondary,Worldcoin
+IO,AI/Compute,secondary,io.net
+OCEAN,AI/Compute,secondary,Ocean Protocol
+AKT,AI/Compute,secondary,Akash Network
+
+LINK,Oracle Networks,primary,Chainlink
+BAND,Oracle Networks,secondary,Band Protocol
+TRB,Oracle Networks,secondary,Tellor
+API3,Oracle Networks,secondary,API3
+PYTH,Oracle Networks,secondary,Pyth Network
+
+FIL,Storage/Infra,primary,Filecoin
+RENDER,Storage/Infra,secondary,Render Network
+STORJ,Storage/Infra,secondary,Storj
+GRT,Storage/Infra,secondary,The Graph
+HNT,Storage/Infra,secondary,Helium
+IOTX,Storage/Infra,secondary,IoTeX
+AKT,Storage/Infra,secondary,Akash Network
+
+USDT,Stablecoins,primary,Tether
+DAI,Stablecoins,primary,MakerDAO stablecoin
+PAXG,Stablecoins,secondary,PAX Gold
+PAX,Stablecoins,secondary,Paxos Standard
+
+AVAX,Avalanche Ecosystem,primary,Avalanche
+JOE,Avalanche Ecosystem,secondary,Trader Joe
+
+APT,Move VMs,primary,Aptos
+SUI,Move VMs,primary,Sui
+
+INJ,Cosmos Ecosystem,primary,Injective
+ATOM,Cosmos Ecosystem,primary,Cosmos Hub
+OSMO,Cosmos Ecosystem,primary,Osmosis
+AXL,Cosmos Ecosystem,secondary,Axelar
+TIA,Cosmos Ecosystem,secondary,Celestia
+SEI,Cosmos Ecosystem,secondary,Sei
+
+DOT,Polkadot Ecosystem,primary,Polkadot
+KSM,Polkadot Ecosystem,secondary,Kusama
+
+CRO,Exchange Tokens,primary,Crypto.com
+BNB,Exchange Tokens,primary,Binance
+
+ENA,LST/LRT,primary,Ethena
+LDO,LST/LRT,primary,Lido
+RPL,LST/LRT,secondary,Rocket Pool
+ETHFI,LST/LRT,secondary,Ether.fi
+EIGEN,LST/LRT,secondary,EigenLayer
+
+ONDO,RWA,primary,Ondo Finance
+CFG,RWA,secondary,Centrifuge
+TRAC,RWA,secondary,OriginTrail
+
+APE,NFT/Culture,primary,ApeCoin
+BLUR,NFT/Culture,primary,Blur marketplace
+LOOKS,NFT/Culture,secondary,LooksRare (via OP if available)
+ENS,NFT/Culture,secondary,Ethereum Name Service
+
+QNT,Enterprise,primary,Quant
+VET,Enterprise,primary,VeChain
+HBAR,Enterprise,secondary,Hedera
+
+ZRX,Legacy DeFi,primary,0x Protocol
+BAT,Legacy DeFi,secondary,Basic Attention Token
+KNC,Legacy DeFi,secondary,Kyber Network
+LRC,Legacy DeFi,secondary,Loopring
+BNT,Legacy DeFi,secondary,Bancor
+
+CHZ,Fan Tokens,primary,Chiliz
+SANTOS,Fan Tokens,secondary,Santos FC (if available)
+
+GMT,Move-to-Earn,primary,STEPN
+SWEAT,Move-to-Earn,secondary,Sweat Economy (if available)
+
+OCEAN,Data Economy,primary,Ocean Protocol
+GRT,Data Economy,primary,The Graph
+OCEAN,Data Economy,secondary,Ocean Protocol
+
+AUDIO,Creator Economy,primary,Audius
+TRAC,Creator Economy,secondary,OriginTrail
+
+YFI,Yield Aggregators,primary,Yearn Finance
+CVX,Yield Aggregators,secondary,Convex Finance
+PENDLE,Yield Aggregators,secondary,Pendle Finance
+
+SAND,Real Estate/Metaverse,primary,The Sandbox
+MANA,Real Estate/Metaverse,primary,Decentraland
+
+T,Privacy/Infra,primary,Threshold Network
+NKN,Privacy/Infra,secondary,NKN
+CELR,Privacy/Infra,secondary,Celer Network
+
+MASK,Web3 Social,primary,Mask Network
+LA,Web3 Social,secondary,Launchpad (if available)
+
+SAFE,Infra/Tooling,primary,Safe (Gnosis Safe)
+ENS,Infra/Tooling,secondary,ENS Domains
+
+ME,NFT Marketplaces,primary,Magic Eden
+BLUR,NFT Marketplaces,primary,Blur
