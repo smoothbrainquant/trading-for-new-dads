@@ -638,8 +638,20 @@ def main():
                     bottom_n=bottom_n,
                 )
             elif strategy_name == 'mean_reversion':
-                quantile = float(p.get('quantile', 0.2)) if isinstance(p, dict) else 0.2
-                contrib = strategy_mean_reversion(historical_data, strategy_notional, quantile=quantile)
+                zscore_threshold = float(p.get('zscore_threshold', 2.0)) if isinstance(p, dict) else 2.0
+                lookback_window = int(p.get('lookback_window', 30)) if isinstance(p, dict) else 30
+                limit = int(p.get('limit', 100)) if isinstance(p, dict) else 100
+                large_n = p.get('large_n', None) if isinstance(p, dict) else None
+                small_n = p.get('small_n', None) if isinstance(p, dict) else None
+                contrib = strategy_mean_reversion(
+                    historical_data,
+                    strategy_notional,
+                    zscore_threshold=zscore_threshold,
+                    lookback_window=lookback_window,
+                    limit=limit,
+                    large_n=large_n,
+                    small_n=small_n,
+                )
             elif strategy_name == 'size':
                 top_n = int(p.get('top_n', 10)) if isinstance(p, dict) else 10
                 bottom_n = int(p.get('bottom_n', 10)) if isinstance(p, dict) else 10
