@@ -39,7 +39,7 @@ def find_cmc_file() -> str:
     )
 
 
-def get_top_n_coins(n: int = 50) -> List[Dict]:
+def get_top_n_coins(n: int = 100) -> List[Dict]:
     """Load top N coins by latest CoinMarketCap snapshot."""
     cmc_path = find_cmc_file()
     logger.info(f"Loading CoinMarketCap data from {cmc_path}...")
@@ -174,7 +174,7 @@ def resolve_output_dir() -> Path:
 
 def main():
     print("=" * 80)
-    print("FETCH HISTORICAL OPEN INTEREST (OI) - TOP 50 COINS SINCE 2020")
+    print("FETCH HISTORICAL OPEN INTEREST (OI) - TOP 100 COINS SINCE 2020")
     print("=" * 80)
 
     if not os.environ.get('COINALYZE_API'):
@@ -184,7 +184,7 @@ def main():
     client = CoinalyzeClient()
 
     # Step 1: Top N coins by latest snapshot
-    top_n = 50
+    top_n = 100
     top_10 = get_top_n_coins(top_n)
     print(f"\nTop {top_n} Coins:")
     print("-" * 80)
