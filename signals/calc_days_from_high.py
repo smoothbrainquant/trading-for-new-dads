@@ -67,6 +67,70 @@ def calculate_days_since_200d_high(data_source):
     return output_df
 
 
+def calculate_days_since_200d_low(data_source):
+    """
+    Calculate days since last 200-day low for each symbol in the dataset.
+    
+    Parameters:
+    -----------
+    data_source : str or pd.DataFrame
+        Either a path to a CSV file or a pandas DataFrame
+        Expected columns: date, symbol, open, high, low, close, volume
+    
+    Returns:
+    --------
+    pd.DataFrame
+        DataFrame with columns: date, symbol, low, rolling_200d_low, days_since_200d_low
+    """
+    # Read the data - handle both CSV path and DataFrame
+    if isinstance(data_source, str):
+        df = pd.read_csv(data_source)
+    elif isinstance(data_source, pd.DataFrame):
+        df = data_source.copy()
+    else:
+        raise TypeError("data_source must be either a file path (str) or a pandas DataFrame")
+
+    # Convert date to datetime
+    df['date'] = pd.to_datetime(df['date'])
+
+    # Sort by symbol and date to ensure proper ordering
+    df = df.sort_values(['symbol', 'date']).reset_index(drop=True)
+
+    # Group by symbol and calculate for each
+    results = []
+
+    for symbol, group in df.groupby('symbol'):
+        # Calculate 200-day rolling minimum low
+        group['rolling_200d_low'] = group['low'].rolling(window=200, min_periods=1).min()
+
+        # Initialize days_since_200d_low
+        group['days_since_200d_low'] = 0
+
+        # Calculate days since 200d low
+        days_counter = 0
+        for idx in range(len(group)):
+            current_low = group.iloc[idx]['low']
+            rolling_low = group.iloc[idx]['rolling_200d_low']
+
+            # If current low equals or is below the 200d rolling low, reset counter
+            if current_low <= rolling_low:
+                days_counter = 0
+            else:
+                days_counter += 1
+
+            group.iloc[idx, group.columns.get_loc('days_since_200d_low')] = days_counter
+
+        results.append(group)
+
+    # Combine all symbols
+    result_df = pd.concat(results, ignore_index=True)
+
+    # Select relevant columns
+    output_df = result_df[['date', 'symbol', 'low', 'rolling_200d_low', 'days_since_200d_low']]
+
+    return output_df
+
+
 def get_current_days_since_high(data_source):
     """
     Get the most recent days_since_200d_high value for each symbol.
@@ -87,6 +151,29 @@ def get_current_days_since_high(data_source):
     # Get the most recent date for each symbol
     latest_data = full_results.sort_values('date').groupby('symbol').tail(1).reset_index(drop=True)
     
+    return latest_data
+
+
+def get_current_days_since_low(data_source):
+    """
+    Get the most recent days_since_200d_low value for each symbol.
+    
+    Parameters:
+    -----------
+    data_source : str or pd.DataFrame
+        Either a path to a CSV file or a pandas DataFrame
+        Expected columns: date, symbol, open, high, low, close, volume
+    
+    Returns:
+    --------
+    pd.DataFrame
+        DataFrame with the latest date's data for each symbol
+    """
+    full_results = calculate_days_since_200d_low(data_source)
+
+    # Get the most recent date for each symbol
+    latest_data = full_results.sort_values('date').groupby('symbol').tail(1).reset_index(drop=True)
+
     return latest_data
 
 
