@@ -116,6 +116,30 @@ COINALYZE_API=your_coinalyze_api_key
 - Install dependencies before running any script: `pip install -r requirements.txt`
 - When backtesting, ensure proper handling of lookahead bias (use next-day returns with `.shift(-1)`)
 
+## Project Principles
+
+- **Reproducibility**: Pin dependencies, record data snapshots/versions, set random seeds, and persist run metadata alongside results.
+- **Data contracts**: Define schemas for raw/processed data and validate on ingest with clear failure messages; keep validation summaries in `data/` up to date.
+- **Config-driven runs**: Centralize knobs (symbols, weights, limits, dates) in a YAML config. Current scripts use CLI flags; the template at `configs/config.example.yaml` defines the standard fields for future `--config` support.
+- **Signal hygiene**: Signals use only information available up to time t and apply `.shift(-1)` for returns to avoid lookahead.
+- **Exchange abstraction**: Strategies are exchange-agnostic; adapter layers handle exchange-specific details (symbols, precision, auth).
+- **Execution safety**: Enforce notional and per-asset caps, explicit short handling, dry-run defaults, kill switch, and stablecoin/spot filtering for perps.
+- **Quality gates**: Lint/format/type-check in CI and require tests with coverage on PRs.
+- **Observability**: Emit standardized artifacts (allocation breakdowns, equity curves, metrics) to predictable folders per run.
+- **Release discipline**: Tag tested backtest bundles and freeze data versions; use semantic versioning for strategy releases.
+- **Docs as contract**: Maintain a top-level contributor guide, environment table, PR checklist, and strategy docs.
+
+### Example configuration (template)
+
+Copy the template and tailor it for your runs:
+
+```bash
+mkdir -p configs
+cp configs/config.example.yaml configs/config.yaml
+```
+
+This repo currently uses CLI flags; treat the YAML as the source of truth for parameters and a foundation for a future `--config` option. See `configs/config.example.yaml` for the full template.
+
 ## Strategy Overview
 
 The system implements multiple trading strategies:
