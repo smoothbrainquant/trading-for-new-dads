@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Fetch Historical Open Interest (OI) for Top 10 Coins since 2020
-- Uses CoinMarketCap snapshots to select latest top 10 coins
+Fetch Historical Open Interest (OI) for Top N Coins since 2020
+- Uses CoinMarketCap snapshots to select latest top N coins (default 50)
 - Maps to Coinalyze perpetual futures symbols
 - Fetches DAILY OI (USD) from 2020-01-01 to present
 - Saves detailed CSV and summary CSV to data/raw
@@ -39,7 +39,7 @@ def find_cmc_file() -> str:
     )
 
 
-def get_top_n_coins(n: int = 10) -> List[Dict]:
+def get_top_n_coins(n: int = 50) -> List[Dict]:
     """Load top N coins by latest CoinMarketCap snapshot."""
     cmc_path = find_cmc_file()
     logger.info(f"Loading CoinMarketCap data from {cmc_path}...")
@@ -174,7 +174,7 @@ def resolve_output_dir() -> Path:
 
 def main():
     print("=" * 80)
-    print("FETCH HISTORICAL OPEN INTEREST (OI) - TOP 10 COINS SINCE 2020")
+    print("FETCH HISTORICAL OPEN INTEREST (OI) - TOP 50 COINS SINCE 2020")
     print("=" * 80)
 
     if not os.environ.get('COINALYZE_API'):
@@ -183,9 +183,10 @@ def main():
 
     client = CoinalyzeClient()
 
-    # Step 1: Top 10 coins by latest snapshot
-    top_10 = get_top_n_coins(10)
-    print("\nTop 10 Coins:")
+    # Step 1: Top N coins by latest snapshot
+    top_n = 50
+    top_10 = get_top_n_coins(top_n)
+    print(f"\nTop {top_n} Coins:")
     print("-" * 80)
     for coin in top_10:
         print(f"  {coin['Rank']:>2}. {coin['Name']:<30} ({coin['Symbol']})")
@@ -234,7 +235,7 @@ def main():
     out_dir = resolve_output_dir()
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
 
-    detailed_file = out_dir / f'historical_open_interest_top10_since2020_{timestamp}.csv'
+    detailed_file = out_dir / f'historical_open_interest_top{top_n}_since2020_{timestamp}.csv'
     oi_df.to_csv(detailed_file, index=False)
 
     # Summary by coin
@@ -255,7 +256,7 @@ def main():
         'oi_close_max': 'Max OI USD',
     })
 
-    summary_file = out_dir / f'historical_open_interest_top10_since2020_summary_{timestamp}.csv'
+    summary_file = out_dir / f'historical_open_interest_top{top_n}_since2020_summary_{timestamp}.csv'
     summary.to_csv(summary_file, index=False)
 
     print("\n" + "=" * 80)
