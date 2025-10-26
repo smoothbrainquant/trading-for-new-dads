@@ -723,6 +723,41 @@ def main():
             # Store initial contributions
             initial_contributions[strategy_name] = dict(contrib)
 
+        # Print BEFORE reallocation weights
+        print("\n" + "="*80)
+        print("PORTFOLIO WEIGHTS BEFORE CAPITAL REALLOCATION")
+        print("="*80)
+        temp_positions_before = defaultdict(float)
+        for strategy_name, contrib in initial_contributions.items():
+            for sym, ntl in contrib.items():
+                temp_positions_before[sym] += ntl
+        
+        if temp_positions_before:
+            # Convert to weights
+            weights_before = {}
+            for symbol, notional in temp_positions_before.items():
+                weight = notional / notional_value if notional_value > 0 else 0.0
+                weights_before[symbol] = weight
+            
+            # Sort by absolute weight
+            sorted_weights = sorted(weights_before.items(), key=lambda x: abs(x[1]), reverse=True)
+            
+            print(f"\nTop 20 positions:")
+            for i, (symbol, weight) in enumerate(sorted_weights[:20], 1):
+                side = "LONG" if weight > 0 else ("SHORT" if weight < 0 else "FLAT")
+                print(f"  {i:2d}. {symbol:20s}: {weight:>8.4f} ({weight*100:>6.2f}%) {side:>5s}")
+            
+            total_weight = sum(abs(w) for w in weights_before.values())
+            total_long = sum(w for w in weights_before.values() if w > 0)
+            total_short = sum(abs(w) for w in weights_before.values() if w < 0)
+            print(f"\nTotal positions: {len(weights_before)}")
+            print(f"Total weight (abs): {total_weight:.4f}")
+            print(f"Long weight: {total_long:.4f}")
+            print(f"Short weight: {total_short:.4f}")
+        else:
+            print("\nNo positions before reallocation.")
+        print("="*80)
+
         # Check which strategies returned no positions and rebalance
         # Fixed weight strategies that should maintain their allocation
         FIXED_WEIGHT_STRATEGIES = {'breakout', 'days_from_high'}
@@ -825,6 +860,37 @@ def main():
             per_signal_contribs[strategy_name] = dict(contrib)
             for sym, ntl in contrib.items():
                 target_positions[sym] += ntl
+
+        # Print AFTER reallocation weights
+        print("\n" + "="*80)
+        print("PORTFOLIO WEIGHTS AFTER CAPITAL REALLOCATION")
+        print("="*80)
+        
+        if target_positions:
+            # Convert to weights
+            weights_after = {}
+            for symbol, notional in target_positions.items():
+                weight = notional / notional_value if notional_value > 0 else 0.0
+                weights_after[symbol] = weight
+            
+            # Sort by absolute weight
+            sorted_weights = sorted(weights_after.items(), key=lambda x: abs(x[1]), reverse=True)
+            
+            print(f"\nTop 20 positions:")
+            for i, (symbol, weight) in enumerate(sorted_weights[:20], 1):
+                side = "LONG" if weight > 0 else ("SHORT" if weight < 0 else "FLAT")
+                print(f"  {i:2d}. {symbol:20s}: {weight:>8.4f} ({weight*100:>6.2f}%) {side:>5s}")
+            
+            total_weight = sum(abs(w) for w in weights_after.values())
+            total_long = sum(w for w in weights_after.values() if w > 0)
+            total_short = sum(abs(w) for w in weights_after.values() if w < 0)
+            print(f"\nTotal positions: {len(weights_after)}")
+            print(f"Total weight (abs): {total_weight:.4f}")
+            print(f"Long weight: {total_long:.4f}")
+            print(f"Short weight: {total_short:.4f}")
+        else:
+            print("\nNo positions after reallocation.")
+        print("="*80)
 
         # Print combined positions
         if target_positions:
