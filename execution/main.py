@@ -31,9 +31,9 @@ can update them without code changes. Example config structure:
   }
 }
 
-If no config is provided, you can pass a list of signals via --signals and the
-script will assign equal weights across them. If neither is provided, it falls
-back to the original 50/50 blend of days_from_high and breakout.
+By default, the script uses weights from all_strategies_config.json. You can override
+this by providing a custom --signal-config path, or pass --signals to use equal weights
+across listed signals, or pass --signal-config="" to use the legacy 50/50 blend.
 """
 
 import argparse
@@ -514,10 +514,11 @@ def main():
     """
     Main execution function supporting multi-signal blending with external weights.
     
-    Modes:
-    - If --signal-config provided and found, use weights from config
-    - Else if --signals provided, use equal weights across listed signals
-    - Else fallback to legacy 50/50 (days_from_high + breakout)
+    Modes (evaluated in order):
+    - By default, uses weights from all_strategies_config.json
+    - If custom --signal-config provided and found, use weights from that config
+    - If --signals provided, use equal weights across listed signals
+    - If --signal-config="" (empty), fallback to legacy 50/50 (days_from_high + breakout)
     """
     # Parse command line arguments
     parser = argparse.ArgumentParser(
@@ -563,8 +564,8 @@ def main():
     parser.add_argument(
         '--signal-config',
         type=str,
-        default=None,
-        help='Path to JSON config file with strategy_weights and optional params'
+        default=os.path.join(EXECUTION_DIR, 'all_strategies_config.json'),
+        help='Path to JSON config file with strategy_weights and optional params (default: all_strategies_config.json)'
     )
     args = parser.parse_args()
     
