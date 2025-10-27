@@ -1,0 +1,2 @@
+strategy,kurtosis_window,long_percentile,short_percentile,weighting
+mean_reversion,30,20,80,risk_parity

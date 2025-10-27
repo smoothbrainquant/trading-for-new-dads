@@ -1,0 +1,2 @@
+initial_capital,final_value,total_return,annualized_return,annualized_volatility,sharpe_ratio,max_drawdown,win_rate,num_days,avg_long_positions,avg_short_positions,avg_long_exposure,avg_short_exposure,avg_net_exposure,avg_gross_exposure
+10000,5280.797626018875,-0.47192023739811245,-0.15726624452082827,0.3986071828597542,-0.39453941444943996,-0.754705718207823,0.4698972099853157,1363,1.2575201760821717,2.2575201760821715,0.41269258987527513,0.5,-0.08730741012472487,0.9126925898752751
