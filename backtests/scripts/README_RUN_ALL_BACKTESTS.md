@@ -32,6 +32,9 @@ The script runs the following backtests:
 2. **Mean Reversion** - Contrarian strategy betting on price reversals
 3. **Size Factor** - Long small-cap / short large-cap strategy
 4. **Carry Factor** - Long low funding rate / short high funding rate strategy
+5. **Days from High** - Strategy based on days since 200-day high
+6. **OI Divergence** - Open interest divergence/trend following strategy
+7. **Skew Factor** - Long/short strategy based on return skewness
 
 ## Usage
 
@@ -59,17 +62,31 @@ python3 backtests/scripts/run_all_backtests.py \
 
 ### Command Line Arguments
 
+**Data Files:**
 - `--data-file`: Path to historical OHLCV price data CSV file
 - `--marketcap-file`: Path to market cap data CSV file
-- `--funding-rates-file`: Path to funding rates data CSV file  
+- `--funding-rates-file`: Path to funding rates data CSV file
+- `--oi-data-file`: Path to open interest data CSV file
+
+**General Parameters:**
 - `--initial-capital`: Initial portfolio capital in USD (default: 10000)
 - `--start-date`: Start date for backtest (YYYY-MM-DD format, optional)
 - `--end-date`: End date for backtest (YYYY-MM-DD format, optional)
 - `--output-file`: Output file for summary table (default: backtests/results/all_backtests_summary.csv)
+
+**Strategy Toggles:**
 - `--run-breakout`: Run breakout signal backtest (default: True)
 - `--run-mean-reversion`: Run mean reversion backtest (default: True)
 - `--run-size`: Run size factor backtest (default: True)
 - `--run-carry`: Run carry factor backtest (default: True)
+- `--run-days-from-high`: Run days from high backtest (default: True)
+- `--run-oi-divergence`: Run OI divergence backtest (default: True)
+- `--run-skew`: Run skew factor backtest (default: True)
+
+**Strategy-Specific Parameters:**
+- `--oi-mode`: OI divergence mode: 'divergence' (contrarian) or 'trend' (momentum) (default: divergence)
+- `--skew-lookback`: Lookback window for skewness calculation in days (default: 30)
+- `--skew-strategy-type`: Skew strategy type: 'long_short', 'short_only', or 'long_only' (default: long_short)
 
 ## Output
 

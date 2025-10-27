@@ -45,6 +45,9 @@ from backtests.scripts.backtest_open_interest_divergence import (
     backtest as backtest_oi_divergence, load_price_data as load_oi_price_data,
     load_oi_data, BacktestConfig as OIBacktestConfig
 )
+from backtests.scripts.backtest_skew_factor import (
+    backtest_strategy as backtest_skew, calculate_skewness, generate_signals, load_data
+)
 
 
 def calculate_comprehensive_metrics(portfolio_df, initial_capital, benchmark_returns=None):
@@ -474,6 +477,58 @@ def run_oi_divergence_backtest(data_file, oi_data_file, **kwargs):
         return None
 
 
+def run_skew_factor_backtest(data_file, **kwargs):
+    """Run skew factor backtest."""
+    print("\n" + "="*80)
+    print("Running Skew Factor Backtest")
+    print("="*80)
+    
+    try:
+        data = load_data(data_file)
+        
+        # Calculate skewness with filters
+        data_with_skewness = calculate_skewness(
+            data,
+            lookback_window=kwargs.get('lookback_window', 30),
+            min_volume=kwargs.get('min_volume', 5_000_000),
+            min_market_cap=kwargs.get('min_market_cap', 50_000_000)
+        )
+        
+        # Generate signals based on skewness quintiles
+        signals_df = generate_signals(
+            data_with_skewness,
+            num_quintiles=kwargs.get('num_quintiles', 5),
+            strategy_type=kwargs.get('strategy_type', 'long_short')
+        )
+        
+        # Run backtest
+        results = backtest_skew(
+            signals_df=signals_df,
+            start_date=kwargs.get('start_date'),
+            end_date=kwargs.get('end_date'),
+            initial_capital=kwargs.get('initial_capital', 10000),
+            strategy_type=kwargs.get('strategy_type', 'long_short')
+        )
+        
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results['portfolio_values'],
+            kwargs.get('initial_capital', 10000)
+        )
+        
+        return {
+            'strategy': 'Skew Factor',
+            'description': f"30d skewness, {kwargs.get('strategy_type', 'long_short')}",
+            'metrics': metrics,
+            'results': results
+        }
+    except Exception as e:
+        print(f"Error in Skew Factor backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 def create_summary_table(all_results):
     """
     Create summary table with all metrics.
@@ -768,6 +823,25 @@ def main():
         choices=['divergence', 'trend'],
         help='OI divergence mode: divergence (contrarian) or trend (momentum)'
     )
+    parser.add_argument(
+        '--run-skew',
+        action='store_true',
+        default=True,
+        help='Run skew factor backtest'
+    )
+    parser.add_argument(
+        '--skew-lookback',
+        type=int,
+        default=30,
+        help='Lookback window for skewness calculation (days)'
+    )
+    parser.add_argument(
+        '--skew-strategy-type',
+        type=str,
+        default='long_short',
+        choices=['long_short', 'short_only', 'long_only'],
+        help='Skew strategy type: long_short, short_only, or long_only'
+    )
     
     args = parser.parse_args()
     
@@ -869,6 +943,20 @@ def main():
             top_n=10,
             bottom_n=10,
             rebalance_days=7,
+            **common_params
+        )
+        if result:
+            all_results.append(result)
+    
+    # 7. Skew Factor
+    if args.run_skew:
+        result = run_skew_factor_backtest(
+            args.data_file,
+            lookback_window=args.skew_lookback,
+            strategy_type=args.skew_strategy_type,
+            num_quintiles=5,
+            min_volume=5_000_000,
+            min_market_cap=50_000_000,
             **common_params
         )
         if result:
