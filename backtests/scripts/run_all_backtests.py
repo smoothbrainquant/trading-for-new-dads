@@ -45,6 +45,18 @@ from backtests.scripts.backtest_open_interest_divergence import (
     backtest as backtest_oi_divergence, load_price_data as load_oi_price_data,
     load_oi_data, BacktestConfig as OIBacktestConfig
 )
+from backtests.scripts.backtest_beta_factor import (
+    run_backtest as run_beta_backtest, load_data as load_beta_data
+)
+from backtests.scripts.backtest_kurtosis_factor import (
+    backtest as backtest_kurtosis, load_data as load_kurtosis_data
+)
+from backtests.scripts.backtest_volatility_factor import (
+    backtest as backtest_volatility, load_data as load_volatility_data
+)
+from backtests.scripts.backtest_skew_factor import (
+    backtest as backtest_skew, load_data as load_skew_data
+)
 
 
 def calculate_comprehensive_metrics(portfolio_df, initial_capital, benchmark_returns=None):
@@ -474,6 +486,189 @@ def run_oi_divergence_backtest(data_file, oi_data_file, **kwargs):
         return None
 
 
+def run_beta_factor_backtest(data_file, **kwargs):
+    """Run beta factor backtest."""
+    print("\n" + "="*80)
+    print("Running Beta Factor Backtest")
+    print("="*80)
+    
+    try:
+        data = load_beta_data(data_file)
+        results = run_beta_backtest(
+            data=data,
+            strategy=kwargs.get('beta_strategy', 'betting_against_beta'),
+            beta_window=kwargs.get('beta_window', 90),
+            volatility_window=kwargs.get('volatility_window', 30),
+            rebalance_days=kwargs.get('rebalance_days', 7),
+            num_quintiles=kwargs.get('num_quintiles', 5),
+            long_percentile=kwargs.get('long_percentile', 20),
+            short_percentile=kwargs.get('short_percentile', 80),
+            weighting_method=kwargs.get('weighting_method', 'equal_weight'),
+            initial_capital=kwargs.get('initial_capital', 10000),
+            leverage=kwargs.get('leverage', 1.0),
+            long_allocation=kwargs.get('long_allocation', 0.5),
+            short_allocation=kwargs.get('short_allocation', 0.5),
+            min_volume=kwargs.get('min_volume', 5_000_000),
+            min_market_cap=kwargs.get('min_market_cap', 50_000_000),
+            start_date=kwargs.get('start_date'),
+            end_date=kwargs.get('end_date')
+        )
+        
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results['portfolio_values'],
+            kwargs.get('initial_capital', 10000)
+        )
+        
+        return {
+            'strategy': 'Beta Factor',
+            'description': f"Strategy: {kwargs.get('beta_strategy', 'betting_against_beta')}",
+            'metrics': metrics,
+            'results': results
+        }
+    except Exception as e:
+        print(f"Error in Beta Factor backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+def run_kurtosis_factor_backtest(data_file, **kwargs):
+    """Run kurtosis factor backtest."""
+    print("\n" + "="*80)
+    print("Running Kurtosis Factor Backtest")
+    print("="*80)
+    
+    try:
+        data = load_kurtosis_data(data_file)
+        results = backtest_kurtosis(
+            price_data=data,
+            strategy=kwargs.get('kurtosis_strategy', 'mean_reversion'),
+            kurtosis_window=kwargs.get('kurtosis_window', 30),
+            volatility_window=kwargs.get('volatility_window', 30),
+            rebalance_days=kwargs.get('rebalance_days', 7),
+            long_percentile=kwargs.get('long_percentile', 20),
+            short_percentile=kwargs.get('short_percentile', 80),
+            max_positions=kwargs.get('max_positions', 10),
+            weighting=kwargs.get('weighting', 'risk_parity'),
+            start_date=kwargs.get('start_date'),
+            end_date=kwargs.get('end_date'),
+            initial_capital=kwargs.get('initial_capital', 10000),
+            leverage=kwargs.get('leverage', 1.0),
+            long_allocation=kwargs.get('long_allocation', 0.5),
+            short_allocation=kwargs.get('short_allocation', 0.5),
+            min_volume=kwargs.get('min_volume', 5_000_000),
+            min_market_cap=kwargs.get('min_market_cap', 50_000_000)
+        )
+        
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results['portfolio_values'],
+            kwargs.get('initial_capital', 10000)
+        )
+        
+        return {
+            'strategy': 'Kurtosis Factor',
+            'description': f"Strategy: {kwargs.get('kurtosis_strategy', 'mean_reversion')}",
+            'metrics': metrics,
+            'results': results
+        }
+    except Exception as e:
+        print(f"Error in Kurtosis Factor backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+def run_volatility_factor_backtest(data_file, **kwargs):
+    """Run volatility factor backtest."""
+    print("\n" + "="*80)
+    print("Running Volatility Factor Backtest")
+    print("="*80)
+    
+    try:
+        data = load_volatility_data(data_file)
+        results = backtest_volatility(
+            price_data=data,
+            strategy=kwargs.get('volatility_strategy', 'long_low_short_high'),
+            num_quintiles=kwargs.get('num_quintiles', 5),
+            volatility_window=kwargs.get('volatility_window', 30),
+            rebalance_days=kwargs.get('rebalance_days', 7),
+            start_date=kwargs.get('start_date'),
+            end_date=kwargs.get('end_date'),
+            initial_capital=kwargs.get('initial_capital', 10000),
+            leverage=kwargs.get('leverage', 1.0),
+            long_allocation=kwargs.get('long_allocation', 0.5),
+            short_allocation=kwargs.get('short_allocation', 0.5),
+            weighting_method=kwargs.get('weighting_method', 'equal')
+        )
+        
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results['portfolio_values'],
+            kwargs.get('initial_capital', 10000)
+        )
+        
+        return {
+            'strategy': 'Volatility Factor',
+            'description': f"Strategy: {kwargs.get('volatility_strategy', 'long_low_short_high')}",
+            'metrics': metrics,
+            'results': results
+        }
+    except Exception as e:
+        print(f"Error in Volatility Factor backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+def run_skew_factor_backtest(data_file, **kwargs):
+    """Run skew factor backtest."""
+    print("\n" + "="*80)
+    print("Running Skew Factor Backtest")
+    print("="*80)
+    
+    try:
+        data = load_skew_data(data_file)
+        results = backtest_skew(
+            price_data=data,
+            strategy=kwargs.get('skew_strategy', 'mean_reversion'),
+            skewness_window=kwargs.get('skewness_window', 30),
+            volatility_window=kwargs.get('volatility_window', 30),
+            rebalance_days=kwargs.get('rebalance_days', 7),
+            long_percentile=kwargs.get('long_percentile', 20),
+            short_percentile=kwargs.get('short_percentile', 80),
+            max_positions=kwargs.get('max_positions', 10),
+            weighting=kwargs.get('weighting', 'risk_parity'),
+            start_date=kwargs.get('start_date'),
+            end_date=kwargs.get('end_date'),
+            initial_capital=kwargs.get('initial_capital', 10000),
+            leverage=kwargs.get('leverage', 1.0),
+            long_allocation=kwargs.get('long_allocation', 0.5),
+            short_allocation=kwargs.get('short_allocation', 0.5),
+            min_volume=kwargs.get('min_volume', 5_000_000),
+            min_market_cap=kwargs.get('min_market_cap', 50_000_000)
+        )
+        
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results['portfolio_values'],
+            kwargs.get('initial_capital', 10000)
+        )
+        
+        return {
+            'strategy': 'Skew Factor',
+            'description': f"Strategy: {kwargs.get('skew_strategy', 'mean_reversion')}",
+            'metrics': metrics,
+            'results': results
+        }
+    except Exception as e:
+        print(f"Error in Skew Factor backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 def create_summary_table(all_results):
     """
     Create summary table with all metrics.
@@ -768,6 +963,30 @@ def main():
         choices=['divergence', 'trend'],
         help='OI divergence mode: divergence (contrarian) or trend (momentum)'
     )
+    parser.add_argument(
+        '--run-beta',
+        action='store_true',
+        default=True,
+        help='Run beta factor backtest'
+    )
+    parser.add_argument(
+        '--run-kurtosis',
+        action='store_true',
+        default=True,
+        help='Run kurtosis factor backtest'
+    )
+    parser.add_argument(
+        '--run-volatility',
+        action='store_true',
+        default=True,
+        help='Run volatility factor backtest'
+    )
+    parser.add_argument(
+        '--run-skew',
+        action='store_true',
+        default=True,
+        help='Run skew factor backtest'
+    )
     
     args = parser.parse_args()
     
@@ -869,6 +1088,53 @@ def main():
             top_n=10,
             bottom_n=10,
             rebalance_days=7,
+            **common_params
+        )
+        if result:
+            all_results.append(result)
+    
+    # 7. Beta Factor
+    if args.run_beta:
+        result = run_beta_factor_backtest(
+            args.data_file,
+            beta_strategy='betting_against_beta',
+            beta_window=90,
+            rebalance_days=7,
+            **common_params
+        )
+        if result:
+            all_results.append(result)
+    
+    # 8. Kurtosis Factor
+    if args.run_kurtosis:
+        result = run_kurtosis_factor_backtest(
+            args.data_file,
+            kurtosis_strategy='mean_reversion',
+            kurtosis_window=30,
+            max_positions=10,
+            **common_params
+        )
+        if result:
+            all_results.append(result)
+    
+    # 9. Volatility Factor
+    if args.run_volatility:
+        result = run_volatility_factor_backtest(
+            args.data_file,
+            volatility_strategy='long_low_short_high',
+            weighting_method='equal',
+            **common_params
+        )
+        if result:
+            all_results.append(result)
+    
+    # 10. Skew Factor
+    if args.run_skew:
+        result = run_skew_factor_backtest(
+            args.data_file,
+            skew_strategy='mean_reversion',
+            skewness_window=30,
+            max_positions=10,
             **common_params
         )
         if result:
