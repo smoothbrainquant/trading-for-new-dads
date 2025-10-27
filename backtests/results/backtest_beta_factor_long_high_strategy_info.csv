@@ -1,0 +1,2 @@
+strategy,beta_window,volatility_window,rebalance_days,num_quintiles,long_percentile,short_percentile,weighting_method,initial_capital,leverage,long_allocation,short_allocation,avg_long_beta,avg_short_beta,long_symbols,short_symbols
+long_high_beta,90,30,7,5,20,80,equal_weight,10000,1.0,0.5,0.5,1.842135628675571,,"ALGO/USD,BIO/USD,BONK/USD,CHZ/USD,CRO/USD,CRV/USD,CVC/USD,DOGE/USD,EOS/USD,FARTCOIN/USD,GIGA/USD,GRT/USD,IMX/USD,MANA/USD,MOG/USD,OXT/USD,PENGU/USD,PNUT/USD,POPCAT/USD,ROSE/USD,SNX/USD,STORJ/USD,SUPER/USD,T/USD,TURBO/USD,WIF/USD,XLM/USD,XTZ/USD,ZRX/USD",
