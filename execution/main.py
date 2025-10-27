@@ -97,6 +97,94 @@ from execution.reporting import (
 )
 
 
+# Strategy Registry: Maps strategy names to their implementation functions
+STRATEGY_REGISTRY = {
+    'days_from_high': strategy_days_from_high,
+    'breakout': strategy_breakout,
+    'carry': strategy_carry,
+    'mean_reversion': strategy_mean_reversion,
+    'size': strategy_size,
+    'oi_divergence': strategy_oi_divergence,
+}
+
+
+def _build_strategy_params(
+    strategy_name: str,
+    historical_data: dict,
+    strategy_notional: float,
+    params: dict,
+    cli_args,
+) -> tuple:
+    """
+    Build parameters for a strategy based on its name.
+    
+    Returns:
+        Tuple of (args, kwargs) to pass to the strategy function
+    """
+    p = params.get(strategy_name, {}) if isinstance(params, dict) else {}
+    
+    if strategy_name == 'days_from_high':
+        max_days = int(p.get('max_days', cli_args.days_since_high)) if p else cli_args.days_since_high
+        return (historical_data, strategy_notional), {'max_days': max_days}
+    
+    elif strategy_name == 'breakout':
+        return (historical_data, strategy_notional), {}
+    
+    elif strategy_name == 'carry':
+        exchange_id = p.get('exchange_id', 'hyperliquid') if isinstance(p, dict) else 'hyperliquid'
+        top_n = int(p.get('top_n', 10)) if isinstance(p, dict) else 10
+        bottom_n = int(p.get('bottom_n', 10)) if isinstance(p, dict) else 10
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            'exchange_id': exchange_id,
+            'top_n': top_n,
+            'bottom_n': bottom_n,
+        }
+    
+    elif strategy_name == 'mean_reversion':
+        zscore_threshold = float(p.get('zscore_threshold', 1.5)) if isinstance(p, dict) else 1.5
+        volume_threshold = float(p.get('volume_threshold', 1.0)) if isinstance(p, dict) else 1.0
+        lookback_window = int(p.get('lookback_window', 30)) if isinstance(p, dict) else 30
+        period_days = int(p.get('period_days', 2)) if isinstance(p, dict) else 2
+        limit = int(p.get('limit', 100)) if isinstance(p, dict) else 100
+        long_only = bool(p.get('long_only', True)) if isinstance(p, dict) else True
+        return (historical_data, strategy_notional), {
+            'zscore_threshold': zscore_threshold,
+            'volume_threshold': volume_threshold,
+            'lookback_window': lookback_window,
+            'period_days': period_days,
+            'limit': limit,
+            'long_only': long_only,
+        }
+    
+    elif strategy_name == 'oi_divergence':
+        mode = p.get('mode', 'trend') if isinstance(p, dict) else 'trend'
+        lookback = int(p.get('lookback', 30)) if isinstance(p, dict) else 30
+        top_n = int(p.get('top_n', 10)) if isinstance(p, dict) else 10
+        bottom_n = int(p.get('bottom_n', 10)) if isinstance(p, dict) else 10
+        exchange_code = p.get('exchange_code', 'A') if isinstance(p, dict) else 'A'
+        return (historical_data, strategy_notional), {
+            'mode': mode,
+            'lookback': lookback,
+            'top_n': top_n,
+            'bottom_n': bottom_n,
+            'exchange_code': exchange_code,
+        }
+    
+    elif strategy_name == 'size':
+        top_n = int(p.get('top_n', 10)) if isinstance(p, dict) else 10
+        bottom_n = int(p.get('bottom_n', 10)) if isinstance(p, dict) else 10
+        limit = int(p.get('limit', 100)) if isinstance(p, dict) else 100
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            'top_n': top_n,
+            'bottom_n': bottom_n,
+            'limit': limit,
+        }
+    
+    else:
+        # Default: just pass historical_data and notional
+        return (historical_data, strategy_notional), {}
+
+
 def update_market_data():
     """
     Update market cap data from CoinMarketCap.
@@ -874,78 +962,32 @@ def main():
         for strategy_name, weight in blend_weights.items():
             if weight <= 0:
                 continue
+            
             strategy_notional = notional_value * weight
             print("\n" + "-"*80)
             print(f"Strategy: {strategy_name} | Allocation: ${strategy_notional:,.2f} ({weight*100:.2f}%)")
-            p = params.get(strategy_name, {}) if isinstance(params, dict) else {}
-
-            if strategy_name == 'days_from_high':
-                max_days = int(p.get('max_days', args.days_since_high)) if p else args.days_since_high
-                contrib = strategy_days_from_high(historical_data, strategy_notional, max_days=max_days)
-            elif strategy_name == 'breakout':
-                contrib = strategy_breakout(historical_data, strategy_notional)
-            elif strategy_name == 'carry':
-                exchange_id = p.get('exchange_id', 'hyperliquid') if isinstance(p, dict) else 'hyperliquid'
-                top_n = int(p.get('top_n', 10)) if isinstance(p, dict) else 10
-                bottom_n = int(p.get('bottom_n', 10)) if isinstance(p, dict) else 10
-                contrib = strategy_carry(
-                    historical_data,
-                    list(historical_data.keys()),
-                    strategy_notional,
-                    exchange_id=exchange_id,
-                    top_n=top_n,
-                    bottom_n=bottom_n,
-                )
-            elif strategy_name == 'mean_reversion':
-                # Optimal parameters from backtest (see DIRECTIONAL_MEAN_REVERSION_SUMMARY.md)
-                zscore_threshold = float(p.get('zscore_threshold', 1.5)) if isinstance(p, dict) else 1.5
-                volume_threshold = float(p.get('volume_threshold', 1.0)) if isinstance(p, dict) else 1.0
-                lookback_window = int(p.get('lookback_window', 30)) if isinstance(p, dict) else 30
-                period_days = int(p.get('period_days', 2)) if isinstance(p, dict) else 2
-                limit = int(p.get('limit', 100)) if isinstance(p, dict) else 100
-                long_only = bool(p.get('long_only', True)) if isinstance(p, dict) else True
-                contrib = strategy_mean_reversion(
-                    historical_data,
-                    strategy_notional,
-                    zscore_threshold=zscore_threshold,
-                    volume_threshold=volume_threshold,
-                    lookback_window=lookback_window,
-                    period_days=period_days,
-                    limit=limit,
-                    long_only=long_only,
-                )
-            elif strategy_name == 'oi_divergence':
-                mode = p.get('mode', 'trend') if isinstance(p, dict) else 'trend'
-                lookback = int(p.get('lookback', 30)) if isinstance(p, dict) else 30
-                top_n = int(p.get('top_n', 10)) if isinstance(p, dict) else 10
-                bottom_n = int(p.get('bottom_n', 10)) if isinstance(p, dict) else 10
-                # Default to 'A' (aggregate across all exchanges) for robust signals
-                # Format: BTCUSDT_PERP.A per Coinalyze API docs
-                exchange_code = p.get('exchange_code', 'A') if isinstance(p, dict) else 'A'
-                contrib = strategy_oi_divergence(
-                    historical_data,
-                    strategy_notional,
-                    mode=mode,
-                    lookback=lookback,
-                    top_n=top_n,
-                    bottom_n=bottom_n,
-                    exchange_code=exchange_code,
-                )
-            elif strategy_name == 'size':
-                top_n = int(p.get('top_n', 10)) if isinstance(p, dict) else 10
-                bottom_n = int(p.get('bottom_n', 10)) if isinstance(p, dict) else 10
-                limit = int(p.get('limit', 100)) if isinstance(p, dict) else 100
-                contrib = strategy_size(
-                    historical_data,
-                    list(historical_data.keys()),
-                    strategy_notional,
-                    top_n=top_n,
-                    bottom_n=bottom_n,
-                    limit=limit,
-                )
-            else:
-                print(f"  WARNING: Unknown strategy '{strategy_name}', skipping.")
+            
+            # Look up strategy function in registry
+            strategy_fn = STRATEGY_REGISTRY.get(strategy_name)
+            if not strategy_fn:
+                print(f"  WARNING: Unknown strategy '{strategy_name}' not in registry, skipping.")
                 contrib = {}
+            else:
+                # Build parameters for this strategy
+                strategy_args, strategy_kwargs = _build_strategy_params(
+                    strategy_name=strategy_name,
+                    historical_data=historical_data,
+                    strategy_notional=strategy_notional,
+                    params=params,
+                    cli_args=args,
+                )
+                
+                # Execute strategy
+                try:
+                    contrib = strategy_fn(*strategy_args, **strategy_kwargs)
+                except Exception as e:
+                    print(f"  ERROR executing strategy '{strategy_name}': {e}")
+                    contrib = {}
 
             # Store initial contributions (both original and working copy)
             initial_contributions[strategy_name] = dict(contrib)
