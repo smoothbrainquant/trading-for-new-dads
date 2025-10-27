@@ -45,6 +45,9 @@ from backtests.scripts.backtest_open_interest_divergence import (
     backtest as backtest_oi_divergence, load_price_data as load_oi_price_data,
     load_oi_data, BacktestConfig as OIBacktestConfig
 )
+from backtests.scripts.backtest_volatility_factor import (
+    backtest as backtest_volatility, load_data
+)
 
 
 def calculate_comprehensive_metrics(portfolio_df, initial_capital, benchmark_returns=None):
@@ -474,6 +477,49 @@ def run_oi_divergence_backtest(data_file, oi_data_file, **kwargs):
         return None
 
 
+def run_volatility_factor_backtest(data_file, **kwargs):
+    """Run volatility factor backtest."""
+    print("\n" + "="*80)
+    print("Running Volatility Factor Backtest")
+    print("="*80)
+    
+    try:
+        price_data = load_data(data_file)
+        
+        results = backtest_volatility(
+            price_data=price_data,
+            strategy=kwargs.get('strategy', 'long_low_short_high'),
+            num_quintiles=kwargs.get('num_quintiles', 5),
+            volatility_window=kwargs.get('volatility_window', 30),
+            rebalance_days=kwargs.get('rebalance_days', 7),
+            initial_capital=kwargs.get('initial_capital', 10000),
+            leverage=kwargs.get('leverage', 1.0),
+            long_allocation=kwargs.get('long_allocation', 0.5),
+            short_allocation=kwargs.get('short_allocation', 0.5),
+            weighting_method=kwargs.get('weighting_method', 'equal'),
+            start_date=kwargs.get('start_date'),
+            end_date=kwargs.get('end_date')
+        )
+        
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results['portfolio_values'],
+            kwargs.get('initial_capital', 10000)
+        )
+        
+        return {
+            'strategy': 'Volatility Factor',
+            'description': f"Strategy: {kwargs.get('strategy', 'long_low_short_high')}",
+            'metrics': metrics,
+            'results': results
+        }
+    except Exception as e:
+        print(f"Error in Volatility Factor backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 def create_summary_table(all_results):
     """
     Create summary table with all metrics.
@@ -768,6 +814,19 @@ def main():
         choices=['divergence', 'trend'],
         help='OI divergence mode: divergence (contrarian) or trend (momentum)'
     )
+    parser.add_argument(
+        '--run-volatility',
+        action='store_true',
+        default=True,
+        help='Run volatility factor backtest'
+    )
+    parser.add_argument(
+        '--volatility-strategy',
+        type=str,
+        default='long_low_short_high',
+        choices=['long_low_short_high', 'long_low_vol', 'long_high_vol', 'long_high_short_low'],
+        help='Volatility factor strategy type'
+    )
     
     args = parser.parse_args()
     
@@ -869,6 +928,19 @@ def main():
             top_n=10,
             bottom_n=10,
             rebalance_days=7,
+            **common_params
+        )
+        if result:
+            all_results.append(result)
+    
+    # 7. Volatility Factor
+    if args.run_volatility:
+        result = run_volatility_factor_backtest(
+            args.data_file,
+            strategy=args.volatility_strategy,
+            num_quintiles=5,
+            rebalance_days=1,  # Daily rebalancing
+            weighting_method='equal',
             **common_params
         )
         if result:
