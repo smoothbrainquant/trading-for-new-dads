@@ -1,11 +1,11 @@
 {
   "strategy_weights": {
-    "mean_reversion": 0.0,
-    "size": 0.0,
-    "carry": 0.5,
-    "oi_divergence": 0.5,
-    "breakout": 0.0,
-    "days_from_high": 0.0
+    "mean_reversion": 0.6370925523838878,
+    "size": 0.1032488189960471,
+    "carry": 0.0919692268871264,
+    "oi_divergence": 0.0676894017329385,
+    "breakout": 0.0499999999999999,
+    "days_from_high": 0.0499999999999999
   },
   "params": {
     "days_from_high": {
