@@ -141,7 +141,7 @@ df = fetch_coinalyze_aggregated_funding_cached(
 ### Running the Script
 ```bash
 # Set your Coinalyze API key
-export COINALYZE_API_KEY="your_api_key_here"
+export COINALYZE_API="your_api_key_here"
 
 # Run the demo script
 python3 execution/get_carry.py
@@ -197,7 +197,7 @@ for i in range(0, len(symbols_list), chunk_size):
    ```
 
 2. **No functional changes**: Output format remains the same
-3. **Ensure API key is set**: `export COINALYZE_API_KEY="your_key"`
+3. **Ensure API key is set**: `export COINALYZE_API="your_key"`
 
 ### Backward Compatibility
 - Binance functions still exist but are deprecated
@@ -210,7 +210,7 @@ To verify the changes work correctly:
 
 1. Set Coinalyze API key:
    ```bash
-   export COINALYZE_API_KEY="your_key"
+   export COINALYZE_API="your_key"
    ```
 
 2. Test aggregated funding rates:
@@ -234,7 +234,7 @@ To verify the changes work correctly:
 ## Dependencies
 - `data.scripts.coinalyze_client`: Coinalyze API client
 - `data.scripts.coinalyze_cache`: Caching layer (8-hour TTL)
-- Environment: `COINALYZE_API_KEY`
+- Environment: `COINALYZE_API`
 
 ## Performance
 - **API Calls**: 1 call per 20 symbols
