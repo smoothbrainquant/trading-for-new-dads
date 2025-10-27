@@ -217,15 +217,16 @@ def fetch_coinalyze_funding_rates_cached(
 
 def fetch_coinalyze_aggregated_funding_cached(
     universe_symbols: List[str],
-    aggregation: str = 'mean',
     cache_ttl_hours: int = 1,
 ) -> Optional[pd.DataFrame]:
     """
     Fetch aggregated funding rates with caching
     
+    Uses Coinalyze's built-in aggregation with .A suffix (e.g., BTCUSDT_PERP.A)
+    which aggregates funding rates across all major exchanges.
+    
     Args:
         universe_symbols: List of trading symbols
-        aggregation: Aggregation method ('mean', 'median', 'binance_primary')
         cache_ttl_hours: Cache time-to-live in hours
     
     Returns:
@@ -236,17 +237,17 @@ def fetch_coinalyze_aggregated_funding_cached(
     # Try to load from cache
     df_cached = cache.load_funding_rates('aggregated')
     if df_cached is not None:
-        logger.info(f"Using cached aggregated funding rates")
+        logger.info(f"Using cached aggregated funding rates (.A suffix)")
         return df_cached
     
     # Cache miss - fetch from API
     logger.info(f"Cache miss - fetching aggregated funding rates from Coinalyze API...")
+    logger.info(f"Using .A suffix format (e.g., BTCUSDT_PERP.A) for aggregated data")
     try:
         from execution.get_carry import fetch_coinalyze_aggregated_funding_rates
         
         df = fetch_coinalyze_aggregated_funding_rates(
-            universe_symbols=universe_symbols,
-            aggregation=aggregation
+            universe_symbols=universe_symbols
         )
         
         if df is not None and not df.empty:

@@ -1297,33 +1297,46 @@ def main():
                 # If fetching fails, leave marketcap map empty
                 marketcap_by_trading_symbol = {}
 
-            # 3) Funding rate via Coinalyze (Hyperliquid) with fallback to Binance
+            # 3) Funding rate via Coinalyze (using aggregated .A suffix)
             funding_by_base: dict[str, float] = {}
             try:
-                from execution.get_carry import fetch_coinalyze_funding_rates_for_universe
-                # Use traded symbols universe to minimize API usage; Hyperliquid exchange code 'H'
-                print(f"\n  Fetching funding rates from Coinalyze for {len(traded_symbols)} symbols...")
+                from execution.get_carry import fetch_coinalyze_aggregated_funding_rates
+                # Use aggregated funding rates with .A suffix (e.g., BTCUSDT_PERP.A)
+                # This uses Coinalyze's built-in aggregation across all exchanges
+                print(f"\n  Fetching aggregated funding rates from Coinalyze for {len(traded_symbols)} symbols...")
+                print(f"  Format: [SYMBOL]USDT_PERP.A for aggregated data across all exchanges")
                 print(f"  Note: Rate limited to 40 calls/min (1.5s between calls)")
-                df_fr = fetch_coinalyze_funding_rates_for_universe(traded_symbols, exchange_code='H')
+                df_fr = fetch_coinalyze_aggregated_funding_rates(
+                    universe_symbols=traded_symbols
+                )
                 if df_fr is not None and not df_fr.empty:
                     df_tmp = df_fr.copy()
-                    # Already has 'base', but ensure
-                    if 'base' not in df_tmp.columns:
-                        df_tmp['base'] = df_tmp['coinalyze_symbol'].astype(str).str.extract(r'^([A-Z0-9]+)')[0]
+                    # Already has 'base' column from aggregated function
                     funding_by_base = (
                         df_tmp.groupby('base')['funding_rate_pct'].mean().to_dict()
                     )
-            except Exception:
+                    print(f"  Got funding rates for {len(funding_by_base)} symbols")
+            except Exception as e:
+                # Fallback: Try exchange-specific Coinalyze for the target exchange
                 try:
-                    from execution.get_carry import fetch_binance_funding_rates
-                    df_fr = fetch_binance_funding_rates(symbols=None, exchange_id='binance')
+                    from execution.get_carry import fetch_coinalyze_funding_rates_for_universe
+                    # Map exchange_id to Coinalyze code
+                    exchange_code_map = {'hyperliquid': 'H', 'bybit': 'D', 'okx': 'K'}
+                    exchange_code = exchange_code_map.get(exchange_id.lower(), 'H')
+                    print(f"  Aggregated fetch failed, trying {exchange_id} (code: {exchange_code})...")
+                    df_fr = fetch_coinalyze_funding_rates_for_universe(
+                        traded_symbols, 
+                        exchange_code=exchange_code
+                    )
                     if df_fr is not None and not df_fr.empty:
                         df_tmp = df_fr.copy()
-                        df_tmp['base'] = df_tmp['symbol'].astype(str).str.split('/').str[0]
+                        if 'base' not in df_tmp.columns:
+                            df_tmp['base'] = df_tmp['coinalyze_symbol'].astype(str).str.extract(r'^([A-Z0-9]+)')[0]
                         funding_by_base = (
                             df_tmp.groupby('base')['funding_rate_pct'].mean().to_dict()
                         )
-                except Exception:
+                except Exception as e2:
+                    print(f"  ⚠️  Could not fetch funding rates: {e2}")
                     funding_by_base = {}
 
             rows = []

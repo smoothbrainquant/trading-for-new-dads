@@ -52,13 +52,14 @@ def strategy_carry(
         print(f"  Warning: Market cap filtering failed ({e}), using full universe")
     
     df_rates = None
-    # Use Coinalyze to get aggregated market-wide funding rates (with caching)
+    # Use Coinalyze to get aggregated market-wide funding rates using .A suffix (with caching)
     try:
         from data.scripts.coinalyze_cache import fetch_coinalyze_aggregated_funding_cached
 
         num_symbols = len(universe_symbols)
         estimated_time = (num_symbols / 20 + 1) * 1.5  # chunks of 20, 1.5s per call
-        print(f"  Fetching market-wide funding rates from Coinalyze (using Binance as primary)...")
+        print(f"  Fetching market-wide funding rates from Coinalyze (using .A aggregated suffix)...")
+        print(f"  Format: [SYMBOL]USDT_PERP.A (e.g., BTCUSDT_PERP.A)")
         print(f"  Processing {num_symbols} symbols - checking cache first...")
         print(f"  (If cache miss: Rate limited to 40 calls/min, ~{estimated_time:.0f}s total)")
         df_rates = fetch_coinalyze_aggregated_funding_cached(
@@ -66,7 +67,7 @@ def strategy_carry(
             cache_ttl_hours=8,  # 8 hour cache for funding rates
         )
         if df_rates is not None and not df_rates.empty:
-            print(f"  Got funding rates for {len(df_rates)} symbols from Binance (market proxy)")
+            print(f"  Got funding rates for {len(df_rates)} symbols from aggregated .A data")
             # Normalize expected columns
             df_rates = df_rates.copy()
             if 'base' not in df_rates.columns:
@@ -77,32 +78,33 @@ def strategy_carry(
                 df_rates = df_rates.rename(columns={'fundingRate': 'funding_rate'})
     except Exception as e:
         print(f"  ⚠️  CARRY STRATEGY: Coinalyze aggregated funding fetch failed ({e})")
-        print(f"      Falling back to exchange API...")
+        print(f"      Falling back to exchange-specific Coinalyze API...")
         df_rates = None
 
-    # Fallback: Binance via CCXT
+    # Fallback: Use exchange-specific Coinalyze API
     if df_rates is None or df_rates.empty:
         try:
-            from execution.get_carry import fetch_binance_funding_rates
-            # If exchange_id unsupported, default to 'binance'
-            ex_id = exchange_id if exchange_id in ("binance", "binanceus") else "binance"
-            df_rates = fetch_binance_funding_rates(symbols=None, exchange_id=ex_id)
+            from execution.get_carry import fetch_coinalyze_funding_rates_for_universe
+            # Map exchange_id to Coinalyze exchange code
+            exchange_code_map = {
+                'hyperliquid': 'H',
+                'bybit': 'D',
+                'okx': 'K',
+            }
+            exchange_code = exchange_code_map.get(exchange_id.lower(), 'H')  # Default to Hyperliquid
+            print(f"  Fetching funding rates for {exchange_id} (code: {exchange_code}) via Coinalyze...")
+            df_rates = fetch_coinalyze_funding_rates_for_universe(
+                universe_symbols=universe_symbols,
+                exchange_code=exchange_code
+            )
         except Exception as e:
-            print(f"  Error fetching funding rates from {exchange_id}: {e}")
-            # Fallback to binanceus if primary is restricted
-            if exchange_id == "binance":
-                try:
-                    print("  Trying fallback exchange_id='binanceus' ...")
-                    df_rates = fetch_binance_funding_rates(symbols=None, exchange_id="binanceus")
-                except Exception as e2:
-                    print(f"  Carry unavailable from both binance and binanceus: {e2}")
-                    return {}
-            else:
-                return {}
+            print(f"  ⚠️  Error fetching funding rates from Coinalyze for {exchange_id}: {e}")
+            return {}
     if df_rates is None or df_rates.empty:
         print("  ⚠️  CARRY STRATEGY: No funding rate data available!")
-        print(f"      Check: 1) COINALYZE_API key for exchange {exchange_id}")
-        print(f"      Check: 2) Exchange API access (Binance may be geo-restricted)")
+        print(f"      Check: 1) COINALYZE_API_KEY environment variable is set")
+        print(f"      Check: 2) Coinalyze API access and rate limits")
+        print(f"      Check: 3) Symbols exist on Coinalyze (try different symbols)")
         return {}
 
     universe_bases = {get_base_symbol(s): s for s in universe_symbols}
