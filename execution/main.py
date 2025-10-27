@@ -822,16 +822,10 @@ def main():
         help='Rebalance threshold as decimal (e.g., 0.05 for 5%%)'
     )
     parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        default=True,
-        help='Run in dry-run mode (no actual orders placed) [DEFAULT]'
-    )
-    parser.add_argument(
         '--live',
         action='store_true',
         default=False,
-        help='Enable live trading execution (overrides --dry-run)'
+        help='Enable live trading execution (default: dry-run mode)'
     )
     parser.add_argument(
         '--leverage',
@@ -859,9 +853,8 @@ def main():
     )
     args = parser.parse_args()
     
-    # Handle --live flag: if specified, override dry-run to False
-    if args.live:
-        args.dry_run = False
+    # Set dry_run based on --live flag: live mode = False, default = True (dry-run)
+    args.dry_run = not args.live
     
     # Decide blending mode
     config = load_signal_config(args.signal_config) if args.signal_config else None
@@ -915,7 +908,7 @@ def main():
     print(f"  Rebalance threshold: {args.threshold*100:.1f}%")
     print(f"  Leverage: {args.leverage}x")
     print(f"  Aggressive execution: {args.aggressive}")
-    print(f"  Dry run: {args.dry_run}")
+    print(f"  Mode: {'LIVE TRADING' if args.live else 'DRY RUN'}")
     if blend_weights:
         print("\nSelected signals and weights:")
         for name, w in blend_weights.items():
