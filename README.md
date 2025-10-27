@@ -10,12 +10,18 @@ The repository is organized into the following main directories:
 Contains all data-related scripts and raw data files.
 
 - **`data/scripts/`** - Scripts for fetching market data
+  - `update_all_data.py` - **Master script to update all data sources** (market cap, price, OI, funding rates)
+  - `fetch_coinmarketcap_data.py` - Fetch market cap data from CoinMarketCap
+  - `download_coinbase_spot_historical.py` - Download price data from Coinbase spot (primary source)
+  - `fetch_all_historical_open_interest_max.py` - Fetch open interest data from Coinalyze
+  - `fetch_all_historical_funding_rates_max.py` - Fetch funding rates (carry) data from Coinalyze
   - `ccxt_get_data.py` - Get OHLCV data via CCXT
   - `ccxt_get_markets.py` - Fetch available markets
   - `ccxt_get_markets_by_volume.py` - Get markets sorted by volume
   - `coinalyze_client.py` - Client for Coinalyze API
   - `coinalyze_demo.py` - Demo script for Coinalyze integration
   - `ccxt_api_test.py` - API connection testing
+  - See [DATA_UPDATE_README.md](data/scripts/DATA_UPDATE_README.md) for comprehensive data update guide
 
 - **`data/raw/`** - Raw CSV data files
   - Historical price data from Coinbase and other sources
@@ -107,6 +113,8 @@ COINALYZE_API=your_coinalyze_api_key
 ### Workflow
 
 1. **Data Collection**: Use scripts in `data/scripts/` to fetch market data
+   - **Quick update all data**: `cd data/scripts && python3 update_all_data.py`
+   - See [Data Update Guide](data/scripts/DATA_UPDATE_README.md) for details
 2. **Signal Generation**: Run signal calculations from `signals/` directory
 3. **Backtesting**: Test strategies using scripts in `backtests/scripts/`
 4. **Live Trading**: Execute trades using scripts in `execution/`
