@@ -1,0 +1,2 @@
+strategy,volatility_window,num_quintiles,rebalance_days,weighting_method
+long_high_vol,30,5,7,equal
