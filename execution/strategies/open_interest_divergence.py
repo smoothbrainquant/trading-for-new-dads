@@ -16,15 +16,26 @@ def _parse_trading_symbol(symbol: str) -> Tuple[str, str]:
     return base, quote
 
 
-def _build_coinalyze_symbol(base: str, quote: str, exchange_code: str) -> str:
+def _build_coinalyze_symbol(base: str, quote: str = 'USDT', exchange_code: str = 'A') -> str:
     """
-    Build Coinalyze symbol. Format varies by exchange:
+    Build Coinalyze symbol. Default format uses aggregate data across all exchanges.
+    
+    Formats by exchange:
+    - Aggregate (A): {BASE}USDT_PERP.A (e.g., BTCUSDT_PERP.A) - RECOMMENDED for robust signals
     - Hyperliquid (H): {BASE}.H  (e.g., BTC.H)
-    - Binance (A): {BASE}{QUOTE}_PERP.A (e.g., BTCUSDT_PERP.A)
+    - Binance (default): {BASE}{QUOTE}_PERP (e.g., BTCUSDT_PERP)
+    
+    Default is aggregate ('A') which provides OI data summed across all exchanges.
+    This gives more robust signals than single-exchange data.
     """
-    if exchange_code == 'H':
+    if exchange_code == 'A':
+        # Aggregate format: always use USDT
+        return f"{base}USDT_PERP.A"
+    elif exchange_code == 'H':
+        # Hyperliquid format
         return f"{base}.{exchange_code}"
     else:
+        # Other exchanges (e.g., Binance)
         return f"{base}{quote}_PERP.{exchange_code}"
 
 
@@ -181,11 +192,19 @@ def _load_aggregated_oi_from_file(
 
 def _fetch_oi_history_for_universe(
     universe_symbols: List[str],
-    exchange_code: str = 'H',
+    exchange_code: str = 'A',
     days: int = 200,
 ) -> pd.DataFrame:
     """Fetch daily OI USD history for given trading symbols' bases.
-
+    
+    Args:
+        universe_symbols: List of trading symbols (e.g., ['BTC/USDC:USDC', 'ETH/USDC:USDC'])
+        exchange_code: Exchange code - use 'A' for aggregate (default, recommended)
+        days: Number of days of history to fetch
+    
+    Default exchange_code='A' fetches aggregate OI across all exchanges using format:
+    BTCUSDT_PERP.A, ETHUSDT_PERP.A, etc.
+    
     Returns columns: ['coin_symbol','coinalyze_symbol','date','oi_close']
     """
     try:
@@ -195,15 +214,15 @@ def _fetch_oi_history_for_universe(
 
     client = CoinalyzeClient()
 
-    # Map base -> coinalyze symbol (choose quote from trading symbol or default USDC)
+    # Map base -> coinalyze symbol
+    # For aggregate (A), always use USDT format regardless of trading pair quote
     base_to_csym: Dict[str, str] = {}
     for tsym in universe_symbols:
         base, quote = _parse_trading_symbol(tsym)
         if not base:
             continue
-        if not quote:
-            quote = 'USDC'
-        c_sym = _build_coinalyze_symbol(base, quote, exchange_code)
+        # Use aggregate format by default for robust cross-exchange signals
+        c_sym = _build_coinalyze_symbol(base, quote='USDT', exchange_code=exchange_code)
         base_to_csym.setdefault(base, c_sym)
 
     if not base_to_csym:
@@ -213,7 +232,9 @@ def _fetch_oi_history_for_universe(
     end_ts = int(datetime.now().timestamp())
     start_ts = int((datetime.now() - timedelta(days=days)).timestamp())
     
-    print(f"    Fetching OI for {len(base_to_csym)} symbols (exchange={exchange_code}, days={days})")
+    exchange_label = "aggregate (all exchanges)" if exchange_code == 'A' else f"exchange {exchange_code}"
+    print(f"    Fetching OI for {len(base_to_csym)} symbols ({exchange_label}, days={days})")
+    print(f"    Using 'daily' interval with convert_to_usd=true")
     print(f"    Sample mappings: {list(base_to_csym.items())[:3]}")
 
     rows: List[dict] = []
@@ -230,10 +251,10 @@ def _fetch_oi_history_for_universe(
         try:
             data = client.get_open_interest_history(
                 symbols=symbols_param,
-                interval='daily',
+                interval='daily',  # Use 'daily' as specified
                 from_ts=start_ts,
                 to_ts=end_ts,
-                convert_to_usd=True,
+                convert_to_usd=True,  # Always convert to USD
             )
             if data:
                 print(f"      Batch {i//chunk + 1}: Got data for {len(data)} symbols")
@@ -277,18 +298,28 @@ def strategy_oi_divergence(
     lookback: int = 30,
     top_n: int = 10,
     bottom_n: int = 10,
-    exchange_code: str = 'H',  # Ignored - uses aggregated data
+    exchange_code: str = 'A',  # 'A' = aggregate across all exchanges (recommended)
 ) -> Dict[str, float]:
     """Open Interest divergence/trend strategy using aggregated OI history.
 
     - Uses pre-downloaded aggregated OI data across all exchanges
-    - Filters universe to top 50 by market cap to optimize computation
+    - Default format: [SYMBOL]USDT_PERP.A (e.g., BTCUSDT_PERP.A)
+    - Filters universe to top 150 by market cap to optimize computation
     - Builds OI z-score vs price returns over a rolling window
     - Selects top/bottom by score
     - Allocates risk-parity within each side using recent price volatility
     
-    Note: exchange_code parameter is ignored; strategy uses aggregated OI data
-    from all exchanges for more robust signals.
+    Args:
+        historical_data: Dict of symbol -> OHLCV dataframe
+        notional: Total notional value to allocate
+        mode: 'trend' (follow OI momentum) or 'divergence' (fade OI moves)
+        lookback: Rolling window for z-score calculation (default 30 days)
+        top_n: Number of long positions
+        bottom_n: Number of short positions
+        exchange_code: 'A' for aggregate (default), 'H' for Hyperliquid only, etc.
+    
+    Note: Recommended to use exchange_code='A' (aggregate) for robust signals
+    across all exchanges. Format is [SYMBOL]USDT_PERP.A per Coinalyze docs.
     """
     if not historical_data:
         return {}
@@ -341,8 +372,11 @@ def strategy_oi_divergence(
 
     # Fetch OI history - use aggregated data from local file
     # This provides a more robust signal across all exchanges and avoids API rate limits
+    # Format: [SYMBOL]USDT_PERP.A (e.g., BTCUSDT_PERP.A) per Coinalyze docs
     days_needed = max(lookback * 4, 120)
-    print(f"    Using aggregated OI data (exchange-agnostic)")
+    exchange_label = "aggregate (all exchanges)" if exchange_code == 'A' else f"exchange {exchange_code}"
+    print(f"    Using aggregated OI data ({exchange_label})")
+    print(f"    Format: [SYMBOL]USDT_PERP.A (e.g., BTCUSDT_PERP.A)")
     oi_df = _load_aggregated_oi_from_file(universe_symbols, days=days_needed)
     
     if oi_df is None or oi_df.empty:

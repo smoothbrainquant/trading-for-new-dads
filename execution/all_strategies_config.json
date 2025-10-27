@@ -38,8 +38,8 @@
       "lookback": 30,
       "top_n": 10,
       "bottom_n": 10,
-      "exchange_code": "H",
-      "_comment": "exchange_code is ignored; strategy uses aggregated OI data from all exchanges"
+      "exchange_code": "A",
+      "_comment": "exchange_code 'A' = aggregate OI across all exchanges (recommended). Use 'daily' interval per Coinalyze API."
     }
   }
 }

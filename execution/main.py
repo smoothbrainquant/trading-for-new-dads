@@ -27,7 +27,7 @@ can update them without code changes. Example config structure:
     "mean_reversion": {"zscore_threshold": 1.5, "volume_threshold": 1.0, "period_days": 2},
     "size": {"top_n": 10, "bottom_n": 10},
     "carry": {"exchange_id": "hyperliquid"},
-    "oi_divergence": {"mode": "trend", "lookback": 30, "exchange_code": "H (ignored - uses aggregated data)"}
+    "oi_divergence": {"mode": "trend", "lookback": 30, "exchange_code": "A"}
   }
 }
 
@@ -903,7 +903,9 @@ def main():
                 lookback = int(p.get('lookback', 30)) if isinstance(p, dict) else 30
                 top_n = int(p.get('top_n', 10)) if isinstance(p, dict) else 10
                 bottom_n = int(p.get('bottom_n', 10)) if isinstance(p, dict) else 10
-                exchange_code = p.get('exchange_code', 'H') if isinstance(p, dict) else 'H'
+                # Default to 'A' (aggregate across all exchanges) for robust signals
+                # Format: BTCUSDT_PERP.A per Coinalyze API docs
+                exchange_code = p.get('exchange_code', 'A') if isinstance(p, dict) else 'A'
                 contrib = strategy_oi_divergence(
                     historical_data,
                     strategy_notional,
