@@ -89,8 +89,38 @@ def compute_oi_divergence_scores(
     prices = prepare_price_data(price_df)
     oi = prepare_oi_data(oi_df)
 
+    # Check for date/symbol overlap before merge
+    if prices.empty or oi.empty:
+        print("    ⚠️  Empty price or OI data, cannot compute scores")
+        return pd.DataFrame(columns=essential_cols)
+    
+    # Validate date overlap
+    price_dates = set(prices['date'].dt.date)
+    oi_dates = set(oi['date'].dt.date)
+    overlap_dates = price_dates & oi_dates
+    
+    if not overlap_dates:
+        print(f"    ⚠️  No date overlap for OI divergence merge:")
+        print(f"       Price dates: {min(price_dates)} to {max(price_dates)} ({len(price_dates)} days)")
+        print(f"       OI dates: {min(oi_dates)} to {max(oi_dates)} ({len(oi_dates)} days)")
+        return pd.DataFrame(columns=essential_cols)
+    
+    # Validate symbol overlap
+    price_symbols = set(prices['symbol'].unique())
+    oi_symbols = set(oi['symbol'].unique())
+    overlap_symbols = price_symbols & oi_symbols
+    
+    if not overlap_symbols:
+        print(f"    ⚠️  No symbol overlap for OI divergence merge:")
+        print(f"       Price symbols: {list(price_symbols)[:10]} (showing first 10)")
+        print(f"       OI symbols: {list(oi_symbols)[:10]} (showing first 10)")
+        return pd.DataFrame(columns=essential_cols)
+
     df = pd.merge(prices, oi, on=['date', 'symbol'], how='inner')
     if df.empty:
+        print(f"    ⚠️  Merge produced empty dataframe despite overlap:")
+        print(f"       Date overlap: {len(overlap_dates)} days")
+        print(f"       Symbol overlap: {len(overlap_symbols)} symbols")
         return pd.DataFrame(columns=essential_cols)
 
     df['ret'] = df.groupby('symbol')['close'].transform(lambda x: np.log(x) - np.log(x.shift(1)))

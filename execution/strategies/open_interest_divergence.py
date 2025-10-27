@@ -67,7 +67,8 @@ def _load_aggregated_oi_from_file(
     oi_files = sorted(glob(pattern), reverse=True)
     
     if not oi_files:
-        print(f"    No aggregated OI data file found at: {pattern}")
+        print(f"    ⚠️  No aggregated OI data file found at: {pattern}")
+        print(f"    Expected format: historical_open_interest_all_perps_since2020_YYYYMMDD_HHMMSS.csv")
         return pd.DataFrame()
     
     oi_file = oi_files[0]
@@ -75,39 +76,97 @@ def _load_aggregated_oi_from_file(
     
     try:
         df = pd.read_csv(oi_file)
-        df['date'] = pd.to_datetime(df['date'])
+        
+        # Validate required columns
+        required_cols = ['coin_symbol', 'date', 'oi_close']
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            print(f"    ❌ Missing required columns: {missing_cols}")
+            print(f"    Available columns: {list(df.columns)}")
+            return pd.DataFrame()
+        
+        # Parse dates with error handling
+        try:
+            df['date'] = pd.to_datetime(df['date'], errors='coerce')
+            # Remove rows with invalid dates
+            invalid_dates = df['date'].isna().sum()
+            if invalid_dates > 0:
+                print(f"    ⚠️  Removed {invalid_dates} rows with invalid dates")
+                df = df.dropna(subset=['date'])
+        except Exception as e:
+            print(f"    ❌ Error parsing dates: {e}")
+            return pd.DataFrame()
+        
+        # Check data freshness
+        if not df.empty:
+            max_date = df['date'].max()
+            today = pd.Timestamp(datetime.now().date())
+            days_stale = (today - max_date).days
+            
+            if days_stale > 7:
+                print(f"    ⚠️  WARNING: OI data is {days_stale} days old (last update: {max_date.date()})")
+                print(f"    Consider refreshing OI data for more accurate signals")
+            elif days_stale < 0:
+                print(f"    ⚠️  WARNING: OI data has future dates (max: {max_date.date()}, today: {today.date()})")
+                print(f"    This may indicate a data quality issue")
         
         # Filter to recent data (last N days)
         cutoff_date = datetime.now() - timedelta(days=days)
-        df = df[df['date'] >= cutoff_date]
+        df_filtered = df[df['date'] >= cutoff_date]
+        
+        if df_filtered.empty:
+            print(f"    ⚠️  No OI data within last {days} days (cutoff: {cutoff_date.date()})")
+            print(f"    Data range: {df['date'].min().date()} to {df['date'].max().date()}")
+            # Return all data instead of empty dataframe
+            print(f"    Using all available data instead")
+            df_filtered = df
         
         # Extract base symbols from universe
         base_symbols = set()
         for tsym in universe_symbols:
-            base = get_base_symbol(tsym)
-            base_symbols.add(base)
+            try:
+                base = get_base_symbol(tsym)
+                base_symbols.add(base)
+            except Exception as e:
+                print(f"    ⚠️  Could not extract base symbol from {tsym}: {e}")
+                continue
+        
+        if not base_symbols:
+            print(f"    ❌ No valid base symbols extracted from universe")
+            return pd.DataFrame()
         
         # Filter to universe base symbols
-        df = df[df['coin_symbol'].isin(base_symbols)]
+        df_filtered = df_filtered[df_filtered['coin_symbol'].isin(base_symbols)]
         
-        if df.empty:
-            print(f"    No OI data found for universe symbols")
+        if df_filtered.empty:
+            print(f"    ⚠️  No OI data found for universe symbols")
+            print(f"    Universe symbols: {sorted(list(base_symbols))[:10]} (showing first 10)")
+            print(f"    Available symbols: {sorted(df['coin_symbol'].unique()[:10].tolist())} (showing first 10)")
             return pd.DataFrame()
         
         # Rename columns to match expected format
-        df = df.rename(columns={'symbol': 'coinalyze_symbol'})
+        df_filtered = df_filtered.rename(columns={'symbol': 'coinalyze_symbol'})
         
         # If coinalyze_symbol column doesn't exist, create it from coin_symbol
-        if 'coinalyze_symbol' not in df.columns:
-            df['coinalyze_symbol'] = df['coin_symbol']
+        if 'coinalyze_symbol' not in df_filtered.columns:
+            df_filtered['coinalyze_symbol'] = df_filtered['coin_symbol']
         
-        print(f"    Loaded {len(df)} OI records for {df['coin_symbol'].nunique()} symbols")
-        print(f"    Date range: {df['date'].min().date()} to {df['date'].max().date()}")
+        # Validate data quality
+        null_oi = df_filtered['oi_close'].isna().sum()
+        if null_oi > 0:
+            print(f"    ⚠️  Found {null_oi} rows with null OI values (will be filtered later)")
         
-        return df[['coin_symbol', 'coinalyze_symbol', 'date', 'oi_close']].sort_values(['coin_symbol', 'date']).reset_index(drop=True)
+        print(f"    ✓ Loaded {len(df_filtered)} OI records for {df_filtered['coin_symbol'].nunique()} symbols")
+        print(f"    Date range: {df_filtered['date'].min().date()} to {df_filtered['date'].max().date()}")
+        
+        result = df_filtered[['coin_symbol', 'coinalyze_symbol', 'date', 'oi_close']].sort_values(['coin_symbol', 'date']).reset_index(drop=True)
+        
+        return result
         
     except Exception as e:
-        print(f"    Error loading aggregated OI data: {e}")
+        print(f"    ❌ Error loading aggregated OI data: {e}")
+        import traceback
+        traceback.print_exc()
         return pd.DataFrame()
 
 
@@ -290,8 +349,22 @@ def strategy_oi_divergence(
         build_equal_or_risk_parity_weights,
     )
 
+    # Check date overlap before computing scores
+    oi_dates = set(oi_df['date'].dt.date)
+    price_dates = set(price_df['date'].dt.date)
+    overlap_dates = oi_dates & price_dates
+    
+    if not overlap_dates:
+        print(f"  ⚠️  OI DIVERGENCE STRATEGY: No date overlap between OI and price data!")
+        print(f"       OI date range: {oi_df['date'].min().date()} to {oi_df['date'].max().date()}")
+        print(f"       Price date range: {price_df['date'].min().date()} to {price_df['date'].max().date()}")
+        return {}
+    
+    print(f"    Date overlap: {min(overlap_dates)} to {max(overlap_dates)} ({len(overlap_dates)} days)")
+
     scores = compute_oi_divergence_scores(oi_df, price_df, lookback=lookback)
     if scores.empty:
+        print(f"  ⚠️  OI DIVERGENCE STRATEGY: No scores computed (merge produced empty dataframe)")
         return {}
 
     # Pick on latest date present across both
@@ -299,8 +372,10 @@ def strategy_oi_divergence(
     day_scores = scores[scores['date'] == latest_date]
     if day_scores.empty:
         # fallback to last available in scores
+        print(f"    ⚠️  No scores for latest date {latest_date.date()}, using most recent available")
         latest_date = scores['date'].max()
         day_scores = scores[scores['date'] == latest_date]
+        print(f"    Using scores from {latest_date.date()}")
     col = 'score_trend' if mode == 'trend' else 'score_divergence'
     day_scores = day_scores[['symbol', col]].dropna()
     if day_scores.empty:
