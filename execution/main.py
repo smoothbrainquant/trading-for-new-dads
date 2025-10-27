@@ -767,6 +767,7 @@ def main():
         
         # First pass: Call all strategies with their initial weights
         initial_contributions = {}
+        initial_contributions_original = {}  # Store unscaled contributions for comparison
         for strategy_name, weight in blend_weights.items():
             if weight <= 0:
                 continue
@@ -841,8 +842,9 @@ def main():
                 print(f"  WARNING: Unknown strategy '{strategy_name}', skipping.")
                 contrib = {}
 
-            # Store initial contributions
+            # Store initial contributions (both original and working copy)
             initial_contributions[strategy_name] = dict(contrib)
+            initial_contributions_original[strategy_name] = dict(contrib)
 
         # Print BEFORE reallocation weights
         print("\n" + "="*80)
@@ -1047,55 +1049,81 @@ def main():
             print(f"      2. Current market conditions don't meet strategy criteria")
             print(f"      3. Strategy parameters are too conservative")
             print(f"{'='*80}\n")
-    
-    # Export portfolio weights to file after handling reallocation
-    try:
-        if target_positions:
-            # Convert target positions (notional) to portfolio weights
-            portfolio_weights = {}
-            for symbol, notional in target_positions.items():
-                weight = notional / notional_value if notional_value > 0 else 0.0
-                portfolio_weights[symbol] = weight
-            
-            # Create DataFrame with weights and per-strategy contributions
-            weight_rows = []
-            for symbol in portfolio_weights.keys():
-                row = {
-                    'symbol': symbol,
-                    'final_weight': portfolio_weights[symbol],
-                    'target_notional': target_positions[symbol],
-                    'target_side': 'LONG' if target_positions[symbol] > 0 else ('SHORT' if target_positions[symbol] < 0 else 'FLAT')
-                }
-                # Add per-strategy weight contributions
-                for name in signal_names:
-                    contrib_val = per_signal_contribs.get(name, {}).get(symbol, 0.0)
-                    row[f'{name}_weight'] = (contrib_val / notional_value) if notional_value > 0 else 0.0
-                weight_rows.append(row)
-            
-            df_weights = pd.DataFrame(weight_rows)
-            
-            # Sort by absolute weight (descending)
-            df_weights['abs_weight'] = df_weights['final_weight'].abs()
-            df_weights = df_weights.sort_values('abs_weight', ascending=False).drop('abs_weight', axis=1)
-            
-            # Save to file
-            out_dir = os.path.join(WORKSPACE_ROOT, 'backtests', 'results')
-            os.makedirs(out_dir, exist_ok=True)
-            out_path = os.path.join(out_dir, 'portfolio_weights.csv')
-            df_weights.to_csv(out_path, index=False)
-            print(f"\n{'='*80}")
-            print(f"PORTFOLIO WEIGHTS EXPORTED")
-            print(f"{'='*80}")
-            print(f"Saved portfolio weights to: {out_path}")
-            print(f"Total symbols: {len(portfolio_weights)}")
-            print(f"Total weight (abs): {sum(abs(w) for w in portfolio_weights.values()):.4f}")
-            print(f"{'='*80}\n")
-    except Exception as e:
-        print(f"\nWarning: Could not export portfolio weights: {e}")
+        
+        # Export portfolio weights to file after handling reallocation
+        # Show simplified format: original allocation vs final allocation after rebalancing
+        try:
+            if target_positions:
+                # Create simplified DataFrame showing strategy weight changes
+                weight_rows = []
+                
+                # Get all symbols from either original or final contributions
+                all_symbols = set(target_positions.keys())
+                for strategy_contribs in initial_contributions_original.values():
+                    all_symbols.update(strategy_contribs.keys())
+                
+                for symbol in all_symbols:
+                    # Calculate ORIGINAL weights (before reallocation)
+                    original_weight_total = 0.0
+                    original_strategy_weights = {}
+                    for name in signal_names:
+                        orig_contrib = initial_contributions_original.get(name, {}).get(symbol, 0.0)
+                        orig_weight = (orig_contrib / notional_value) if notional_value > 0 else 0.0
+                        original_strategy_weights[name] = orig_weight
+                        original_weight_total += orig_weight
+                    
+                    # Calculate FINAL weights (after reallocation)
+                    final_weight_total = 0.0
+                    final_strategy_weights = {}
+                    for name in signal_names:
+                        final_contrib = per_signal_contribs.get(name, {}).get(symbol, 0.0)
+                        final_weight = (final_contrib / notional_value) if notional_value > 0 else 0.0
+                        final_strategy_weights[name] = final_weight
+                        final_weight_total += final_weight
+                    
+                    # Build row with simplified format
+                    row = {
+                        'symbol': symbol,
+                        'original_weight_pct': original_weight_total * 100,
+                        'final_weight_pct': final_weight_total * 100,
+                        'weight_change_pct': (final_weight_total - original_weight_total) * 100,
+                        'target_notional': target_positions.get(symbol, 0.0),
+                        'target_side': 'LONG' if target_positions.get(symbol, 0.0) > 0 else ('SHORT' if target_positions.get(symbol, 0.0) < 0 else 'FLAT'),
+                    }
+                    
+                    # Add per-strategy contributions (final weights as %)
+                    for name in signal_names:
+                        row[f'{name}_weight_pct'] = final_strategy_weights.get(name, 0.0) * 100
+                    
+                    weight_rows.append(row)
+                
+                df_weights = pd.DataFrame(weight_rows)
+                
+                # Sort by absolute final weight (descending)
+                df_weights['abs_final_weight'] = df_weights['final_weight_pct'].abs()
+                df_weights = df_weights.sort_values('abs_final_weight', ascending=False).drop('abs_final_weight', axis=1)
+                
+                # Save to file
+                out_dir = os.path.join(WORKSPACE_ROOT, 'backtests', 'results')
+                os.makedirs(out_dir, exist_ok=True)
+                out_path = os.path.join(out_dir, 'portfolio_weights.csv')
+                df_weights.to_csv(out_path, index=False)
+                print(f"\n{'='*80}")
+                print(f"PORTFOLIO WEIGHTS EXPORTED")
+                print(f"{'='*80}")
+                print(f"Saved portfolio weights to: {out_path}")
+                print(f"Format: Shows weight change from original allocation to final (after reallocation)")
+                print(f"Columns: symbol, original_weight_pct, final_weight_pct, weight_change_pct, target_notional, target_side")
+                print(f"         + per-strategy final contributions: [mean_reversion, size, carry, oi_divergence, breakout, days_from_high]_weight_pct")
+                print(f"Total symbols: {len(weight_rows)}")
+                print(f"{'='*80}\n")
+        except Exception as e:
+            print(f"\nWarning: Could not export portfolio weights: {e}")
 
     else:
         # Legacy 50/50 pipeline (days_from_high + breakout)
         print("\nUsing legacy 50/50 blend: days_from_high + breakout")
+        initial_contributions_original = {}  # Initialize for legacy path
 
         # Days from high path
         days_from_high = calculate_days_from_200d_high(historical_data)
@@ -1126,6 +1154,8 @@ def main():
             contrib_breakout[sym] = contrib_breakout.get(sym, 0.0) - w * strat2_notional
         per_signal_contribs['days_from_high'] = contrib_days
         per_signal_contribs['breakout'] = contrib_breakout
+        initial_contributions_original['days_from_high'] = dict(contrib_days)
+        initial_contributions_original['breakout'] = dict(contrib_breakout)
 
         # Combined target positions
         for sym, amt in contrib_days.items():
