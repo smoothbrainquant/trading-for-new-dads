@@ -966,15 +966,15 @@ def main():
             print(f"\nTop 20 positions:")
             for i, (symbol, weight) in enumerate(sorted_weights[:20], 1):
                 side = "LONG" if weight > 0 else ("SHORT" if weight < 0 else "FLAT")
-                print(f"  {i:2d}. {symbol:20s}: {weight:>8.4f} ({weight*100:>6.2f}%) {side:>5s}")
+                print(f"  {i:2d}. {symbol:20s}: {weight:>8.3f} ({weight*100:>6.2f}%) {side:>5s}")
             
             total_weight = sum(abs(w) for w in weights_before.values())
             total_long = sum(w for w in weights_before.values() if w > 0)
             total_short = sum(abs(w) for w in weights_before.values() if w < 0)
             print(f"\nTotal positions: {len(weights_before)}")
-            print(f"Total weight (abs): {total_weight:.4f}")
-            print(f"Long weight: {total_long:.4f}")
-            print(f"Short weight: {total_short:.4f}")
+            print(f"Total weight (abs): {total_weight:.3f}")
+            print(f"Long weight: {total_long:.3f}")
+            print(f"Short weight: {total_short:.3f}")
         else:
             print("\nNo positions before reallocation.")
         print("="*80)
@@ -1100,15 +1100,15 @@ def main():
             print(f"\nTop 20 positions:")
             for i, (symbol, weight) in enumerate(sorted_weights[:20], 1):
                 side = "LONG" if weight > 0 else ("SHORT" if weight < 0 else "FLAT")
-                print(f"  {i:2d}. {symbol:20s}: {weight:>8.4f} ({weight*100:>6.2f}%) {side:>5s}")
+                print(f"  {i:2d}. {symbol:20s}: {weight:>8.3f} ({weight*100:>6.2f}%) {side:>5s}")
             
             total_weight = sum(abs(w) for w in weights_after.values())
             total_long = sum(w for w in weights_after.values() if w > 0)
             total_short = sum(abs(w) for w in weights_after.values() if w < 0)
             print(f"\nTotal positions: {len(weights_after)}")
-            print(f"Total weight (abs): {total_weight:.4f}")
-            print(f"Long weight: {total_long:.4f}")
-            print(f"Short weight: {total_short:.4f}")
+            print(f"Total weight (abs): {total_weight:.3f}")
+            print(f"Long weight: {total_long:.3f}")
+            print(f"Short weight: {total_short:.3f}")
         else:
             print("\nNo positions after reallocation.")
         print("="*80)
@@ -1480,7 +1480,7 @@ def main():
             df = df[base_cols + weight_cols + pct_cols]
 
             # Pretty print
-            with pd.option_context('display.max_columns', None, 'display.width', 140, 'display.float_format', '{:,.2f}'.format):
+            with pd.option_context('display.max_columns', None, 'display.width', 140, 'display.float_format', '{:,.3f}'.format):
                 print(df.to_string(index=False))
 
             # Also save to CSV under backtests/results for reference
