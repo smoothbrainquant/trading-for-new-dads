@@ -822,10 +822,10 @@ def main():
         help='Rebalance threshold as decimal (e.g., 0.05 for 5%%)'
     )
     parser.add_argument(
-        '--dry-run',
+        '--live',
         action='store_true',
         default=False,
-        help='Run in dry-run mode (no actual orders placed)'
+        help='Enable live trading execution (default: dry-run mode)'
     )
     parser.add_argument(
         '--leverage',
@@ -853,6 +853,9 @@ def main():
     )
     args = parser.parse_args()
     
+    # Set dry_run based on --live flag: live mode = False, default = True (dry-run)
+    args.dry_run = not args.live
+    
     # Decide blending mode
     config = load_signal_config(args.signal_config) if args.signal_config else None
     configured_weights = (config or {}).get('strategy_weights') if config else None
@@ -872,6 +875,14 @@ def main():
     print("="*80)
     print(f"AUTOMATED TRADING STRATEGY EXECUTION - {title}")
     print("="*80)
+    
+    # Display mode warning
+    if not args.dry_run:
+        print("\n" + "!"*80)
+        print("⚠️  LIVE TRADING MODE ENABLED - REAL ORDERS WILL BE PLACED")
+        print("!"*80)
+    else:
+        print("\n🔒 DRY RUN MODE (Default) - No real orders will be placed")
     
     # Update market data and check cache freshness
     print("\n[Pre-flight checks]")
@@ -897,7 +908,7 @@ def main():
     print(f"  Rebalance threshold: {args.threshold*100:.1f}%")
     print(f"  Leverage: {args.leverage}x")
     print(f"  Aggressive execution: {args.aggressive}")
-    print(f"  Dry run: {args.dry_run}")
+    print(f"  Mode: {'LIVE TRADING' if args.live else 'DRY RUN'}")
     if blend_weights:
         print("\nSelected signals and weights:")
         for name, w in blend_weights.items():
@@ -1326,8 +1337,8 @@ def main():
         
         if args.dry_run:
             print("\n" + "="*80)
-            print("NOTE: Running in DRY RUN mode. No actual orders were placed.")
-            print("To execute live orders, run without --dry-run flag")
+            print("NOTE: Running in DRY RUN mode (DEFAULT). No actual orders were placed.")
+            print("To execute live orders, run with --live flag")
             print("="*80)
     else:
         print("\nNo trades needed. Portfolio is within rebalancing threshold.")
