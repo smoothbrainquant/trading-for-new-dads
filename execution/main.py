@@ -745,11 +745,18 @@ def main():
     try:
         base_notional_value = get_account_notional_value()
     except Exception as e:
-        if args.dry_run:
-            print(f"Could not fetch account value ({e}). Using mock $100,000 for DRY RUN.")
+        # Check if error is due to missing credentials
+        missing_creds = 'HL_API' in str(e) or 'HL_SECRET' in str(e) or 'must be set' in str(e)
+        if missing_creds:
+            print(f"Could not fetch account value (credentials missing). Using mock $100,000 for DRY RUN.")
             base_notional_value = 100000.0
         else:
-            raise
+            # For other errors, still raise if not in dry-run
+            if args.dry_run:
+                print(f"Could not fetch account value ({e}). Using mock $100,000 for DRY RUN.")
+                base_notional_value = 100000.0
+            else:
+                raise
     notional_value = base_notional_value * args.leverage
     if args.leverage != 1.0:
         print(f"Applying {args.leverage}x leverage: ${base_notional_value:,.2f} → ${notional_value:,.2f}")
