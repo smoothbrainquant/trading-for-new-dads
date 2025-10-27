@@ -891,7 +891,7 @@ def main():
     parser.add_argument(
         '--kurtosis-rebalance-days',
         type=int,
-        default=14,
+        default=1,
         help='Kurtosis rebalance frequency in days'
     )
     
