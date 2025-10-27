@@ -95,13 +95,14 @@ def calculate_skewness(data, lookback_window=30, min_volume=5_000_000, min_marke
     return df
 
 
-def generate_signals(data, num_quintiles=5):
+def generate_signals(data, num_quintiles=5, strategy_type='long_short'):
     """
     Generate long/short signals based on skewness quintiles.
     
     Args:
         data (pd.DataFrame): Data with skewness calculated
         num_quintiles (int): Number of quintiles for ranking (default 5)
+        strategy_type (str): 'long_short', 'short_only', or 'long_only'
         
     Returns:
         pd.DataFrame: Data with signals added
@@ -128,12 +129,16 @@ def generate_signals(data, num_quintiles=5):
                 duplicates='drop'
             )
             
-            # Generate signals
-            # Long: Bottom quintile (most negative skewness)
-            # Short: Top quintile (most positive skewness)
+            # Generate signals based on strategy type
             valid['signal'] = 0
-            valid.loc[valid['quintile'] == 1, 'signal'] = 1  # Long
-            valid.loc[valid['quintile'] == num_quintiles, 'signal'] = -1  # Short
+            
+            if strategy_type in ['long_short', 'long_only']:
+                # Long: Bottom quintile (most negative skewness)
+                valid.loc[valid['quintile'] == 1, 'signal'] = 1
+            
+            if strategy_type in ['long_short', 'short_only']:
+                # Short: Top quintile (most positive skewness)
+                valid.loc[valid['quintile'] == num_quintiles, 'signal'] = -1
         
         return valid
     
@@ -180,7 +185,8 @@ def backtest_strategy(
     signals_df,
     start_date=None,
     end_date=None,
-    initial_capital=10000
+    initial_capital=10000,
+    strategy_type='long_short'
 ):
     """
     Run backtest for the skew factor strategy.
@@ -190,6 +196,7 @@ def backtest_strategy(
         start_date (str): Start date for backtest (format: 'YYYY-MM-DD')
         end_date (str): End date for backtest (format: 'YYYY-MM-DD')
         initial_capital (float): Initial portfolio capital
+        strategy_type (str): 'long_short', 'short_only', or 'long_only'
         
     Returns:
         dict: Dictionary containing backtest results
@@ -210,6 +217,7 @@ def backtest_strategy(
         raise ValueError(f"Insufficient data. Need at least 31 days, have {len(all_dates)}")
     
     print(f"\nBacktest Configuration:")
+    print(f"  Strategy Type: {strategy_type}")
     print(f"  Period: {all_dates[0].date()} to {all_dates[-1].date()}")
     print(f"  Trading days: {len(all_dates)}")
     print(f"  Initial capital: ${initial_capital:,.2f}")
@@ -638,6 +646,13 @@ def main():
         action='store_true',
         help='Skip generating plots'
     )
+    parser.add_argument(
+        '--strategy-type',
+        type=str,
+        default='long_short',
+        choices=['long_short', 'short_only', 'long_only'],
+        help='Strategy type: long_short, short_only, or long_only'
+    )
     
     args = parser.parse_args()
     
@@ -645,6 +660,7 @@ def main():
     print("SKEW FACTOR BACKTEST")
     print("=" * 80)
     print(f"\nConfiguration:")
+    print(f"  Strategy Type: {args.strategy_type}")
     print(f"  Data file: {args.data_file}")
     print(f"  Lookback window: {args.lookback_window} days")
     print(f"  Min volume: ${args.min_volume:,.0f}")
@@ -675,8 +691,12 @@ def main():
     print(f"Coins with valid data: {valid_data['symbol'].nunique()}")
     
     # Generate signals
-    print("\nGenerating long/short signals based on skewness quintiles...")
-    signals_df = generate_signals(data_with_skewness, num_quintiles=args.num_quintiles)
+    print(f"\nGenerating signals based on skewness quintiles ({args.strategy_type})...")
+    signals_df = generate_signals(
+        data_with_skewness, 
+        num_quintiles=args.num_quintiles,
+        strategy_type=args.strategy_type
+    )
     
     long_signals = signals_df[signals_df['signal'] == 1]
     short_signals = signals_df[signals_df['signal'] == -1]
@@ -689,7 +709,8 @@ def main():
         signals_df=signals_df,
         start_date=args.start_date,
         end_date=args.end_date,
-        initial_capital=args.initial_capital
+        initial_capital=args.initial_capital,
+        strategy_type=args.strategy_type
     )
     
     # Print results
