@@ -824,8 +824,14 @@ def main():
     parser.add_argument(
         '--dry-run',
         action='store_true',
+        default=True,
+        help='Run in dry-run mode (no actual orders placed) [DEFAULT]'
+    )
+    parser.add_argument(
+        '--live',
+        action='store_true',
         default=False,
-        help='Run in dry-run mode (no actual orders placed)'
+        help='Enable live trading execution (overrides --dry-run)'
     )
     parser.add_argument(
         '--leverage',
@@ -853,6 +859,10 @@ def main():
     )
     args = parser.parse_args()
     
+    # Handle --live flag: if specified, override dry-run to False
+    if args.live:
+        args.dry_run = False
+    
     # Decide blending mode
     config = load_signal_config(args.signal_config) if args.signal_config else None
     configured_weights = (config or {}).get('strategy_weights') if config else None
@@ -872,6 +882,14 @@ def main():
     print("="*80)
     print(f"AUTOMATED TRADING STRATEGY EXECUTION - {title}")
     print("="*80)
+    
+    # Display mode warning
+    if not args.dry_run:
+        print("\n" + "!"*80)
+        print("⚠️  LIVE TRADING MODE ENABLED - REAL ORDERS WILL BE PLACED")
+        print("!"*80)
+    else:
+        print("\n🔒 DRY RUN MODE (Default) - No real orders will be placed")
     
     # Update market data and check cache freshness
     print("\n[Pre-flight checks]")
@@ -1326,8 +1344,8 @@ def main():
         
         if args.dry_run:
             print("\n" + "="*80)
-            print("NOTE: Running in DRY RUN mode. No actual orders were placed.")
-            print("To execute live orders, run without --dry-run flag")
+            print("NOTE: Running in DRY RUN mode (DEFAULT). No actual orders were placed.")
+            print("To execute live orders, run with --live flag")
             print("="*80)
     else:
         print("\nNo trades needed. Portfolio is within rebalancing threshold.")
