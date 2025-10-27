@@ -816,7 +816,7 @@ def main():
         help='Maximum days since 200d high for instrument selection'
     )
     parser.add_argument(
-        '--rebalance-threshold',
+        '--threshold',
         type=float,
         default=0.05,
         help='Rebalance threshold as decimal (e.g., 0.05 for 5%%)'
@@ -894,7 +894,7 @@ def main():
     
     print(f"\nParameters:")
     print(f"  Days since high (Strategy 1 default): {args.days_since_high}")
-    print(f"  Rebalance threshold: {args.rebalance_threshold*100:.1f}%")
+    print(f"  Rebalance threshold: {args.threshold*100:.1f}%")
     print(f"  Leverage: {args.leverage}x")
     print(f"  Aggressive execution: {args.aggressive}")
     print(f"  Dry run: {args.dry_run}")
@@ -1290,12 +1290,12 @@ def main():
     print(f"Total unrealized PnL: ${current_positions['total_unrealized_pnl']:,.2f}")
     
     # Step 6: Calculate trade amounts
-    print(f"\n[6/7] Calculating trade amounts (>{args.rebalance_threshold*100:.0f}% threshold)...")
+    print(f"\n[6/7] Calculating trade amounts (>{args.threshold*100:.0f}% threshold)...")
     trades = calculate_trade_amounts(
         target_positions, 
         current_positions, 
         notional_value, 
-        threshold=args.rebalance_threshold
+        threshold=args.threshold
     )
     
     # Build and print allocation breakdown by trade before executing orders
