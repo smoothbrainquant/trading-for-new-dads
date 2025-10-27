@@ -25,18 +25,23 @@ def _zscore(series: pd.Series, window: int) -> pd.Series:
 
 
 def prepare_price_data(price_df: pd.DataFrame) -> pd.DataFrame:
-    """Normalize price data schema to ['date','symbol','close']."""
+    """Normalize price data schema to ['date','symbol','close'].
+    
+    Prioritizes base_symbol over symbol to ensure compatibility with OI data
+    which uses base symbols (e.g., 'BTC') not trading symbols (e.g., 'BTC/USDC:USDC').
+    """
     df = price_df.copy()
     if 'date' not in df.columns:
         raise ValueError("price_df must contain 'date' column")
     if 'close' not in df.columns:
         raise ValueError("price_df must contain 'close' column")
-    if 'symbol' in df.columns:
-        sym_col = 'symbol'
-    elif 'base_symbol' in df.columns:
+    # Prioritize base_symbol over symbol for OI matching
+    if 'base_symbol' in df.columns:
         sym_col = 'base_symbol'
     elif 'base' in df.columns:
         sym_col = 'base'
+    elif 'symbol' in df.columns:
+        sym_col = 'symbol'
     else:
         raise ValueError("price_df must contain one of: 'symbol', 'base_symbol', 'base'")
 

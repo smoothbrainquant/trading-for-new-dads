@@ -459,8 +459,10 @@ def strategy_oi_divergence(
     short_bases = sel.tail(max(0, int(bottom_n)))['symbol'].tolist()
 
     # Build risk-parity weights on base-level price data
+    # Drop 'symbol' column if it exists to avoid duplicate after rename
+    price_df_for_weights = price_df[['date', 'base_symbol', 'close']].rename(columns={'base_symbol': 'symbol'})
     weights_base = build_equal_or_risk_parity_weights(
-        price_df=price_df.rename(columns={'base_symbol': 'symbol'})[['date','symbol','close']],
+        price_df=price_df_for_weights,
         long_symbols=long_bases,
         short_symbols=short_bases,
         notional=notional,
