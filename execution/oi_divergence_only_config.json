@@ -1,0 +1,14 @@
+{
+  "strategy_weights": {
+    "oi_divergence": 1.0
+  },
+  "params": {
+    "oi_divergence": {
+      "mode": "divergence",
+      "lookback": 30,
+      "top_n": 10,
+      "bottom_n": 10,
+      "exchange_code": "A"
+    }
+  }
+}
