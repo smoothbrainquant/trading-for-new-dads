@@ -102,7 +102,7 @@ def strategy_carry(
             return {}
     if df_rates is None or df_rates.empty:
         print("  ⚠️  CARRY STRATEGY: No funding rate data available!")
-        print(f"      Check: 1) COINALYZE_API_KEY environment variable is set")
+        print(f"      Check: 1) COINALYZE_API environment variable is set")
         print(f"      Check: 2) Coinalyze API access and rate limits")
         print(f"      Check: 3) Symbols exist on Coinalyze (try different symbols)")
         return {}

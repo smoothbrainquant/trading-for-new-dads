@@ -457,12 +457,12 @@ if __name__ == "__main__":
         print("=" * 100)
         print("\nNOTE: This script uses Coinalyze API exclusively (no Binance dependency)")
         print("      Aggregated rates use .A suffix (e.g., BTCUSDT_PERP.A)")
-        print("      Set COINALYZE_API_KEY environment variable to use this functionality")
+        print("      Set COINALYZE_API environment variable to use this functionality")
         
     except Exception as e:
         print(f"\n⚠️  Error fetching funding rates: {str(e)}")
         print("\nTroubleshooting:")
-        print("  1. Ensure COINALYZE_API_KEY environment variable is set")
+        print("  1. Ensure COINALYZE_API environment variable is set")
         print("  2. Check your Coinalyze API subscription and rate limits")
         print("  3. Verify the symbols exist on Coinalyze")
         raise
