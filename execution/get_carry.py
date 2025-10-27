@@ -13,6 +13,12 @@ except Exception:
 
 def fetch_binance_funding_rates(symbols=None, exchange_id='binance'):
     """
+    DEPRECATED: Use fetch_coinalyze_aggregated_funding_rates() or 
+    fetch_coinalyze_funding_rates_for_universe() instead.
+    
+    This function is kept for backward compatibility but should not be used
+    as it creates a dependency on Binance which may be geo-restricted.
+    
     Fetch current funding rates from Binance for perpetual futures.
     
     Args:
@@ -86,6 +92,11 @@ def fetch_binance_funding_rates(symbols=None, exchange_id='binance'):
 
 def fetch_binance_funding_history(symbol, limit=100):
     """
+    DEPRECATED: This function creates a dependency on Binance which may be geo-restricted.
+    
+    This function is kept for backward compatibility but should not be used.
+    Consider using Coinalyze historical funding rate endpoints instead.
+    
     Fetch historical funding rates for a specific symbol.
     
     Args:
@@ -152,7 +163,7 @@ def _build_coinalyze_symbol(base: str, quote: str, exchange_code: str) -> str:
 
 def fetch_coinalyze_aggregated_funding_rates(
     universe_symbols: List[str],
-    aggregation: str = 'mean',  # 'mean', 'median', or 'binance_primary'
+    aggregation: str = 'mean',  # 'mean', 'median', or 'bybit_primary'
 ) -> pd.DataFrame:
     """
     Fetch AGGREGATED funding rates from Coinalyze across ALL major exchanges.
@@ -166,7 +177,7 @@ def fetch_coinalyze_aggregated_funding_rates(
         aggregation: How to aggregate across exchanges:
             - 'mean': Average funding rate across all exchanges
             - 'median': Median funding rate across all exchanges  
-            - 'binance_primary': Use Binance as primary source (largest exchange)
+            - 'bybit_primary': Use Bybit as primary source (large, reliable exchange)
     
     Returns:
         DataFrame with columns: base, quote, funding_rate, funding_rate_pct,
@@ -180,12 +191,11 @@ def fetch_coinalyze_aggregated_funding_rates(
         ])
     
     # Major exchanges to aggregate across (in order of preference/volume)
-    # A=Binance (primary - most liquid and reliable data)
-    # D=Bybit, K=OKX, F=Bitfinex (may have limited current FR data in Coinalyze)
-    major_exchanges = ['A']  # Binance as primary market signal
+    # H=Hyperliquid, D=Bybit, K=OKX - all have good liquidity and reliable data
+    # Note: Removed Binance (A) to eliminate dependency
+    major_exchanges = ['D', 'K', 'H']  # Bybit, OKX, Hyperliquid
     
-    # Note: In practice, Binance funding rates are a good proxy for market-wide
-    # sentiment as it's the largest exchange by volume
+    # Note: We aggregate across multiple major exchanges for robust market-wide signals
     
     client = CoinalyzeClient()
     
@@ -202,7 +212,7 @@ def fetch_coinalyze_aggregated_funding_rates(
         # Build symbols for this exchange
         symbols_for_exchange = []
         for base in base_symbols:
-            # Binance and others typically use USDT perpetuals
+            # Most exchanges use USDT perpetuals
             c_symbol = _build_coinalyze_symbol(base, 'USDT', exchange_code)
             symbols_for_exchange.append(c_symbol)
         
@@ -257,19 +267,19 @@ def fetch_coinalyze_aggregated_funding_rates(
             'exchange_code': 'count'
         }).reset_index()
         df_agg = df_agg.rename(columns={'exchange_code': 'num_exchanges'})
-    elif aggregation == 'binance_primary':
-        # Use Binance (A) as primary, fall back to others
-        df_binance = df_all[df_all['exchange_code'] == 'A']
-        df_others = df_all[df_all['exchange_code'] != 'A']
+    elif aggregation == 'bybit_primary':
+        # Use Bybit (D) as primary, fall back to others
+        df_bybit = df_all[df_all['exchange_code'] == 'D']
+        df_others = df_all[df_all['exchange_code'] != 'D']
         
-        # For symbols on Binance, use Binance rate
-        # For symbols not on Binance, use mean of others
-        df_agg_binance = df_binance.groupby('base').agg({
+        # For symbols on Bybit, use Bybit rate
+        # For symbols not on Bybit, use mean of others
+        df_agg_bybit = df_bybit.groupby('base').agg({
             'funding_rate': 'first',
             'funding_rate_pct': 'first',
             'exchange_code': 'count'
         }).reset_index()
-        df_agg_binance = df_agg_binance.rename(columns={'exchange_code': 'num_exchanges'})
+        df_agg_bybit = df_agg_bybit.rename(columns={'exchange_code': 'num_exchanges'})
         
         df_agg_others = df_others.groupby('base').agg({
             'funding_rate': 'mean',
@@ -278,8 +288,8 @@ def fetch_coinalyze_aggregated_funding_rates(
         }).reset_index()
         df_agg_others = df_agg_others.rename(columns={'exchange_code': 'num_exchanges'})
         
-        # Combine: prefer Binance
-        df_agg = pd.concat([df_agg_binance, df_agg_others[~df_agg_others['base'].isin(df_agg_binance['base'])]])
+        # Combine: prefer Bybit
+        df_agg = pd.concat([df_agg_bybit, df_agg_others[~df_agg_others['base'].isin(df_agg_bybit['base'])]])
     else:
         df_agg = df_all.groupby('base').agg({
             'funding_rate': 'mean',
@@ -380,7 +390,7 @@ def print_funding_summary(df, top_n=20):
         top_n: Number of top positive and negative rates to display
     """
     print("\n" + "=" * 100)
-    print("BINANCE PERPETUAL FUTURES FUNDING RATES")
+    print("PERPETUAL FUTURES FUNDING RATES")
     print("=" * 100)
     
     if df.empty:
@@ -438,56 +448,83 @@ def print_funding_summary(df, top_n=20):
 
 
 if __name__ == "__main__":
-    print("Fetching Binance funding rates...")
+    print("Fetching funding rates via Coinalyze...")
     print("=" * 100)
     
     try:
-        # Option 1: Fetch all funding rates
-        # Note: Use exchange_id='binanceus' if you're in the US
-        df_all = fetch_binance_funding_rates(exchange_id='binance')
-        print_funding_summary(df_all, top_n=20)
+        # Example universe of symbols to fetch funding rates for
+        universe = [
+            'BTC/USDC:USDC', 'ETH/USDC:USDC', 'SOL/USDC:USDC', 'AVAX/USDC:USDC',
+            'MATIC/USDC:USDC', 'LINK/USDC:USDC', 'UNI/USDC:USDC', 'ATOM/USDC:USDC'
+        ]
         
-        # Save to CSV
-        output_file = 'binance_funding_rates.csv'
-        df_all.to_csv(output_file, index=False)
-        print(f"\n✓ Funding rates saved to {output_file}")
+        # Option 1: Fetch aggregated funding rates across multiple exchanges (recommended)
+        print("\n1. Fetching AGGREGATED funding rates (market-wide signal)...")
+        print("-" * 100)
+        df_aggregated = fetch_coinalyze_aggregated_funding_rates(
+            universe_symbols=universe,
+            aggregation='mean'  # Options: 'mean', 'median', 'bybit_primary'
+        )
         
-        # Option 2: Fetch specific symbols (uncomment to use)
-        # specific_symbols = ['BTC/USDT:USDT', 'ETH/USDT:USDT', 'SOL/USDT:USDT']
-        # df_specific = fetch_binance_funding_rates(symbols=specific_symbols)
-        # print("\nSpecific symbols:")
-        # print(df_specific[['symbol', 'funding_rate_pct', 'mark_price']])
+        if not df_aggregated.empty:
+            print(f"\nAggregated Funding Rates (across {df_aggregated['num_exchanges'].iloc[0]:.0f} exchanges):")
+            print(df_aggregated.to_string(index=False))
+            
+            # Save to CSV
+            output_file = 'aggregated_funding_rates.csv'
+            df_aggregated.to_csv(output_file, index=False)
+            print(f"\n✓ Aggregated funding rates saved to {output_file}")
+        else:
+            print("⚠️  No aggregated funding data returned")
         
-        # Option 3: Fetch funding rate history for a specific symbol (uncomment to use)
-        # df_history = fetch_binance_funding_history('BTC/USDT:USDT', limit=50)
-        # if not df_history.empty:
-        #     print("\n\nBTC/USDT Funding Rate History (Last 50):")
-        #     print(df_history[['funding_time', 'fundingRate', 'funding_rate_pct']].head(20))
-        #     
-        #     # Calculate average funding rate
-        #     avg_funding = df_history['funding_rate_pct'].mean()
-        #     print(f"\nAverage funding rate (last 50): {avg_funding:.4f}%")
-        #     print(f"Annualized (assuming 3x per day): {avg_funding * 3 * 365:.2f}%")
+        # Option 2: Fetch exchange-specific funding rates (Hyperliquid example)
+        print("\n\n2. Fetching HYPERLIQUID funding rates (exchange-specific)...")
+        print("-" * 100)
+        df_hyperliquid = fetch_coinalyze_funding_rates_for_universe(
+            universe_symbols=universe, 
+            exchange_code='H'  # H=Hyperliquid
+        )
         
-        # Option 4: Fetch Coinalyze funding rates for a universe on Hyperliquid (if COINALYZE_API set)
-        try:
-            universe = ['BTC/USDC:USDC', 'ETH/USDC:USDC', 'SOL/USDC:USDC']
-            df_c = fetch_coinalyze_funding_rates_for_universe(universe_symbols=universe, exchange_code='H')
-            if not df_c.empty:
-                print("\nCoinalyze current funding (Hyperliquid):")
-                print(df_c[['base', 'funding_rate_pct', 'update_time']].head(10))
-        except Exception as _:
-            pass
-
-    except ccxt.ExchangeNotAvailable as e:
-        print("\n" + "!" * 100)
-        print("ERROR: Binance API is not available from this location (geo-restricted)")
-        print("!" * 100)
-        print("\nPossible solutions:")
-        print("  1. Use a VPN to access from a supported location")
-        print("  2. Use exchange_id='binanceus' if you're in the US")
-        print("  3. Use an alternative exchange (e.g., Bybit, OKX)")
-        print(f"\nError details: {str(e)}")
+        if not df_hyperliquid.empty:
+            print(f"\nHyperliquid Funding Rates:")
+            print(df_hyperliquid[['base', 'funding_rate_pct', 'update_time']].to_string(index=False))
+            
+            # Save to CSV
+            output_file = 'hyperliquid_funding_rates.csv'
+            df_hyperliquid.to_csv(output_file, index=False)
+            print(f"\n✓ Hyperliquid funding rates saved to {output_file}")
+        else:
+            print("⚠️  No Hyperliquid funding data returned")
+        
+        # Option 3: Fetch exchange-specific funding rates (Bybit example)
+        print("\n\n3. Fetching BYBIT funding rates (exchange-specific)...")
+        print("-" * 100)
+        df_bybit = fetch_coinalyze_funding_rates_for_universe(
+            universe_symbols=universe, 
+            exchange_code='D'  # D=Bybit
+        )
+        
+        if not df_bybit.empty:
+            print(f"\nBybit Funding Rates:")
+            print(df_bybit[['base', 'funding_rate_pct', 'update_time']].to_string(index=False))
+            
+            # Save to CSV
+            output_file = 'bybit_funding_rates.csv'
+            df_bybit.to_csv(output_file, index=False)
+            print(f"\n✓ Bybit funding rates saved to {output_file}")
+        else:
+            print("⚠️  No Bybit funding data returned")
+        
+        print("\n" + "=" * 100)
+        print("✓ All funding rates fetched successfully via Coinalyze")
+        print("=" * 100)
+        print("\nNOTE: This script now uses Coinalyze API exclusively (no Binance dependency)")
+        print("      Set COINALYZE_API_KEY environment variable to use this functionality")
+        
     except Exception as e:
-        print(f"\nUnexpected error: {str(e)}")
+        print(f"\n⚠️  Error fetching funding rates: {str(e)}")
+        print("\nTroubleshooting:")
+        print("  1. Ensure COINALYZE_API_KEY environment variable is set")
+        print("  2. Check your Coinalyze API subscription and rate limits")
+        print("  3. Verify the symbols exist on the requested exchanges")
         raise
