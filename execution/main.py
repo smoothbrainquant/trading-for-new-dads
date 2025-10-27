@@ -236,7 +236,16 @@ def check_cache_freshness():
             age_str = f"{f['age_hours']:.2f}h"
             size_kb = f['size'] / 1024
             
-            print(f"  {status:10s} {f['name']:40s} age={age_str:8s} size={size_kb:.1f}KB")
+            # Show validation reason for expired caches
+            reason_str = ""
+            if not f['is_valid'] and 'validation_reason' in f:
+                reason = f['validation_reason']
+                if reason == 'date_changed':
+                    reason_str = " (date changed)"
+                elif reason == 'ttl_expired':
+                    reason_str = " (TTL expired)"
+            
+            print(f"  {status:10s} {f['name']:40s} age={age_str:8s} size={size_kb:.1f}KB{reason_str}")
             
             if f['is_valid']:
                 valid_count += 1

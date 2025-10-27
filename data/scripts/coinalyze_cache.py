@@ -57,6 +57,37 @@ class CoinalyzeCache:
         logger.info(f"Cache valid: {cache_path.name} (age: {age})")
         return True
     
+    def _is_oi_cache_valid(self, cache_path: Path) -> bool:
+        """
+        Check if OI cache file exists and is not stale
+        
+        Special rules for OI data:
+        - Force update if date has changed (even if cache <8h old)
+        - Otherwise use standard TTL check
+        
+        This ensures we always have today's data when available.
+        """
+        if not cache_path.exists():
+            return False
+        
+        # Check file modification time
+        mtime = datetime.fromtimestamp(cache_path.stat().st_mtime)
+        age = datetime.now() - mtime
+        now = datetime.now()
+        
+        # Check if date has changed (cache is from a previous day)
+        if mtime.date() < now.date():
+            logger.info(f"Cache expired: {cache_path.name} - date changed (cached: {mtime.date()}, now: {now.date()})")
+            return False
+        
+        # Standard TTL check
+        if age > timedelta(hours=self.ttl_hours):
+            logger.info(f"Cache expired: {cache_path.name} (age: {age})")
+            return False
+        
+        logger.info(f"Cache valid: {cache_path.name} (age: {age}, same day)")
+        return True
+    
     def save_funding_rates(self, data: pd.DataFrame, exchange_code: str = 'all'):
         """Save funding rates to cache"""
         cache_path = self._get_cache_path('funding_rates', exchange_code)
@@ -108,11 +139,12 @@ class CoinalyzeCache:
         logger.info(f"Saved OI history to cache: {cache_path.name} ({len(data)} records)")
     
     def load_oi_history(self, exchange_code: str, days: int) -> Optional[pd.DataFrame]:
-        """Load open interest history from cache if valid"""
+        """Load open interest history from cache if valid (with date-change detection)"""
         cache_key = f"{exchange_code}_days{days}"
         cache_path = self._get_cache_path('oi_history', cache_key)
         
-        if not self._is_cache_valid(cache_path):
+        # Use OI-specific cache validation (checks date change + TTL)
+        if not self._is_oi_cache_valid(cache_path):
             return None
         
         try:
@@ -155,14 +187,27 @@ class CoinalyzeCache:
         for cache_file in self.cache_dir.glob("*.json"):
             mtime = datetime.fromtimestamp(cache_file.stat().st_mtime)
             age = datetime.now() - mtime
-            is_valid = age <= timedelta(hours=self.ttl_hours)
+            now = datetime.now()
+            
+            # Use OI-specific validation for oi_history files
+            if 'oi_history' in cache_file.name:
+                # Check both date change and TTL
+                date_changed = mtime.date() < now.date()
+                ttl_expired = age > timedelta(hours=self.ttl_hours)
+                is_valid = not (date_changed or ttl_expired)
+                validation_reason = "date_changed" if date_changed else ("ttl_expired" if ttl_expired else "valid")
+            else:
+                # Standard TTL validation for other files
+                is_valid = age <= timedelta(hours=self.ttl_hours)
+                validation_reason = "ttl_expired" if not is_valid else "valid"
             
             info['files'].append({
                 'name': cache_file.name,
                 'size': cache_file.stat().st_size,
                 'modified': mtime.isoformat(),
                 'age_hours': age.total_seconds() / 3600,
-                'is_valid': is_valid
+                'is_valid': is_valid,
+                'validation_reason': validation_reason
             })
         
         return info
@@ -272,7 +317,10 @@ def fetch_oi_history_cached(
     """
     Fetch OI history with caching
     
-    Note: Historical data has longer TTL (8 hours) since it changes less frequently
+    Special caching rules for OI data:
+    - Standard TTL: 8 hours (configurable)
+    - Date-change detection: Cache is invalidated if date has changed, even if <8h old
+    - This ensures we always fetch fresh data when a new day starts
     
     Args:
         universe_symbols: List of trading symbols
