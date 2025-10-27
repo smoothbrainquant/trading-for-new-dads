@@ -27,7 +27,7 @@ can update them without code changes. Example config structure:
     "mean_reversion": {"zscore_threshold": 1.5, "volume_threshold": 1.0, "period_days": 2},
     "size": {"top_n": 10, "bottom_n": 10},
     "carry": {"exchange_id": "hyperliquid"},
-    "oi_divergence": {"mode": "trend", "lookback": 30, "exchange_code": "H (ignored - uses aggregated data)"}
+    "oi_divergence": {"mode": "trend", "lookback": 30, "exchange_code": "A"}
   }
 }
 
@@ -125,6 +125,72 @@ def update_market_data():
         return None
 
 
+def check_oi_data_freshness():
+    """
+    Check the freshness of OI data for trading signals.
+    
+    This function checks if OI data is from today and warns if it's stale.
+    Critical for OI-based strategies.
+    
+    Returns:
+        dict: OI data status information
+    """
+    import os
+    from glob import glob
+    from datetime import datetime
+    import pandas as pd
+    
+    print("\n" + "="*80)
+    print("CHECKING OI DATA FRESHNESS")
+    print("="*80)
+    
+    try:
+        # Find OI data file
+        workspace_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        oi_data_dir = os.path.join(workspace_root, 'data', 'raw')
+        pattern = os.path.join(oi_data_dir, 'historical_open_interest_all_perps_since2020_*.csv')
+        oi_files = sorted(glob(pattern), reverse=True)
+        
+        if not oi_files:
+            print("⚠️  No OI data file found")
+            print("   OI-based strategies will not work")
+            return {'status': 'missing', 'days_behind': None}
+        
+        oi_file = oi_files[0]
+        print(f"OI data file: {os.path.basename(oi_file)}")
+        
+        # Read and check dates
+        df = pd.read_csv(oi_file, usecols=['date'], nrows=100000)  # Sample for speed
+        df['date'] = pd.to_datetime(df['date'])
+        max_date = df['date'].max()
+        today = pd.Timestamp(datetime.now().date())
+        days_behind = (today - max_date).days
+        
+        print(f"Latest OI data: {max_date.date()}")
+        print(f"Today: {today.date()}")
+        
+        if days_behind == 0:
+            print("✓ OI data is CURRENT (same day)")
+            return {'status': 'current', 'days_behind': 0, 'latest_date': max_date.date()}
+        elif days_behind == 1:
+            print("⚠️  OI data is from YESTERDAY")
+            print("   Signals will be based on yesterday's data")
+            print("   Recommendation: Refresh OI data for today")
+            return {'status': 'yesterday', 'days_behind': 1, 'latest_date': max_date.date()}
+        elif days_behind > 1:
+            print(f"🔴 WARNING: OI data is {days_behind} DAYS OLD")
+            print(f"   Signals are significantly stale")
+            print(f"   STRONGLY RECOMMEND: Refresh OI data before trading")
+            return {'status': 'stale', 'days_behind': days_behind, 'latest_date': max_date.date()}
+        else:
+            print(f"⚠️  WARNING: OI data has FUTURE dates (data quality issue)")
+            return {'status': 'future', 'days_behind': days_behind, 'latest_date': max_date.date()}
+            
+    except Exception as e:
+        print(f"⚠️  Error checking OI data: {e}")
+        return {'status': 'error', 'error': str(e)}
+
+
 def check_cache_freshness():
     """
     Check the freshness of cached OI and carry (funding rate) data.
@@ -136,7 +202,7 @@ def check_cache_freshness():
         dict: Cache status information
     """
     print("\n" + "="*80)
-    print("CHECKING CACHE FRESHNESS")
+    print("CHECKING CACHE FRESHNESS (Funding Rates)")
     print("="*80)
     
     if CoinalyzeCache is None:
@@ -706,6 +772,20 @@ def main():
     # Update market data and check cache freshness
     print("\n[Pre-flight checks]")
     update_market_data()
+    
+    # Check OI data freshness if OI strategy is being used
+    if blend_weights and 'oi_divergence' in blend_weights and blend_weights.get('oi_divergence', 0) > 0:
+        oi_status = check_oi_data_freshness()
+        # Issue strong warning if data is stale and strategy has significant weight
+        if oi_status.get('status') in ['stale', 'yesterday'] and blend_weights.get('oi_divergence', 0) > 0.1:
+            print("\n" + "!"*80)
+            print("⚠️  TRADING ALERT: OI Divergence strategy is using stale data")
+            print(f"   Strategy weight: {blend_weights.get('oi_divergence', 0)*100:.1f}%")
+            print(f"   Data age: {oi_status.get('days_behind', 'unknown')} day(s) behind")
+            print("   Impact: Signals may not reflect current market conditions")
+            print("   Recommendation: Refresh OI data before executing trades")
+            print("!"*80)
+    
     check_cache_freshness()
     
     print(f"\nParameters:")
@@ -823,7 +903,9 @@ def main():
                 lookback = int(p.get('lookback', 30)) if isinstance(p, dict) else 30
                 top_n = int(p.get('top_n', 10)) if isinstance(p, dict) else 10
                 bottom_n = int(p.get('bottom_n', 10)) if isinstance(p, dict) else 10
-                exchange_code = p.get('exchange_code', 'H') if isinstance(p, dict) else 'H'
+                # Default to 'A' (aggregate across all exchanges) for robust signals
+                # Format: BTCUSDT_PERP.A per Coinalyze API docs
+                exchange_code = p.get('exchange_code', 'A') if isinstance(p, dict) else 'A'
                 contrib = strategy_oi_divergence(
                     historical_data,
                     strategy_notional,
