@@ -94,7 +94,9 @@ def export_portfolio_weights_multisignal(
         out_dir = os.path.join(workspace_root, 'backtests', 'results')
         os.makedirs(out_dir, exist_ok=True)
         out_path = os.path.join(out_dir, 'portfolio_weights.csv')
-        df_weights.to_csv(out_path, index=False)
+        # Round all numeric columns to 2 decimal places
+        df_weights = df_weights.round(2)
+        df_weights.to_csv(out_path, index=False, float_format='%.2f')
         
         print(f"\n{'='*80}")
         print(f"PORTFOLIO WEIGHTS EXPORTED")
@@ -163,7 +165,9 @@ def export_portfolio_weights_legacy(
         out_dir = os.path.join(workspace_root, 'backtests', 'results')
         os.makedirs(out_dir, exist_ok=True)
         out_path = os.path.join(out_dir, 'portfolio_weights.csv')
-        df_weights.to_csv(out_path, index=False)
+        # Round all numeric columns to 2 decimal places
+        df_weights = df_weights.round(2)
+        df_weights.to_csv(out_path, index=False, float_format='%.2f')
         
         print(f"\n{'='*80}")
         print(f"PORTFOLIO WEIGHTS EXPORTED")
@@ -402,7 +406,9 @@ def generate_trade_allocation_breakdown(
             out_dir = os.path.join(workspace_root, 'backtests', 'results')
             os.makedirs(out_dir, exist_ok=True)
             out_path = os.path.join(out_dir, 'trade_allocation_breakdown.csv')
-            df.to_csv(out_path, index=False)
+            # Round all numeric columns to 2 decimal places
+            df = df.round(2)
+            df.to_csv(out_path, index=False, float_format='%.2f')
             print(f"\nSaved allocation breakdown to: {out_path}")
         except Exception as e:
             print(f"Could not save allocation breakdown CSV: {e}")
