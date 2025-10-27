@@ -97,18 +97,27 @@ def _load_aggregated_oi_from_file(
             print(f"    ❌ Error parsing dates: {e}")
             return pd.DataFrame()
         
-        # Check data freshness
+        # Check data freshness - strict same-day check
         if not df.empty:
             max_date = df['date'].max()
             today = pd.Timestamp(datetime.now().date())
             days_stale = (today - max_date).days
             
-            if days_stale > 7:
+            if days_stale == 0:
+                print(f"    ✓ OI data is current (today: {today.date()})")
+            elif days_stale == 1:
+                print(f"    ⚠️  WARNING: OI data is from YESTERDAY ({max_date.date()})")
+                print(f"    Using most recent available data")
+                print(f"    Consider refreshing OI data for today's trading signals")
+            elif days_stale > 1:
                 print(f"    ⚠️  WARNING: OI data is {days_stale} days old (last update: {max_date.date()})")
-                print(f"    Consider refreshing OI data for more accurate signals")
+                print(f"    Today: {today.date()}")
+                print(f"    Using most recent available data, but signals may be stale")
+                print(f"    RECOMMENDATION: Refresh OI data before trading")
             elif days_stale < 0:
-                print(f"    ⚠️  WARNING: OI data has future dates (max: {max_date.date()}, today: {today.date()})")
-                print(f"    This may indicate a data quality issue")
+                print(f"    ⚠️  WARNING: OI data has FUTURE dates (max: {max_date.date()}, today: {today.date()})")
+                print(f"    This indicates a data quality issue - check data collection")
+                print(f"    Using data anyway, but verify results carefully")
         
         # Filter to recent data (last N days)
         cutoff_date = datetime.now() - timedelta(days=days)
@@ -342,6 +351,23 @@ def strategy_oi_divergence(
         print(f"       Make sure aggregated OI data file exists in data/raw/")
         print(f"       File pattern: historical_open_interest_all_perps_since2020_*.csv")
         return {}
+    
+    # Check if OI data is same day as execution
+    today = pd.Timestamp(datetime.now().date())
+    oi_latest_date = oi_df['date'].max()
+    days_behind = (today - oi_latest_date).days
+    
+    if days_behind > 0:
+        print(f"  ⚠️  OI DIVERGENCE STRATEGY: OI data is {days_behind} day(s) behind")
+        print(f"       Today: {today.date()}")
+        print(f"       Latest OI data: {oi_latest_date.date()}")
+        print(f"       Strategy will use data from {oi_latest_date.date()} for signal generation")
+        if days_behind > 2:
+            print(f"       🔴 CRITICAL: Data is significantly stale - signals may be unreliable")
+            print(f"       Strongly recommend refreshing OI data before trading")
+    elif days_behind < 0:
+        print(f"  ⚠️  OI DIVERGENCE STRATEGY: OI data has future dates!")
+        print(f"       This is unexpected and may indicate data quality issues")
 
     # Compute scores
     from signals.calc_open_interest_divergence import (
@@ -369,6 +395,14 @@ def strategy_oi_divergence(
 
     # Pick on latest date present across both
     latest_date = min(price_df['date'].max(), oi_df['date'].max())
+    today = pd.Timestamp(datetime.now().date())
+    
+    # Warn if using historical data instead of today's data
+    days_behind = (today - latest_date).days
+    if days_behind > 0:
+        print(f"    ⚠️  Generating signals from {latest_date.date()} (today is {today.date()})")
+        print(f"    Signals are {days_behind} day(s) behind current date")
+    
     day_scores = scores[scores['date'] == latest_date]
     if day_scores.empty:
         # fallback to last available in scores
@@ -376,6 +410,11 @@ def strategy_oi_divergence(
         latest_date = scores['date'].max()
         day_scores = scores[scores['date'] == latest_date]
         print(f"    Using scores from {latest_date.date()}")
+        
+        # Additional warning if falling back to even older data
+        days_behind = (today - latest_date).days
+        if days_behind > 2:
+            print(f"    🔴 WARNING: Fallback data is {days_behind} days old - signals highly unreliable")
     col = 'score_trend' if mode == 'trend' else 'score_divergence'
     day_scores = day_scores[['symbol', col]].dropna()
     if day_scores.empty:
