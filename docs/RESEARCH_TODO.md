@@ -9,7 +9,20 @@ Reappraise and update this list after every research session. Keep priorities cu
 
 ## TODOs
 
-1. [P1] Pairs Trading Strategy (Category-Based)
+1. [P1] ✅ Beta Factor Strategy (COMPLETE)
+   - ✅ Specification document created
+   - ✅ Backtest script implemented (backtest_beta_factor.py)
+   - ✅ All 4 strategy variants tested:
+     - Betting Against Beta (BAB) - Equal Weight: +177.7% return
+     - Betting Against Beta (BAB) - Risk Parity: +218.5% return (BEST)
+     - Traditional Risk Premium: -82.4% return (failed)
+     - Long Low Beta: -56.9% return
+     - Long High Beta: -91.2% return
+   - ✅ Results documented (BETA_FACTOR_BACKTEST_RESULTS.md)
+   - Key Finding: BAB anomaly exists in crypto; low beta coins outperform high beta
+   - See: docs/BETA_FACTOR_SPEC.md, docs/BETA_FACTOR_BACKTEST_RESULTS.md
+
+2. [P1] Pairs Trading Strategy (Category-Based)
    - ✅ Phase 1: Category definition & data collection (COMPLETE)
    - ✅ Phase 2: Correlation & covariance analysis (COMPLETE)
    - [ ] Phase 3: Divergence signal generation
