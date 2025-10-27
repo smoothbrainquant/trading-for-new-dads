@@ -52,13 +52,14 @@ def strategy_carry(
         print(f"  Warning: Market cap filtering failed ({e}), using full universe")
     
     df_rates = None
-    # Use Coinalyze to get aggregated market-wide funding rates (with caching)
+    # Use Coinalyze to get aggregated market-wide funding rates using .A suffix (with caching)
     try:
         from data.scripts.coinalyze_cache import fetch_coinalyze_aggregated_funding_cached
 
         num_symbols = len(universe_symbols)
         estimated_time = (num_symbols / 20 + 1) * 1.5  # chunks of 20, 1.5s per call
-        print(f"  Fetching market-wide funding rates from Coinalyze (aggregated across exchanges)...")
+        print(f"  Fetching market-wide funding rates from Coinalyze (using .A aggregated suffix)...")
+        print(f"  Format: [SYMBOL]USDT_PERP.A (e.g., BTCUSDT_PERP.A)")
         print(f"  Processing {num_symbols} symbols - checking cache first...")
         print(f"  (If cache miss: Rate limited to 40 calls/min, ~{estimated_time:.0f}s total)")
         df_rates = fetch_coinalyze_aggregated_funding_cached(
@@ -66,7 +67,7 @@ def strategy_carry(
             cache_ttl_hours=8,  # 8 hour cache for funding rates
         )
         if df_rates is not None and not df_rates.empty:
-            print(f"  Got funding rates for {len(df_rates)} symbols from aggregated exchanges")
+            print(f"  Got funding rates for {len(df_rates)} symbols from aggregated .A data")
             # Normalize expected columns
             df_rates = df_rates.copy()
             if 'base' not in df_rates.columns:
@@ -103,7 +104,7 @@ def strategy_carry(
         print("  ⚠️  CARRY STRATEGY: No funding rate data available!")
         print(f"      Check: 1) COINALYZE_API_KEY environment variable is set")
         print(f"      Check: 2) Coinalyze API access and rate limits")
-        print(f"      Check: 3) Exchange {exchange_id} has data for requested symbols")
+        print(f"      Check: 3) Symbols exist on Coinalyze (try different symbols)")
         return {}
 
     universe_bases = {get_base_symbol(s): s for s in universe_symbols}

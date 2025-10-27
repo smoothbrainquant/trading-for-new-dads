@@ -1297,16 +1297,17 @@ def main():
                 # If fetching fails, leave marketcap map empty
                 marketcap_by_trading_symbol = {}
 
-            # 3) Funding rate via Coinalyze (using aggregated market rates)
+            # 3) Funding rate via Coinalyze (using aggregated .A suffix)
             funding_by_base: dict[str, float] = {}
             try:
                 from execution.get_carry import fetch_coinalyze_aggregated_funding_rates
-                # Use aggregated funding rates across multiple exchanges for more robust signal
+                # Use aggregated funding rates with .A suffix (e.g., BTCUSDT_PERP.A)
+                # This uses Coinalyze's built-in aggregation across all exchanges
                 print(f"\n  Fetching aggregated funding rates from Coinalyze for {len(traded_symbols)} symbols...")
+                print(f"  Format: [SYMBOL]USDT_PERP.A for aggregated data across all exchanges")
                 print(f"  Note: Rate limited to 40 calls/min (1.5s between calls)")
                 df_fr = fetch_coinalyze_aggregated_funding_rates(
-                    universe_symbols=traded_symbols,
-                    aggregation='mean'  # Average across Bybit, OKX, Hyperliquid
+                    universe_symbols=traded_symbols
                 )
                 if df_fr is not None and not df_fr.empty:
                     df_tmp = df_fr.copy()
