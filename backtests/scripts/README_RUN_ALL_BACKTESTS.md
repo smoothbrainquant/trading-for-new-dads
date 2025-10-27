@@ -32,6 +32,9 @@ The script runs the following backtests:
 2. **Mean Reversion** - Contrarian strategy betting on price reversals
 3. **Size Factor** - Long small-cap / short large-cap strategy
 4. **Carry Factor** - Long low funding rate / short high funding rate strategy
+5. **Days from High** - Long coins within 20 days of 200-day high
+6. **OI Divergence** - Open interest divergence signals (contrarian or momentum)
+7. **Volatility Factor** - Long low volatility / short high volatility strategy
 
 ## Usage
 
@@ -70,6 +73,11 @@ python3 backtests/scripts/run_all_backtests.py \
 - `--run-mean-reversion`: Run mean reversion backtest (default: True)
 - `--run-size`: Run size factor backtest (default: True)
 - `--run-carry`: Run carry factor backtest (default: True)
+- `--run-days-from-high`: Run days from high backtest (default: True)
+- `--run-oi-divergence`: Run OI divergence backtest (default: True)
+- `--run-volatility`: Run volatility factor backtest (default: True)
+- `--oi-mode`: OI divergence mode: 'divergence' or 'trend' (default: divergence)
+- `--volatility-strategy`: Volatility factor strategy: 'long_low_short_high', 'long_low_vol', 'long_high_vol', or 'long_high_short_low' (default: long_low_short_high)
 
 ## Output
 
