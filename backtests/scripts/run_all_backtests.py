@@ -939,7 +939,7 @@ def main():
             args.data_file,
             strategy=args.volatility_strategy,
             num_quintiles=5,
-            rebalance_days=7,
+            rebalance_days=1,  # Daily rebalancing
             weighting_method='equal',
             **common_params
         )
