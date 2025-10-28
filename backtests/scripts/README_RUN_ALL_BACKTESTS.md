@@ -53,7 +53,7 @@ python3 backtests/scripts/run_all_backtests.py
 python3 backtests/scripts/run_all_backtests.py \
     --data-file data/raw/top10_markets_500d_daily_data.csv \
     --marketcap-file data/raw/coinmarketcap_historical_20250105.csv \
-    --funding-rates-file data/raw/historical_funding_rates_top100_20251025_124832.csv \
+    --funding-rates-file data/raw/historical_funding_rates_top100_ALL_HISTORY_20251028_002456.csv \
     --initial-capital 10000 \
     --start-date 2024-01-01 \
     --end-date 2025-10-23 \
@@ -64,7 +64,7 @@ python3 backtests/scripts/run_all_backtests.py \
 
 - `--data-file`: Path to historical OHLCV price data CSV file
 - `--marketcap-file`: Path to market cap data CSV file
-- `--funding-rates-file`: Path to funding rates data CSV file  
+- `--funding-rates-file`: Path to funding rates data CSV file (now includes top 100 coins with complete history from 2020-present)  
 - `--initial-capital`: Initial portfolio capital in USD (default: 10000)
 - `--start-date`: Start date for backtest (YYYY-MM-DD format, optional)
 - `--end-date`: End date for backtest (YYYY-MM-DD format, optional)
