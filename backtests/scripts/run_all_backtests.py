@@ -51,6 +51,9 @@ from backtests.scripts.backtest_volatility_factor import (
 from backtests.scripts.backtest_kurtosis_factor import (
     backtest as backtest_kurtosis, load_data
 )
+from backtests.scripts.backtest_beta_factor import (
+    run_backtest as backtest_beta, load_data
+)
 from backtests.scripts.backtest_adf_factor import (
     run_backtest as run_adf_backtest, load_data
 )
@@ -571,6 +574,54 @@ def run_kurtosis_factor_backtest(data_file, **kwargs):
         return None
 
 
+def run_beta_factor_backtest(data_file, **kwargs):
+    """Run beta factor backtest."""
+    print("\n" + "="*80)
+    print("Running Beta Factor Backtest")
+    print("="*80)
+    
+    try:
+        price_data = load_data(data_file)
+        
+        results = backtest_beta(
+            data=price_data,
+            strategy=kwargs.get('strategy', 'betting_against_beta'),
+            beta_window=kwargs.get('beta_window', 90),
+            volatility_window=kwargs.get('volatility_window', 30),
+            rebalance_days=kwargs.get('rebalance_days', 1),
+            num_quintiles=kwargs.get('num_quintiles', 5),
+            long_percentile=kwargs.get('long_percentile', 20),
+            short_percentile=kwargs.get('short_percentile', 80),
+            weighting_method=kwargs.get('weighting_method', 'risk_parity'),
+            initial_capital=kwargs.get('initial_capital', 10000),
+            leverage=kwargs.get('leverage', 1.0),
+            long_allocation=kwargs.get('long_allocation', 0.5),
+            short_allocation=kwargs.get('short_allocation', 0.5),
+            min_volume=kwargs.get('min_volume', 5000000),
+            min_market_cap=kwargs.get('min_market_cap', 50000000),
+            start_date=kwargs.get('start_date'),
+            end_date=kwargs.get('end_date')
+        )
+        
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results['portfolio_values'],
+            kwargs.get('initial_capital', 10000)
+        )
+        
+        return {
+            'strategy': 'Beta Factor (BAB)',
+            'description': f"Strategy: BAB, Weighting: {kwargs.get('weighting_method', 'risk_parity')}, Rebal: {kwargs.get('rebalance_days', 1)}d",
+            'metrics': metrics,
+            'results': results
+        }
+    except Exception as e:
+        print(f"Error in Beta Factor backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 def run_adf_factor_backtest(data_file, **kwargs):
     """Run ADF factor backtest."""
     print("\n" + "="*80)
@@ -947,6 +998,32 @@ def main():
         help='Kurtosis rebalance frequency in days'
     )
     parser.add_argument(
+        '--run-beta',
+        action='store_true',
+        default=True,
+        help='Run beta factor backtest'
+    )
+    parser.add_argument(
+        '--beta-strategy',
+        type=str,
+        default='betting_against_beta',
+        choices=['betting_against_beta', 'traditional_risk_premium', 'long_low_beta', 'long_high_beta'],
+        help='Beta factor strategy type'
+    )
+    parser.add_argument(
+        '--beta-weighting',
+        type=str,
+        default='risk_parity',
+        choices=['equal_weight', 'risk_parity', 'beta_weighted'],
+        help='Beta factor weighting method'
+    )
+    parser.add_argument(
+        '--beta-rebalance-days',
+        type=int,
+        default=1,
+        help='Beta rebalance frequency in days'
+    )
+    parser.add_argument(
         '--run-adf',
         action='store_true',
         default=True,
@@ -1099,7 +1176,22 @@ def main():
         if result:
             all_results.append(result)
     
-    # 9. ADF Factor (Trend Following)
+    # 9. Beta Factor (BAB with Risk Parity, Daily Rebalancing)
+    if args.run_beta:
+        result = run_beta_factor_backtest(
+            args.data_file,
+            strategy=args.beta_strategy,
+            beta_window=90,
+            rebalance_days=args.beta_rebalance_days,
+            weighting_method=args.beta_weighting,
+            long_percentile=20,
+            short_percentile=80,
+            **common_params
+        )
+        if result:
+            all_results.append(result)
+    
+    # 10. ADF Factor (Trend Following)
     if args.run_adf:
         result = run_adf_factor_backtest(
             args.data_file,
