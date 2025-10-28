@@ -568,6 +568,56 @@ def run_kurtosis_factor_backtest(data_file, **kwargs):
         return None
 
 
+def run_dw_factor_backtest(data_file, **kwargs):
+    """Run Durbin-Watson factor backtest."""
+    print("\n" + "="*80)
+    print("Running Durbin-Watson Factor Backtest")
+    print("="*80)
+    
+    try:
+        price_data = load_data(data_file)
+        
+        results = backtest_dw(
+            data=price_data,
+            strategy=kwargs.get('strategy', 'contrarian'),
+            dw_window=kwargs.get('dw_window', 30),
+            dw_method=kwargs.get('dw_method', 'raw_returns'),
+            volatility_window=kwargs.get('volatility_window', 30),
+            rebalance_days=kwargs.get('rebalance_days', 1),
+            num_quintiles=kwargs.get('num_quintiles', 5),
+            long_percentile=kwargs.get('long_percentile', 80),
+            short_percentile=kwargs.get('short_percentile', 20),
+            weighting_method=kwargs.get('weighting_method', 'equal_weight'),
+            initial_capital=kwargs.get('initial_capital', 10000),
+            leverage=kwargs.get('leverage', 1.0),
+            long_allocation=kwargs.get('long_allocation', 0.5),
+            short_allocation=kwargs.get('short_allocation', 0.5),
+            min_volume=kwargs.get('min_volume', 5_000_000),
+            min_market_cap=kwargs.get('min_market_cap', 50_000_000),
+            top_n_market_cap=kwargs.get('top_n_market_cap', 100),
+            start_date=kwargs.get('start_date'),
+            end_date=kwargs.get('end_date')
+        )
+        
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results['portfolio_values'],
+            kwargs.get('initial_capital', 10000)
+        )
+        
+        return {
+            'strategy': 'DW Factor',
+            'description': f"Contrarian, {kwargs.get('dw_window', 30)}d DW, {kwargs.get('rebalance_days', 1)}d rebal",
+            'metrics': metrics,
+            'results': results
+        }
+    except Exception as e:
+        print(f"Error in DW Factor backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 def create_summary_table(all_results):
     """
     Create summary table with all metrics.
