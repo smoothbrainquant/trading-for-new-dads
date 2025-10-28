@@ -1,0 +1,2 @@
+strategy,adf_window,regression,volatility_window,rebalance_days,num_quintiles,long_percentile,short_percentile,weighting_method,initial_capital,leverage,long_allocation,short_allocation,avg_adf_long,avg_adf_short,long_symbols,short_symbols
+mean_reversion_premium,60,ct,30,7,5,20,80,equal_weight,10000,1.0,0.5,0.5,-3.0996137446800964,-1.4214739184701226,"ALGO/USD,BONK/USD,CRO/USD,CVC/USD,GRT/USD,OXT/USD,SUPER/USD,XLM/USD","ALGO/USD,BONK/USD,CRO/USD,CVC/USD,EOS/USD,GRT/USD,LDO/USD,OXT/USD,SUPER/USD,XLM/USD,XTZ/USD,ZRX/USD"
