@@ -837,8 +837,8 @@ def main():
     parser.add_argument(
         '--funding-rates-file',
         type=str,
-        default='data/raw/historical_funding_rates_top50_ALL_HISTORY_20251027_102154.csv',
-        help='Path to funding rates data CSV file'
+        default='data/raw/historical_funding_rates_top100_ALL_HISTORY_20251028_002456.csv',
+        help='Path to funding rates data CSV file (top 100 coins, 2020-present)'
     )
     parser.add_argument(
         '--oi-data-file',

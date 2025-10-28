@@ -604,8 +604,8 @@ def main():
     parser.add_argument(
         '--funding-data',
         type=str,
-        default='historical_funding_rates_top50_ALL_HISTORY_20251025_123832.csv',
-        help='Path to historical funding rates CSV file'
+        default='historical_funding_rates_top100_ALL_HISTORY_20251028_002456.csv',
+        help='Path to historical funding rates CSV file (top 100 coins, 2020-present)'
     )
     parser.add_argument(
         '--top-n',
