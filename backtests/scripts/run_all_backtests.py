@@ -51,6 +51,9 @@ from backtests.scripts.backtest_volatility_factor import (
 from backtests.scripts.backtest_kurtosis_factor import (
     backtest as backtest_kurtosis, load_data
 )
+from backtests.scripts.backtest_durbin_watson_factor import (
+    run_backtest as backtest_dw, load_data
+)
 
 
 def calculate_comprehensive_metrics(portfolio_df, initial_capital, benchmark_returns=None):
@@ -583,7 +586,7 @@ def run_dw_factor_backtest(data_file, **kwargs):
             dw_window=kwargs.get('dw_window', 30),
             dw_method=kwargs.get('dw_method', 'raw_returns'),
             volatility_window=kwargs.get('volatility_window', 30),
-            rebalance_days=kwargs.get('rebalance_days', 1),
+            rebalance_days=kwargs.get('rebalance_days', 7),  # 7-day optimal (tested on 2021-2025)
             num_quintiles=kwargs.get('num_quintiles', 5),
             long_percentile=kwargs.get('long_percentile', 80),
             short_percentile=kwargs.get('short_percentile', 20),
@@ -607,7 +610,7 @@ def run_dw_factor_backtest(data_file, **kwargs):
         
         return {
             'strategy': 'DW Factor',
-            'description': f"Contrarian, {kwargs.get('dw_window', 30)}d DW, {kwargs.get('rebalance_days', 1)}d rebal",
+            'description': f"Contrarian, {kwargs.get('dw_window', 30)}d DW, {kwargs.get('rebalance_days', 7)}d rebal, Top{kwargs.get('top_n_market_cap', 100)}",
             'metrics': metrics,
             'results': results
         }
@@ -944,6 +947,30 @@ def main():
         default=14,
         help='Kurtosis rebalance frequency in days'
     )
+    parser.add_argument(
+        '--run-dw',
+        action='store_true',
+        default=True,
+        help='Run Durbin-Watson factor backtest'
+    )
+    parser.add_argument(
+        '--dw-window',
+        type=int,
+        default=30,
+        help='DW calculation window in days'
+    )
+    parser.add_argument(
+        '--dw-rebalance-days',
+        type=int,
+        default=7,
+        help='DW rebalance frequency in days (7 = weekly, optimal based on 2021-2025 data)'
+    )
+    parser.add_argument(
+        '--top-n-market-cap',
+        type=int,
+        default=100,
+        help='Filter to top N coins by market cap for DW factor'
+    )
     
     args = parser.parse_args()
     
@@ -1073,6 +1100,22 @@ def main():
             weighting='risk_parity',
             long_percentile=20,
             short_percentile=80,
+            **common_params
+        )
+        if result:
+            all_results.append(result)
+    
+    # 9. Durbin-Watson Factor
+    if args.run_dw:
+        result = run_dw_factor_backtest(
+            args.data_file,
+            strategy='contrarian',
+            dw_window=args.dw_window,
+            rebalance_days=args.dw_rebalance_days,  # 7 days by default (optimal)
+            weighting_method='equal_weight',
+            long_percentile=80,
+            short_percentile=20,
+            top_n_market_cap=args.top_n_market_cap,
             **common_params
         )
         if result:
