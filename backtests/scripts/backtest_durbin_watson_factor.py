@@ -217,14 +217,15 @@ def calculate_volatility(data, window=30):
     return df
 
 
-def filter_universe(data, min_volume=5_000_000, min_market_cap=50_000_000):
+def filter_universe(data, min_volume=5_000_000, min_market_cap=50_000_000, top_n_market_cap=None):
     """
     Filter cryptocurrency universe by liquidity and market cap.
     
     Args:
         data (pd.DataFrame): DataFrame with volume and market_cap columns
         min_volume (float): Minimum 30-day average daily volume
-        min_market_cap (float): Minimum market cap
+        min_market_cap (float): Minimum market cap (ignored if top_n_market_cap is set)
+        top_n_market_cap (int): If set, select top N coins by market cap on each date
         
     Returns:
         pd.DataFrame: Filtered data
@@ -240,7 +241,14 @@ def filter_universe(data, min_volume=5_000_000, min_market_cap=50_000_000):
     
     # Filter by market cap
     if 'market_cap' in df.columns:
-        df = df[df['market_cap'] >= min_market_cap]
+        if top_n_market_cap is not None:
+            # Select top N by market cap on each date
+            df['market_cap_rank'] = df.groupby('date')['market_cap'].rank(ascending=False, method='first')
+            df = df[df['market_cap_rank'] <= top_n_market_cap]
+            df = df.drop('market_cap_rank', axis=1)
+        else:
+            # Use absolute threshold
+            df = df[df['market_cap'] >= min_market_cap]
     
     return df
 
@@ -409,7 +417,7 @@ def run_backtest(data, strategy='contrarian', dw_window=30, dw_method='raw_retur
                 weighting_method='equal_weight', initial_capital=10000,
                 leverage=1.0, long_allocation=0.5, short_allocation=0.5,
                 min_volume=5_000_000, min_market_cap=50_000_000,
-                start_date=None, end_date=None):
+                top_n_market_cap=None, start_date=None, end_date=None):
     """
     Run the Durbin-Watson factor backtest.
     
@@ -472,7 +480,11 @@ def run_backtest(data, strategy='contrarian', dw_window=30, dw_method='raw_retur
     print("\n" + "-" * 80)
     print("Step 3: Filtering universe...")
     print(f"  Coins before filtering: {dw_data['symbol'].nunique()}")
-    dw_data = filter_universe(dw_data, min_volume=min_volume, min_market_cap=min_market_cap)
+    if top_n_market_cap:
+        print(f"  Filter: Top {top_n_market_cap} by market cap")
+    else:
+        print(f"  Filter: Market cap >= ${min_market_cap:,.0f}")
+    dw_data = filter_universe(dw_data, min_volume=min_volume, min_market_cap=min_market_cap, top_n_market_cap=top_n_market_cap)
     print(f"  Coins after filtering: {dw_data['symbol'].nunique()}")
     
     # Step 4: Filter by date range
@@ -882,6 +894,8 @@ def main():
                        help='Minimum 30-day average volume in USD')
     parser.add_argument('--min-market-cap', type=float, default=50_000_000,
                        help='Minimum market cap in USD')
+    parser.add_argument('--top-n-market-cap', type=int, default=None,
+                       help='Select top N coins by market cap (overrides min-market-cap)')
     
     # Date range
     parser.add_argument('--start-date', type=str, default=None,
@@ -920,6 +934,7 @@ def main():
         short_allocation=args.short_allocation,
         min_volume=args.min_volume,
         min_market_cap=args.min_market_cap,
+        top_n_market_cap=args.top_n_market_cap,
         start_date=args.start_date,
         end_date=args.end_date
     )
