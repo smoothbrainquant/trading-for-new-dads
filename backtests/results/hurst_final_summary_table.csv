@@ -1,0 +1,16 @@
+Metric,Value
+Period,2021-01-01 to 2025-10-19
+Total Days,"1,752 days"
+Unique Coins,87 coins
+Observations,"57,566 coin-days"
+,
+High HE Ann. Return,+39.8% (coin-level)
+Low HE Ann. Return,+2.5% (coin-level)
+HE Spread,+37.3 percentage points
+,
+Long High HE,+18.6% annualized ✅
+Short Low HE,-18.2% annualized ❌
+Long/Short 50/50,-1.5% annualized ⚠️
+,
+L/S vs Long-Only,L/S underperforms by 20.1pp
+Conclusion,Long High HE only (no short)
