@@ -1,0 +1,17 @@
+,value
+initial_capital,10000.0
+final_value,15604.310889909548
+total_return,0.5604310889909547
+annualized_return,0.5298353923606827
+annualized_volatility,0.4787300829287511
+sharpe_ratio,1.1067518237401797
+sortino_ratio,1.5691086681306945
+max_drawdown,-0.29228528200442166
+calmar_ratio,1.8127337398831713
+win_rate,0.5549738219895288
+trading_days,382.0
+avg_majors_allocation,0.500523560209424
+avg_small_caps_allocation,0.49947643979057593
+days_low_spread,73.0
+days_medium_spread,242.0
+days_high_spread,67.0

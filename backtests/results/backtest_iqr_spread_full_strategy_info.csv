@@ -1,0 +1,2 @@
+strategy,lookback_days,rebalance_days,iqr_history_window,majors_count,small_caps_range,low_spread_threshold,high_spread_threshold,allocation_method,basket_weighting,initial_capital
+dynamic_rotation,30,7,180,10,26-50,20,80,fixed,equal_weight,10000
