@@ -2,6 +2,17 @@
 
 A comprehensive cryptocurrency trading system with data collection, signal generation, backtesting, and execution capabilities.
 
+## 🚀 Repository Robustness
+
+This repository includes a comprehensive robustness enhancement plan with working infrastructure:
+- **Custom exception hierarchy** - 12+ specific exception types
+- **Input validators** - Data, signal, and risk validation
+- **Retry logic** - Automatic retry with exponential backoff
+- **Development tools** - Pre-commit hooks, linting, formatting
+- **Testing infrastructure** - Expanding test coverage
+
+**📖 [See Robustness Documentation](docs/robustness/)** | **⚡ [Quick Start](ROBUSTNESS_QUICKSTART.md)**
+
 ## Repository Structure
 
 The repository is organized into the following main directories:
