@@ -1,0 +1,6 @@
+rebalance_days,sharpe_ratio,annualized_return,annualized_volatility,max_drawdown,total_return,win_rate,num_days,calmar_ratio,strategy
+1,,,,,,,,,beta_factor
+3,,,,,,,,,beta_factor
+7,,,,,,,,,beta_factor
+14,,,,,,,,,beta_factor
+30,,,,,,,,,beta_factor

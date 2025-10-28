@@ -1,0 +1,2 @@
+Strategy,Current Default (days),Default Sharpe,Optimal Rebalance (days),Optimal Sharpe,Optimal Return,Optimal Max DD,Optimal Calmar,Sharpe Improvement
+carry_factor,7,0.761,1,0.792,27.77%,-38.09%,0.729,4.1%
