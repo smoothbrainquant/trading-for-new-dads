@@ -220,70 +220,30 @@ def update_market_data():
         return None
 
 
-def check_oi_data_freshness():
+def check_and_refresh_oi_data_if_needed():
     """
-    Check the freshness of OI data for trading signals.
+    Check OI data freshness and automatically refresh if stale.
     
-    This function checks if OI data is from today and warns if it's stale.
-    Critical for OI-based strategies.
+    Triggers automatic download if:
+    - OI data is 1+ days behind current date
+    - OI data file is >8 hours old
     
     Returns:
-        dict: OI data status information
+        dict: OI data status information after check/refresh
     """
-    import os
-    from glob import glob
-    from datetime import datetime
-    import pandas as pd
-    
-    print("\n" + "="*80)
-    print("CHECKING OI DATA FRESHNESS")
-    print("="*80)
-    
     try:
-        # Find OI data file
-        workspace_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        oi_data_dir = os.path.join(workspace_root, 'data', 'raw')
-        pattern = os.path.join(oi_data_dir, 'historical_open_interest_all_perps_since2020_*.csv')
-        oi_files = sorted(glob(pattern), reverse=True)
+        from data.scripts.refresh_oi_data import check_and_refresh_oi_data
         
-        if not oi_files:
-            print("⚠️  No OI data file found")
-            print("   OI-based strategies will not work")
-            return {'status': 'missing', 'days_behind': None}
+        # Check and auto-refresh if needed
+        result = check_and_refresh_oi_data(force=False, start_year=2020)
         
-        oi_file = oi_files[0]
-        print(f"OI data file: {os.path.basename(oi_file)}")
+        return result
         
-        # Read and check dates
-        df = pd.read_csv(oi_file, usecols=['date'], nrows=100000)  # Sample for speed
-        df['date'] = pd.to_datetime(df['date'])
-        max_date = df['date'].max()
-        today = pd.Timestamp(datetime.now().date())
-        days_behind = (today - max_date).days
-        
-        print(f"Latest OI data: {max_date.date()}")
-        print(f"Today: {today.date()}")
-        
-        if days_behind == 0:
-            print("✓ OI data is CURRENT (same day)")
-            return {'status': 'current', 'days_behind': 0, 'latest_date': max_date.date()}
-        elif days_behind == 1:
-            print("⚠️  OI data is from YESTERDAY")
-            print("   Signals will be based on yesterday's data")
-            print("   Recommendation: Refresh OI data for today")
-            return {'status': 'yesterday', 'days_behind': 1, 'latest_date': max_date.date()}
-        elif days_behind > 1:
-            print(f"🔴 WARNING: OI data is {days_behind} DAYS OLD")
-            print(f"   Signals are significantly stale")
-            print(f"   STRONGLY RECOMMEND: Refresh OI data before trading")
-            return {'status': 'stale', 'days_behind': days_behind, 'latest_date': max_date.date()}
-        else:
-            print(f"⚠️  WARNING: OI data has FUTURE dates (data quality issue)")
-            return {'status': 'future', 'days_behind': days_behind, 'latest_date': max_date.date()}
-            
     except Exception as e:
-        print(f"⚠️  Error checking OI data: {e}")
-        return {'status': 'error', 'error': str(e)}
+        print(f"\n⚠️  Error in OI data check/refresh: {e}")
+        import traceback
+        traceback.print_exc()
+        return {'status': 'error', 'error': str(e), 'refreshed': False}
 
 
 def check_cache_freshness():
@@ -877,18 +837,32 @@ def main():
     print("\n[Pre-flight checks]")
     update_market_data()
     
-    # Check OI data freshness if OI strategy is being used
+    # Check and auto-refresh OI data if OI strategy is being used
     if blend_weights and 'oi_divergence' in blend_weights and blend_weights.get('oi_divergence', 0) > 0:
-        oi_status = check_oi_data_freshness()
-        # Issue strong warning if data is stale and strategy has significant weight
-        if oi_status.get('status') in ['stale', 'yesterday'] and blend_weights.get('oi_divergence', 0) > 0.1:
+        print("\n[OI Data Check] OI Divergence strategy active - checking data freshness...")
+        oi_result = check_and_refresh_oi_data_if_needed()
+        
+        # Check result
+        if oi_result.get('refreshed'):
+            print("\n" + "✓"*80)
+            print("✓ OI DATA AUTOMATICALLY REFRESHED")
+            print(f"✓ Fresh data downloaded and ready for trading")
+            print("✓"*80)
+        elif oi_result.get('status') == 'current':
+            print("\n✓ OI data is current - no refresh needed")
+        elif oi_result.get('status') in ['refresh_failed', 'error']:
+            # Refresh failed - issue strong warning
             print("\n" + "!"*80)
-            print("⚠️  TRADING ALERT: OI Divergence strategy is using stale data")
+            print("⚠️  CRITICAL: OI DATA REFRESH FAILED")
             print(f"   Strategy weight: {blend_weights.get('oi_divergence', 0)*100:.1f}%")
-            print(f"   Data age: {oi_status.get('days_behind', 'unknown')} day(s) behind")
-            print("   Impact: Signals may not reflect current market conditions")
-            print("   Recommendation: Refresh OI data before executing trades")
+            print("   Impact: Will use existing data (potentially stale)")
+            print("   Recommendation: Check COINALYZE_API credentials and network")
+            if oi_result.get('error'):
+                print(f"   Error: {oi_result.get('error')}")
             print("!"*80)
+        else:
+            # Unknown status - warn but continue
+            print(f"\n⚠️  Warning: Unexpected OI data status: {oi_result.get('status')}")
     
     check_cache_freshness()
     
