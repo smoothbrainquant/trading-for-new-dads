@@ -877,25 +877,25 @@ def main():
     parser.add_argument(
         '--data-file',
         type=str,
-        default='data/raw/top10_markets_500d_daily_data.csv',
+        default='data/raw/combined_coinbase_coinmarketcap_daily.csv',
         help='Path to historical OHLCV data CSV file'
     )
     parser.add_argument(
         '--marketcap-file',
         type=str,
-        default='data/raw/coinmarketcap_historical_20250105.csv',
+        default='data/raw/coinmarketcap_historical_all_snapshots.csv',
         help='Path to market cap data CSV file'
     )
     parser.add_argument(
         '--funding-rates-file',
         type=str,
-        default='data/raw/historical_funding_rates_top100_20251025_124832.csv',
-        help='Path to funding rates data CSV file'
+        default='data/raw/historical_funding_rates_top100_ALL_HISTORY_20251028_002456.csv',
+        help='Path to funding rates data CSV file (top 100 coins, 2020-present)'
     )
     parser.add_argument(
         '--oi-data-file',
         type=str,
-        default='data/raw/historical_open_interest_all_perps_since2020_20251026_115907.csv',
+        default='data/raw/historical_open_interest_all_perps_since2020_20251027_042634.csv',
         help='Path to open interest data CSV file'
     )
     parser.add_argument(
@@ -907,7 +907,7 @@ def main():
     parser.add_argument(
         '--start-date',
         type=str,
-        default=None,
+        default='2023-01-01',
         help='Start date for backtest (YYYY-MM-DD)'
     )
     parser.add_argument(
@@ -994,7 +994,7 @@ def main():
     parser.add_argument(
         '--kurtosis-rebalance-days',
         type=int,
-        default=14,
+        default=1,
         help='Kurtosis rebalance frequency in days'
     )
     parser.add_argument(

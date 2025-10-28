@@ -275,7 +275,7 @@ def backtest(
     strategy='mean_reversion',
     kurtosis_window=30,
     volatility_window=30,
-    rebalance_days=7,
+    rebalance_days=1,
     long_percentile=20,
     short_percentile=80,
     max_positions=10,
@@ -683,7 +683,7 @@ def main():
                        help='Window for kurtosis calculation in days')
     parser.add_argument('--volatility-window', type=int, default=30,
                        help='Window for volatility calculation in days')
-    parser.add_argument('--rebalance-days', type=int, default=7,
+    parser.add_argument('--rebalance-days', type=int, default=1,
                        help='Rebalance every N days')
     parser.add_argument('--long-percentile', type=float, default=20,
                        help='Percentile threshold for long positions')
