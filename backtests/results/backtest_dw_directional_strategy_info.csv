@@ -1,0 +1,2 @@
+strategy,dw_window,direction_window,rebalance_days,weighting_method,initial_capital,leverage,long_allocation,short_allocation,avg_long_positions,avg_short_positions
+dw_directional,30,5,7,equal_weight,10000,1.0,0.5,0.5,0.7916666666666666,0.9583333333333334
