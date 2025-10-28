@@ -9,7 +9,7 @@ This script backtests a skew factor strategy that:
    - Short: Top quintile (20% with most positive skewness)
 4. Equal weight within each quintile
 5. Dollar neutral (100% long, 100% short)
-6. Daily rebalancing
+6. Configurable rebalancing frequency (default: 1 day)
 
 Hypothesis: Skewness patterns (extreme negative or positive return distributions)
 may predict future returns through mean reversion or risk premium effects.
@@ -186,7 +186,8 @@ def backtest_strategy(
     start_date=None,
     end_date=None,
     initial_capital=10000,
-    strategy_type='long_short'
+    strategy_type='long_short',
+    rebalance_days=1
 ):
     """
     Run backtest for the skew factor strategy.
@@ -197,6 +198,7 @@ def backtest_strategy(
         end_date (str): End date for backtest (format: 'YYYY-MM-DD')
         initial_capital (float): Initial portfolio capital
         strategy_type (str): 'long_short', 'short_only', or 'long_only'
+        rebalance_days (int): Rebalance frequency in days (default: 1 for daily)
         
     Returns:
         dict: Dictionary containing backtest results
@@ -220,6 +222,7 @@ def backtest_strategy(
     print(f"  Strategy Type: {strategy_type}")
     print(f"  Period: {all_dates[0].date()} to {all_dates[-1].date()}")
     print(f"  Trading days: {len(all_dates)}")
+    print(f"  Rebalance frequency: Every {rebalance_days} day(s)")
     print(f"  Initial capital: ${initial_capital:,.2f}")
     print("=" * 80)
     
@@ -227,13 +230,22 @@ def backtest_strategy(
     portfolio_history = []
     current_capital = initial_capital
     previous_weights = {}
+    last_rebalance_idx = -rebalance_days  # Force rebalance on first day
     
     for i, current_date in enumerate(all_dates):
         # Get today's data
         today_data = df[df['date'] == current_date]
         
-        # Calculate portfolio weights
-        current_weights = calculate_portfolio_weights(df, current_date)
+        # Check if it's a rebalance day
+        is_rebalance_day = (i - last_rebalance_idx) >= rebalance_days
+        
+        # Calculate portfolio weights (only on rebalance days)
+        if is_rebalance_day:
+            current_weights = calculate_portfolio_weights(df, current_date)
+            last_rebalance_idx = i
+        else:
+            # Keep previous weights if not a rebalance day
+            current_weights = previous_weights.copy()
         
         # Calculate portfolio return using forward returns
         portfolio_return = 0.0
@@ -653,6 +665,12 @@ def main():
         choices=['long_short', 'short_only', 'long_only'],
         help='Strategy type: long_short, short_only, or long_only'
     )
+    parser.add_argument(
+        '--rebalance-days',
+        type=int,
+        default=1,
+        help='Rebalance frequency in days (default: 1 for daily)'
+    )
     
     args = parser.parse_args()
     
@@ -663,6 +681,7 @@ def main():
     print(f"  Strategy Type: {args.strategy_type}")
     print(f"  Data file: {args.data_file}")
     print(f"  Lookback window: {args.lookback_window} days")
+    print(f"  Rebalance frequency: {args.rebalance_days} day(s)")
     print(f"  Min volume: ${args.min_volume:,.0f}")
     print(f"  Min market cap: ${args.min_market_cap:,.0f}")
     print(f"  Quintiles: {args.num_quintiles}")
@@ -710,7 +729,8 @@ def main():
         start_date=args.start_date,
         end_date=args.end_date,
         initial_capital=args.initial_capital,
-        strategy_type=args.strategy_type
+        strategy_type=args.strategy_type,
+        rebalance_days=args.rebalance_days
     )
     
     # Print results
