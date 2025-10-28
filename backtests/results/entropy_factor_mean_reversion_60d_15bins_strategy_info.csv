@@ -1,0 +1,2 @@
+strategy,entropy_window,entropy_bins,long_percentile,short_percentile,weighting
+mean_reversion,60,15,20,80,risk_parity
