@@ -1,0 +1,2 @@
+strategy,adf_window,regression,volatility_window,rebalance_days,num_quintiles,long_percentile,short_percentile,weighting_method,initial_capital,leverage,long_allocation,short_allocation,avg_adf_long,avg_adf_short,long_symbols,short_symbols
+long_stationary,60,ct,30,7,5,20,80,equal_weight,10000,1.0,0.5,0.5,-3.257999655883137,,"ADA/USD,ALGO/USD,ATH/USD,BIO/USD,BONK/USD,CRO/USD,DOGE/USD,ENA/USD,EOS/USD,FARTCOIN/USD,FLOKI/USD,GIGA/USD,GRT/USD,MOG/USD,OXT/USD,PENGU/USD,PEPE/USD,PNUT/USD,POPCAT/USD,PYTH/USD,ROSE/USD,RSR/USD,TURBO/USD,USDT/USD,W/USD,WIF/USD,XLM/USD,ZRX/USD",
