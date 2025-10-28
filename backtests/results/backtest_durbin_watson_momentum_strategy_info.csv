@@ -1,0 +1,2 @@
+strategy,dw_window,dw_method,volatility_window,rebalance_days,num_quintiles,long_percentile,short_percentile,weighting_method,initial_capital,leverage,long_allocation,short_allocation,avg_long_dw,avg_short_dw,long_symbols,short_symbols
+momentum_continuation,30,raw_returns,30,7,5,80,20,equal_weight,10000,1.0,0.5,0.5,1.631475722939804,2.2373852329091455,"ALGO/USD,CRO/USD,GRT/USD,OXT/USD,T/USD,XLM/USD,ZRX/USD","ALGO/USD,CRO/USD,GRT/USD,LINK/USD,OXT/USD,T/USD,VTHO/USD,XLM/USD,ZRX/USD"
