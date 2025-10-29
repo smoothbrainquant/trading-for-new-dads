@@ -22,9 +22,9 @@ logger = logging.getLogger(__name__)
 
 def find_cmc_file() -> str:
     candidates = [
-        'data/raw/coinmarketcap_historical_all_snapshots.csv',
-        '/workspace/data/raw/coinmarketcap_historical_all_snapshots.csv',
-        'coinmarketcap_historical_all_snapshots.csv',
+        "data/raw/coinmarketcap_historical_all_snapshots.csv",
+        "/workspace/data/raw/coinmarketcap_historical_all_snapshots.csv",
+        "coinmarketcap_historical_all_snapshots.csv",
     ]
     for path in candidates:
         if Path(path).exists():
@@ -39,14 +39,14 @@ def get_top_50_coins() -> List[Dict]:
     logger.info(f"Loading CoinMarketCap data from {cmc_path}...")
 
     df = pd.read_csv(cmc_path)
-    latest_date = df['snapshot_date'].max()
+    latest_date = df["snapshot_date"].max()
     logger.info(f"Latest snapshot: {latest_date}")
 
-    latest = df[df['snapshot_date'] == latest_date].copy()
-    latest = latest.sort_values('Rank').head(50)
+    latest = df[df["snapshot_date"] == latest_date].copy()
+    latest = latest.sort_values("Rank").head(50)
     logger.info(f"Found {len(latest)} coins in top 50")
 
-    return latest[['Rank', 'Name', 'Symbol', 'Market Cap']].to_dict('records')
+    return latest[["Rank", "Name", "Symbol", "Market Cap"]].to_dict("records")
 
 
 def find_perpetual_symbols(client: CoinalyzeClient, coin_symbols: List[str]) -> Dict[str, str]:
@@ -55,27 +55,29 @@ def find_perpetual_symbols(client: CoinalyzeClient, coin_symbols: List[str]) -> 
         logger.error("Failed to fetch futures markets")
         return {}
 
-    preferred_exchanges = ['A', '6', '3', '0', '2']
+    preferred_exchanges = ["A", "6", "3", "0", "2"]
     symbol_map: Dict[str, str] = {}
 
     for coin_symbol in coin_symbols:
         matches = [
-            f for f in futures
+            f
+            for f in futures
             if (
-                f.get('base_asset') == coin_symbol
-                and f.get('is_perpetual')
-                and f.get('quote_asset') in ['USDT', 'USD', 'USDC']
+                f.get("base_asset") == coin_symbol
+                and f.get("is_perpetual")
+                and f.get("quote_asset") in ["USDT", "USD", "USDC"]
             )
         ]
         if matches:
             matches_sorted = sorted(
                 matches,
                 key=lambda x: (
-                    preferred_exchanges.index(x.get('exchange'))
-                    if x.get('exchange') in preferred_exchanges else 999
-                )
+                    preferred_exchanges.index(x.get("exchange"))
+                    if x.get("exchange") in preferred_exchanges
+                    else 999
+                ),
             )
-            symbol_map[coin_symbol] = matches_sorted[0]['symbol']
+            symbol_map[coin_symbol] = matches_sorted[0]["symbol"]
             logger.info(f"  {coin_symbol} -> {symbol_map[coin_symbol]}")
         else:
             logger.warning(f"  {coin_symbol} -> No perpetual found")
@@ -102,25 +104,27 @@ def fetch_max_history_for_symbol(
     try:
         result = client.get_open_interest_history(
             symbols=symbol,
-            interval='daily',
+            interval="daily",
             from_ts=start_ts,
             to_ts=end_ts,
             convert_to_usd=True,
         )
         if result and len(result) > 0:
-            history = result[0].get('history', [])
+            history = result[0].get("history", [])
             if history:
                 logger.info(f"  ✓ {symbol}: {len(history)} days of data")
                 for point in history:
-                    rows.append({
-                        'symbol': symbol,
-                        'timestamp': point['t'],
-                        'date': _dt.fromtimestamp(point['t']).strftime('%Y-%m-%d'),
-                        'oi_open': point.get('o'),
-                        'oi_high': point.get('h'),
-                        'oi_low': point.get('l'),
-                        'oi_close': point.get('c'),
-                    })
+                    rows.append(
+                        {
+                            "symbol": symbol,
+                            "timestamp": point["t"],
+                            "date": _dt.fromtimestamp(point["t"]).strftime("%Y-%m-%d"),
+                            "oi_open": point.get("o"),
+                            "oi_high": point.get("h"),
+                            "oi_low": point.get("l"),
+                            "oi_close": point.get("c"),
+                        }
+                    )
             else:
                 logger.warning(f"  ⚠ {symbol}: No data returned")
         else:
@@ -162,7 +166,9 @@ def fetch_all_open_interest_max_history(
                     retry_count += 1
                     if retry_count < max_retries:
                         wait = 10 * retry_count
-                        logger.warning(f"  Retrying in {wait}s (attempt {retry_count+1}/{max_retries})...")
+                        logger.warning(
+                            f"  Retrying in {wait}s (attempt {retry_count+1}/{max_retries})..."
+                        )
                         time.sleep(wait)
             except Exception as e:
                 retry_count += 1
@@ -180,10 +186,10 @@ def fetch_all_open_interest_max_history(
 
 
 def resolve_output_dir() -> Path:
-    for c in [Path('data/raw'), Path('/workspace/data/raw'), Path('.')]:
+    for c in [Path("data/raw"), Path("/workspace/data/raw"), Path(".")]:
         if c.exists() and c.is_dir():
             return c
-    return Path('.')
+    return Path(".")
 
 
 def main():
@@ -194,7 +200,7 @@ def main():
     print("Daily interval data is retained indefinitely by Coinalyze")
     print("=" * 80 + "\n")
 
-    if not os.environ.get('COINALYZE_API'):
+    if not os.environ.get("COINALYZE_API"):
         logger.error("COINALYZE_API environment variable not set")
         return
 
@@ -208,7 +214,7 @@ def main():
     if len(top_50) > 10:
         print(f"  ... and {len(top_50) - 10} more")
 
-    coin_symbols = [coin['Symbol'] for coin in top_50]
+    coin_symbols = [coin["Symbol"] for coin in top_50]
     symbol_map = find_perpetual_symbols(client, coin_symbols)
 
     print(f"\n{len(symbol_map)}/{len(coin_symbols)} coins have perpetual contracts available")
@@ -237,51 +243,74 @@ def main():
         return
 
     reverse_map = {v: k for k, v in symbol_map.items()}
-    coin_info_map = {coin['Symbol']: coin for coin in top_50}
+    coin_info_map = {coin["Symbol"]: coin for coin in top_50}
 
-    oi_df['coin_symbol'] = oi_df['symbol'].apply(lambda x: reverse_map.get(x, ''))
-    oi_df['coin_name'] = oi_df['coin_symbol'].apply(lambda x: coin_info_map.get(x, {}).get('Name', ''))
-    oi_df['rank'] = oi_df['coin_symbol'].apply(lambda x: coin_info_map.get(x, {}).get('Rank', 999))
+    oi_df["coin_symbol"] = oi_df["symbol"].apply(lambda x: reverse_map.get(x, ""))
+    oi_df["coin_name"] = oi_df["coin_symbol"].apply(
+        lambda x: coin_info_map.get(x, {}).get("Name", "")
+    )
+    oi_df["rank"] = oi_df["coin_symbol"].apply(lambda x: coin_info_map.get(x, {}).get("Rank", 999))
 
-    oi_df = oi_df[[
-        'rank', 'coin_name', 'coin_symbol', 'symbol',
-        'date', 'timestamp', 'oi_open', 'oi_high', 'oi_low', 'oi_close'
-    ]].sort_values(['rank', 'date']).reset_index(drop=True)
+    oi_df = (
+        oi_df[
+            [
+                "rank",
+                "coin_name",
+                "coin_symbol",
+                "symbol",
+                "date",
+                "timestamp",
+                "oi_open",
+                "oi_high",
+                "oi_low",
+                "oi_close",
+            ]
+        ]
+        .sort_values(["rank", "date"])
+        .reset_index(drop=True)
+    )
 
     out_dir = resolve_output_dir()
-    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    detailed_file = out_dir / f'historical_open_interest_top50_ALL_HISTORY_{ts}.csv'
+    detailed_file = out_dir / f"historical_open_interest_top50_ALL_HISTORY_{ts}.csv"
     oi_df.to_csv(detailed_file, index=False)
 
     # Availability
-    availability = oi_df.groupby(['rank', 'coin_name', 'coin_symbol']).agg({'date': ['count', 'min', 'max']})
-    availability.columns = ['Days', 'First Date', 'Last Date']
+    availability = oi_df.groupby(["rank", "coin_name", "coin_symbol"]).agg(
+        {"date": ["count", "min", "max"]}
+    )
+    availability.columns = ["Days", "First Date", "Last Date"]
     availability = availability.reset_index()
-    availability['Years'] = (
-        (pd.to_datetime(availability['Last Date']) - pd.to_datetime(availability['First Date'])).dt.days / 365.25
+    availability["Years"] = (
+        (
+            pd.to_datetime(availability["Last Date"]) - pd.to_datetime(availability["First Date"])
+        ).dt.days
+        / 365.25
     ).round(2)
 
-    availability_file = out_dir / f'open_interest_data_availability_{ts}.csv'
+    availability_file = out_dir / f"open_interest_data_availability_{ts}.csv"
     availability.to_csv(availability_file, index=False)
 
     # Summary
     summary = (
-        oi_df.groupby(['rank', 'coin_name', 'coin_symbol'])
-        .agg({'oi_close': ['count', 'mean', 'std', 'min', 'max']})
+        oi_df.groupby(["rank", "coin_name", "coin_symbol"])
+        .agg({"oi_close": ["count", "mean", "std", "min", "max"]})
         .round(4)
     )
-    summary.columns = ['_'.join(col).strip() for col in summary.columns.values]
+    summary.columns = ["_".join(col).strip() for col in summary.columns.values]
     summary = summary.reset_index()
-    summary = summary.rename(columns={
-        'oi_close_count': 'Data Points',
-        'oi_close_mean': 'Avg OI USD',
-        'oi_close_std': 'Std OI USD',
-        'oi_close_min': 'Min OI USD',
-        'oi_close_max': 'Max OI USD',
-    })
+    summary = summary.rename(
+        columns={
+            "oi_close_count": "Data Points",
+            "oi_close_mean": "Avg OI USD",
+            "oi_close_std": "Std OI USD",
+            "oi_close_min": "Min OI USD",
+            "oi_close_max": "Max OI USD",
+        }
+    )
 
-    summary_file = out_dir / f'historical_open_interest_top50_ALL_HISTORY_summary_{ts}.csv'
+    summary_file = out_dir / f"historical_open_interest_top50_ALL_HISTORY_summary_{ts}.csv"
     summary.to_csv(summary_file, index=False)
 
     print("\n" + "=" * 80)

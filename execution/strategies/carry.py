@@ -15,10 +15,10 @@ def strategy_carry(
 ) -> Dict[str, float]:
     """
     Carry strategy using AGGREGATED market-wide funding rates from Coinalyze.
-    
+
     The signal comes from Coinalyze's aggregated funding rates across all exchanges,
     which we then trade on the specified exchange (e.g., Hyperliquid).
-    
+
     We are trading the funding rate signal (market sentiment), not the actual
     funding payments themselves.
     """
@@ -29,18 +29,19 @@ def strategy_carry(
             fetch_coinmarketcap_data,
             map_symbols_to_trading_pairs,
         )
+
         df_mc = fetch_coinmarketcap_data(limit=200)
         if df_mc is not None and not df_mc.empty:
-            df_mc_mapped = map_symbols_to_trading_pairs(df_mc, trading_suffix='/USDC:USDC')
+            df_mc_mapped = map_symbols_to_trading_pairs(df_mc, trading_suffix="/USDC:USDC")
             # Get trading symbols that are in our universe
-            valid_mc_symbols = set(df_mc_mapped['trading_symbol'].dropna().tolist())
+            valid_mc_symbols = set(df_mc_mapped["trading_symbol"].dropna().tolist())
             filtered_universe = [s for s in universe_symbols if s in valid_mc_symbols]
-            
+
             # Sort by market cap and take top 150
-            df_mc_filtered = df_mc_mapped[df_mc_mapped['trading_symbol'].isin(filtered_universe)]
-            df_mc_filtered = df_mc_filtered.sort_values('market_cap', ascending=False).head(150)
-            top_150_symbols = df_mc_filtered['trading_symbol'].tolist()
-            
+            df_mc_filtered = df_mc_mapped[df_mc_mapped["trading_symbol"].isin(filtered_universe)]
+            df_mc_filtered = df_mc_filtered.sort_values("market_cap", ascending=False).head(150)
+            top_150_symbols = df_mc_filtered["trading_symbol"].tolist()
+
             if top_150_symbols:
                 print(f"  Filtered to {len(top_150_symbols)} symbols with top market caps")
                 universe_symbols = top_150_symbols
@@ -50,7 +51,7 @@ def strategy_carry(
             print(f"  Warning: Could not fetch market cap data, using full universe")
     except Exception as e:
         print(f"  Warning: Market cap filtering failed ({e}), using full universe")
-    
+
     df_rates = None
     # Use Coinalyze to get aggregated market-wide funding rates using .A suffix (with caching)
     try:
@@ -58,7 +59,9 @@ def strategy_carry(
 
         num_symbols = len(universe_symbols)
         estimated_time = (num_symbols / 20 + 1) * 1.5  # chunks of 20, 1.5s per call
-        print(f"  Fetching market-wide funding rates from Coinalyze (using .A aggregated suffix)...")
+        print(
+            f"  Fetching market-wide funding rates from Coinalyze (using .A aggregated suffix)..."
+        )
         print(f"  Format: [SYMBOL]USDT_PERP.A (e.g., BTCUSDT_PERP.A)")
         print(f"  Processing {num_symbols} symbols - checking cache first...")
         print(f"  (If cache miss: Rate limited to 40 calls/min, ~{estimated_time:.0f}s total)")
@@ -70,12 +73,12 @@ def strategy_carry(
             print(f"  Got funding rates for {len(df_rates)} symbols from aggregated .A data")
             # Normalize expected columns
             df_rates = df_rates.copy()
-            if 'base' not in df_rates.columns:
-                if 'symbol' in df_rates.columns:
-                    df_rates['base'] = df_rates['symbol'].astype(str).str.split('/').str[0]
+            if "base" not in df_rates.columns:
+                if "symbol" in df_rates.columns:
+                    df_rates["base"] = df_rates["symbol"].astype(str).str.split("/").str[0]
             # Coinalyze current helper uses 'funding_rate' already; ensure presence
-            if 'funding_rate' not in df_rates.columns and 'fundingRate' in df_rates.columns:
-                df_rates = df_rates.rename(columns={'fundingRate': 'funding_rate'})
+            if "funding_rate" not in df_rates.columns and "fundingRate" in df_rates.columns:
+                df_rates = df_rates.rename(columns={"fundingRate": "funding_rate"})
     except Exception as e:
         print(f"  ⚠️  CARRY STRATEGY: Coinalyze aggregated funding fetch failed ({e})")
         print(f"      Falling back to exchange-specific Coinalyze API...")
@@ -85,17 +88,21 @@ def strategy_carry(
     if df_rates is None or df_rates.empty:
         try:
             from execution.get_carry import fetch_coinalyze_funding_rates_for_universe
+
             # Map exchange_id to Coinalyze exchange code
             exchange_code_map = {
-                'hyperliquid': 'H',
-                'bybit': 'D',
-                'okx': 'K',
+                "hyperliquid": "H",
+                "bybit": "D",
+                "okx": "K",
             }
-            exchange_code = exchange_code_map.get(exchange_id.lower(), 'H')  # Default to Hyperliquid
-            print(f"  Fetching funding rates for {exchange_id} (code: {exchange_code}) via Coinalyze...")
+            exchange_code = exchange_code_map.get(
+                exchange_id.lower(), "H"
+            )  # Default to Hyperliquid
+            print(
+                f"  Fetching funding rates for {exchange_id} (code: {exchange_code}) via Coinalyze..."
+            )
             df_rates = fetch_coinalyze_funding_rates_for_universe(
-                universe_symbols=universe_symbols,
-                exchange_code=exchange_code
+                universe_symbols=universe_symbols, exchange_code=exchange_code
             )
         except Exception as e:
             print(f"  ⚠️  Error fetching funding rates from Coinalyze for {exchange_id}: {e}")
@@ -110,26 +117,26 @@ def strategy_carry(
     universe_bases = {get_base_symbol(s): s for s in universe_symbols}
     df_rates = df_rates.copy()
     # 'base' may already exist (from Coinalyze). If not, derive from 'symbol'.
-    if 'base' not in df_rates.columns:
-        if 'symbol' in df_rates.columns:
-            df_rates['base'] = df_rates['symbol'].astype(str).str.split('/').str[0]
-    df_rates = df_rates[df_rates['base'].isin(universe_bases.keys())]
+    if "base" not in df_rates.columns:
+        if "symbol" in df_rates.columns:
+            df_rates["base"] = df_rates["symbol"].astype(str).str.split("/").str[0]
+    df_rates = df_rates[df_rates["base"].isin(universe_bases.keys())]
     if df_rates.empty:
         print("  No funding symbols matched our universe for carry.")
         return {}
 
     # Accept either 'funding_rate' or 'funding_rate_pct' (convert pct→rate if needed)
-    if 'funding_rate' not in df_rates.columns and 'funding_rate_pct' in df_rates.columns:
+    if "funding_rate" not in df_rates.columns and "funding_rate_pct" in df_rates.columns:
         df_rates = df_rates.copy()
-        df_rates['funding_rate'] = df_rates['funding_rate_pct'] / 100.0
-    df_rates = df_rates.dropna(subset=['funding_rate'])
+        df_rates["funding_rate"] = df_rates["funding_rate_pct"] / 100.0
+    df_rates = df_rates.dropna(subset=["funding_rate"])
 
     # Select bottom N (most negative) for LONG carry and top N (most positive) for SHORT carry
-    df_sorted_asc = df_rates.sort_values('funding_rate', ascending=True)
-    df_sorted_desc = df_rates.sort_values('funding_rate', ascending=False)
+    df_sorted_asc = df_rates.sort_values("funding_rate", ascending=True)
+    df_sorted_desc = df_rates.sort_values("funding_rate", ascending=False)
 
-    selected_long_bases = df_sorted_asc.head(max(0, int(bottom_n)))['base'].tolist()
-    selected_short_bases = df_sorted_desc.head(max(0, int(top_n)))['base'].tolist()
+    selected_long_bases = df_sorted_asc.head(max(0, int(bottom_n)))["base"].tolist()
+    selected_short_bases = df_sorted_desc.head(max(0, int(top_n)))["base"].tolist()
 
     long_symbols = [universe_bases[b] for b in selected_long_bases if b in universe_bases]
     short_symbols = [universe_bases[b] for b in selected_short_bases if b in universe_bases]
@@ -141,7 +148,9 @@ def strategy_carry(
         w_long = calc_weights(vola_long) if vola_long else {}
         for symbol, w in w_long.items():
             target_positions[symbol] = target_positions.get(symbol, 0.0) + w * notional
-        print(f"  Allocated ${notional:,.2f} to carry LONGS across {len(w_long)} symbols (bottom {bottom_n} FR)")
+        print(
+            f"  Allocated ${notional:,.2f} to carry LONGS across {len(w_long)} symbols (bottom {bottom_n} FR)"
+        )
     else:
         print("  No carry LONG candidates (negative funding).")
 
@@ -150,7 +159,9 @@ def strategy_carry(
         w_short = calc_weights(vola_short) if vola_short else {}
         for symbol, w in w_short.items():
             target_positions[symbol] = target_positions.get(symbol, 0.0) - w * notional
-        print(f"  Allocated ${notional:,.2f} to carry SHORTS across {len(w_short)} symbols (top {top_n} FR)")
+        print(
+            f"  Allocated ${notional:,.2f} to carry SHORTS across {len(w_short)} symbols (top {top_n} FR)"
+        )
     else:
         print("  No carry SHORT candidates (positive funding).")
 

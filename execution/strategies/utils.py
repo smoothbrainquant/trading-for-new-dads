@@ -13,8 +13,8 @@ def calculate_days_from_200d_high(data: Dict[str, pd.DataFrame]) -> Dict[str, in
     combined_data = []
     for symbol, symbol_df in data.items():
         df_copy = symbol_df.copy()
-        if 'symbol' not in df_copy.columns:
-            df_copy['symbol'] = symbol
+        if "symbol" not in df_copy.columns:
+            df_copy["symbol"] = symbol
         combined_data.append(df_copy)
 
     if not combined_data:
@@ -25,7 +25,7 @@ def calculate_days_from_200d_high(data: Dict[str, pd.DataFrame]) -> Dict[str, in
 
     result: Dict[str, int] = {}
     for _, row in result_df.iterrows():
-        result[row['symbol']] = int(row['days_since_200d_high'])
+        result[row["symbol"]] = int(row["days_since_200d_high"])
 
     return result
 
@@ -34,13 +34,15 @@ def select_instruments_by_days_from_high(data_source, threshold: int) -> pd.Data
     return select_instruments_near_200d_high(data_source, max_days=threshold)
 
 
-def calculate_rolling_30d_volatility(data: Dict[str, pd.DataFrame], selected_symbols: List[str]) -> Dict[str, float]:
+def calculate_rolling_30d_volatility(
+    data: Dict[str, pd.DataFrame], selected_symbols: List[str]
+) -> Dict[str, float]:
     combined_data = []
     for symbol in selected_symbols:
         if symbol in data:
             symbol_df = data[symbol].copy()
-            if 'symbol' not in symbol_df.columns:
-                symbol_df['symbol'] = symbol
+            if "symbol" not in symbol_df.columns:
+                symbol_df["symbol"] = symbol
             combined_data.append(symbol_df)
 
     if not combined_data:
@@ -51,19 +53,19 @@ def calculate_rolling_30d_volatility(data: Dict[str, pd.DataFrame], selected_sym
 
     result: Dict[str, float] = {}
     for symbol in selected_symbols:
-        symbol_data = volatility_df[volatility_df['symbol'] == symbol]
+        symbol_data = volatility_df[volatility_df["symbol"] == symbol]
         if symbol_data.empty:
             continue
-        latest = symbol_data['volatility_30d'].dropna()
+        latest = symbol_data["volatility_30d"].dropna()
         if not latest.empty:
             result[symbol] = float(latest.iloc[-1])
         else:
             # Fallback: estimate simple volatility over available history if <30 days
-            closes = symbol_data['close'].dropna()
+            closes = symbol_data["close"].dropna()
             if len(closes) >= 2:
                 ret = closes.pct_change().dropna()
                 if len(ret) >= 5:  # require at least 5 returns for a rough estimate
-                    result[symbol] = float(ret.std() * (365 ** 0.5))
+                    result[symbol] = float(ret.std() * (365**0.5))
 
     return result
 
@@ -75,15 +77,15 @@ def calc_weights(volatilities: Dict[str, float]) -> Dict[str, float]:
 def get_base_symbol(symbol: str) -> str:
     if not isinstance(symbol, str):
         return symbol
-    return symbol.split('/')[0]
+    return symbol.split("/")[0]
 
 
 def calculate_breakout_signals_from_data(data: Dict[str, pd.DataFrame]) -> Dict[str, int]:
     combined_data = []
     for symbol, symbol_df in data.items():
         df_copy = symbol_df.copy()
-        if 'symbol' not in df_copy.columns:
-            df_copy['symbol'] = symbol
+        if "symbol" not in df_copy.columns:
+            df_copy["symbol"] = symbol
         combined_data.append(df_copy)
 
     if not combined_data:
@@ -94,11 +96,11 @@ def calculate_breakout_signals_from_data(data: Dict[str, pd.DataFrame]) -> Dict[
 
     target_positions: Dict[str, int] = {}
     for _, row in signals_df.iterrows():
-        symbol = row['symbol']
-        position = row['position']
-        if position == 'LONG':
+        symbol = row["symbol"]
+        position = row["position"]
+        if position == "LONG":
             target_positions[symbol] = 1
-        elif position == 'SHORT':
+        elif position == "SHORT":
             target_positions[symbol] = -1
         else:
             target_positions[symbol] = 0

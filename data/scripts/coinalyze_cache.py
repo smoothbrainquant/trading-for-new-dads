@@ -17,151 +17,153 @@ logger = logging.getLogger(__name__)
 
 class CoinalyzeCache:
     """Cache manager for Coinalyze API data"""
-    
+
     def __init__(self, cache_dir: Optional[str] = None, ttl_hours: int = 1):
         """
         Initialize cache manager
-        
+
         Args:
             cache_dir: Directory to store cache files. Defaults to workspace/data/.cache/coinalyze
             ttl_hours: Time-to-live in hours before cache is considered stale (default: 1 hour)
         """
         if cache_dir is None:
             workspace_root = Path(__file__).parent.parent.parent
-            cache_dir = workspace_root / 'data' / '.cache' / 'coinalyze'
-        
+            cache_dir = workspace_root / "data" / ".cache" / "coinalyze"
+
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.ttl_hours = ttl_hours
-        
+
         logger.info(f"Coinalyze cache initialized at: {self.cache_dir}")
         logger.info(f"Cache TTL: {ttl_hours} hours")
-    
-    def _get_cache_path(self, data_type: str, exchange_code: str = 'all') -> Path:
+
+    def _get_cache_path(self, data_type: str, exchange_code: str = "all") -> Path:
         """Get cache file path for a given data type"""
         return self.cache_dir / f"{data_type}_{exchange_code}.json"
-    
+
     def _is_cache_valid(self, cache_path: Path) -> bool:
         """Check if cache file exists and is not stale"""
         if not cache_path.exists():
             return False
-        
+
         # Check file modification time
         mtime = datetime.fromtimestamp(cache_path.stat().st_mtime)
         age = datetime.now() - mtime
-        
+
         if age > timedelta(hours=self.ttl_hours):
             logger.info(f"Cache expired: {cache_path.name} (age: {age})")
             return False
-        
+
         logger.info(f"Cache valid: {cache_path.name} (age: {age})")
         return True
-    
+
     def _is_oi_cache_valid(self, cache_path: Path) -> bool:
         """
         Check if OI cache file exists and is not stale
-        
+
         Special rules for OI data:
         - Force update if date has changed (even if cache <8h old)
         - Otherwise use standard TTL check
-        
+
         This ensures we always have today's data when available.
         """
         if not cache_path.exists():
             return False
-        
+
         # Check file modification time
         mtime = datetime.fromtimestamp(cache_path.stat().st_mtime)
         age = datetime.now() - mtime
         now = datetime.now()
-        
+
         # Check if date has changed (cache is from a previous day)
         if mtime.date() < now.date():
-            logger.info(f"Cache expired: {cache_path.name} - date changed (cached: {mtime.date()}, now: {now.date()})")
+            logger.info(
+                f"Cache expired: {cache_path.name} - date changed (cached: {mtime.date()}, now: {now.date()})"
+            )
             return False
-        
+
         # Standard TTL check
         if age > timedelta(hours=self.ttl_hours):
             logger.info(f"Cache expired: {cache_path.name} (age: {age})")
             return False
-        
+
         logger.info(f"Cache valid: {cache_path.name} (age: {age}, same day)")
         return True
-    
-    def save_funding_rates(self, data: pd.DataFrame, exchange_code: str = 'all'):
+
+    def save_funding_rates(self, data: pd.DataFrame, exchange_code: str = "all"):
         """Save funding rates to cache"""
-        cache_path = self._get_cache_path('funding_rates', exchange_code)
-        
+        cache_path = self._get_cache_path("funding_rates", exchange_code)
+
         cache_data = {
-            'timestamp': datetime.now().isoformat(),
-            'exchange_code': exchange_code,
-            'data': data.to_dict(orient='records')
+            "timestamp": datetime.now().isoformat(),
+            "exchange_code": exchange_code,
+            "data": data.to_dict(orient="records"),
         }
-        
-        with open(cache_path, 'w') as f:
+
+        with open(cache_path, "w") as f:
             json.dump(cache_data, f, indent=2)
-        
+
         logger.info(f"Saved funding rates to cache: {cache_path.name} ({len(data)} records)")
-    
-    def load_funding_rates(self, exchange_code: str = 'all') -> Optional[pd.DataFrame]:
+
+    def load_funding_rates(self, exchange_code: str = "all") -> Optional[pd.DataFrame]:
         """Load funding rates from cache if valid"""
-        cache_path = self._get_cache_path('funding_rates', exchange_code)
-        
+        cache_path = self._get_cache_path("funding_rates", exchange_code)
+
         if not self._is_cache_valid(cache_path):
             return None
-        
+
         try:
-            with open(cache_path, 'r') as f:
+            with open(cache_path, "r") as f:
                 cache_data = json.load(f)
-            
-            df = pd.DataFrame(cache_data['data'])
+
+            df = pd.DataFrame(cache_data["data"])
             logger.info(f"Loaded funding rates from cache: {cache_path.name} ({len(df)} records)")
             return df
         except Exception as e:
             logger.error(f"Error loading cache: {e}")
             return None
-    
+
     def save_oi_history(self, data: pd.DataFrame, exchange_code: str, days: int):
         """Save open interest history to cache"""
         cache_key = f"{exchange_code}_days{days}"
-        cache_path = self._get_cache_path('oi_history', cache_key)
-        
+        cache_path = self._get_cache_path("oi_history", cache_key)
+
         cache_data = {
-            'timestamp': datetime.now().isoformat(),
-            'exchange_code': exchange_code,
-            'days': days,
-            'data': data.to_dict(orient='records')
+            "timestamp": datetime.now().isoformat(),
+            "exchange_code": exchange_code,
+            "days": days,
+            "data": data.to_dict(orient="records"),
         }
-        
-        with open(cache_path, 'w') as f:
+
+        with open(cache_path, "w") as f:
             json.dump(cache_data, f, indent=2)
-        
+
         logger.info(f"Saved OI history to cache: {cache_path.name} ({len(data)} records)")
-    
+
     def load_oi_history(self, exchange_code: str, days: int) -> Optional[pd.DataFrame]:
         """Load open interest history from cache if valid (with date-change detection)"""
         cache_key = f"{exchange_code}_days{days}"
-        cache_path = self._get_cache_path('oi_history', cache_key)
-        
+        cache_path = self._get_cache_path("oi_history", cache_key)
+
         # Use OI-specific cache validation (checks date change + TTL)
         if not self._is_oi_cache_valid(cache_path):
             return None
-        
+
         try:
-            with open(cache_path, 'r') as f:
+            with open(cache_path, "r") as f:
                 cache_data = json.load(f)
-            
-            df = pd.DataFrame(cache_data['data'])
+
+            df = pd.DataFrame(cache_data["data"])
             # Convert date column to datetime if present
-            if 'date' in df.columns:
-                df['date'] = pd.to_datetime(df['date'])
-            
+            if "date" in df.columns:
+                df["date"] = pd.to_datetime(df["date"])
+
             logger.info(f"Loaded OI history from cache: {cache_path.name} ({len(df)} records)")
             return df
         except Exception as e:
             logger.error(f"Error loading cache: {e}")
             return None
-    
+
     def clear_cache(self, data_type: Optional[str] = None):
         """Clear cache files"""
         if data_type:
@@ -169,84 +171,83 @@ class CoinalyzeCache:
             files = list(self.cache_dir.glob(pattern))
         else:
             files = list(self.cache_dir.glob("*.json"))
-        
+
         for f in files:
             f.unlink()
             logger.info(f"Deleted cache file: {f.name}")
-        
+
         logger.info(f"Cleared {len(files)} cache files")
-    
+
     def get_cache_info(self) -> Dict[str, Any]:
         """Get information about cached files"""
-        info = {
-            'cache_dir': str(self.cache_dir),
-            'ttl_hours': self.ttl_hours,
-            'files': []
-        }
-        
+        info = {"cache_dir": str(self.cache_dir), "ttl_hours": self.ttl_hours, "files": []}
+
         for cache_file in self.cache_dir.glob("*.json"):
             mtime = datetime.fromtimestamp(cache_file.stat().st_mtime)
             age = datetime.now() - mtime
             now = datetime.now()
-            
+
             # Use OI-specific validation for oi_history files
-            if 'oi_history' in cache_file.name:
+            if "oi_history" in cache_file.name:
                 # Check both date change and TTL
                 date_changed = mtime.date() < now.date()
                 ttl_expired = age > timedelta(hours=self.ttl_hours)
                 is_valid = not (date_changed or ttl_expired)
-                validation_reason = "date_changed" if date_changed else ("ttl_expired" if ttl_expired else "valid")
+                validation_reason = (
+                    "date_changed" if date_changed else ("ttl_expired" if ttl_expired else "valid")
+                )
             else:
                 # Standard TTL validation for other files
                 is_valid = age <= timedelta(hours=self.ttl_hours)
                 validation_reason = "ttl_expired" if not is_valid else "valid"
-            
-            info['files'].append({
-                'name': cache_file.name,
-                'size': cache_file.stat().st_size,
-                'modified': mtime.isoformat(),
-                'age_hours': age.total_seconds() / 3600,
-                'is_valid': is_valid,
-                'validation_reason': validation_reason
-            })
-        
+
+            info["files"].append(
+                {
+                    "name": cache_file.name,
+                    "size": cache_file.stat().st_size,
+                    "modified": mtime.isoformat(),
+                    "age_hours": age.total_seconds() / 3600,
+                    "is_valid": is_valid,
+                    "validation_reason": validation_reason,
+                }
+            )
+
         return info
 
 
 def fetch_coinalyze_funding_rates_cached(
     universe_symbols: List[str],
-    exchange_code: str = 'H',
+    exchange_code: str = "H",
     cache_ttl_hours: int = 1,
 ) -> Optional[pd.DataFrame]:
     """
     Fetch funding rates with caching
-    
+
     Args:
         universe_symbols: List of trading symbols
         exchange_code: Coinalyze exchange code ('H' for Hyperliquid, 'A' for Binance)
         cache_ttl_hours: Cache time-to-live in hours
-    
+
     Returns:
         DataFrame with funding rates or None
     """
     cache = CoinalyzeCache(ttl_hours=cache_ttl_hours)
-    
+
     # Try to load from cache
     df_cached = cache.load_funding_rates(exchange_code)
     if df_cached is not None:
         logger.info(f"Using cached funding rates for exchange {exchange_code}")
         return df_cached
-    
+
     # Cache miss - fetch from API
     logger.info(f"Cache miss - fetching funding rates from Coinalyze API...")
     try:
         from execution.get_carry import fetch_coinalyze_funding_rates_for_universe
-        
+
         df = fetch_coinalyze_funding_rates_for_universe(
-            universe_symbols=universe_symbols,
-            exchange_code=exchange_code
+            universe_symbols=universe_symbols, exchange_code=exchange_code
         )
-        
+
         if df is not None and not df.empty:
             # Save to cache
             cache.save_funding_rates(df, exchange_code)
@@ -266,38 +267,36 @@ def fetch_coinalyze_aggregated_funding_cached(
 ) -> Optional[pd.DataFrame]:
     """
     Fetch aggregated funding rates with caching
-    
+
     Uses Coinalyze's built-in aggregation with .A suffix (e.g., BTCUSDT_PERP.A)
     which aggregates funding rates across all major exchanges.
-    
+
     Args:
         universe_symbols: List of trading symbols
         cache_ttl_hours: Cache time-to-live in hours
-    
+
     Returns:
         DataFrame with aggregated funding rates or None
     """
     cache = CoinalyzeCache(ttl_hours=cache_ttl_hours)
-    
+
     # Try to load from cache
-    df_cached = cache.load_funding_rates('aggregated')
+    df_cached = cache.load_funding_rates("aggregated")
     if df_cached is not None:
         logger.info(f"Using cached aggregated funding rates (.A suffix)")
         return df_cached
-    
+
     # Cache miss - fetch from API
     logger.info(f"Cache miss - fetching aggregated funding rates from Coinalyze API...")
     logger.info(f"Using .A suffix format (e.g., BTCUSDT_PERP.A) for aggregated data")
     try:
         from execution.get_carry import fetch_coinalyze_aggregated_funding_rates
-        
-        df = fetch_coinalyze_aggregated_funding_rates(
-            universe_symbols=universe_symbols
-        )
-        
+
+        df = fetch_coinalyze_aggregated_funding_rates(universe_symbols=universe_symbols)
+
         if df is not None and not df.empty:
             # Save to cache
-            cache.save_funding_rates(df, 'aggregated')
+            cache.save_funding_rates(df, "aggregated")
             logger.info(f"Fetched and cached {len(df)} aggregated funding rates")
             return df
         else:
@@ -310,56 +309,54 @@ def fetch_coinalyze_aggregated_funding_cached(
 
 def fetch_oi_history_cached(
     universe_symbols: List[str],
-    exchange_code: str = 'H',
+    exchange_code: str = "H",
     days: int = 200,
     cache_ttl_hours: int = 8,
 ) -> Optional[pd.DataFrame]:
     """
     Fetch OI history with caching
-    
+
     Special caching rules for OI data:
     - Standard TTL: 8 hours (configurable)
     - Date-change detection: Cache is invalidated if date has changed, even if <8h old
     - This ensures we always fetch fresh data when a new day starts
-    
+
     Args:
         universe_symbols: List of trading symbols
         exchange_code: Coinalyze exchange code
         days: Number of days of history
         cache_ttl_hours: Cache time-to-live in hours (default 8 for historical data)
-    
+
     Returns:
         DataFrame with OI history or None
     """
     cache = CoinalyzeCache(ttl_hours=cache_ttl_hours)
-    
+
     # Try to load from cache
     df_cached = cache.load_oi_history(exchange_code, days)
     if df_cached is not None:
         logger.info(f"Using cached OI history for exchange {exchange_code} ({days} days)")
         return df_cached
-    
+
     # Cache miss - fetch from API
     logger.info(f"Cache miss - fetching OI history from Coinalyze API...")
-    
+
     # Import the internal fetch function from the strategy module
     try:
         import sys
         from pathlib import Path
-        
+
         # Add strategies module to path if not already
-        strategies_path = Path(__file__).parent.parent.parent / 'execution' / 'strategies'
+        strategies_path = Path(__file__).parent.parent.parent / "execution" / "strategies"
         if str(strategies_path) not in sys.path:
             sys.path.insert(0, str(strategies_path))
-        
+
         from open_interest_divergence import _fetch_oi_history_for_universe
-        
+
         df = _fetch_oi_history_for_universe(
-            universe_symbols=universe_symbols,
-            exchange_code=exchange_code,
-            days=days
+            universe_symbols=universe_symbols, exchange_code=exchange_code, days=days
         )
-        
+
         if df is not None and not df.empty:
             # Save to cache
             cache.save_oi_history(df, exchange_code, days)
@@ -376,19 +373,19 @@ def fetch_oi_history_cached(
 if __name__ == "__main__":
     """Test the cache"""
     cache = CoinalyzeCache(ttl_hours=1)
-    
-    print("="*80)
+
+    print("=" * 80)
     print("COINALYZE CACHE TEST")
-    print("="*80)
-    
+    print("=" * 80)
+
     # Show cache info
     info = cache.get_cache_info()
     print(f"\nCache directory: {info['cache_dir']}")
     print(f"TTL: {info['ttl_hours']} hours")
     print(f"\nCached files: {len(info['files'])}")
-    
-    for f in info['files']:
-        status = "✓ VALID" if f['is_valid'] else "✗ EXPIRED"
+
+    for f in info["files"]:
+        status = "✓ VALID" if f["is_valid"] else "✗ EXPIRED"
         print(f"  {status} {f['name']}: {f['size']} bytes, age={f['age_hours']:.2f}h")
-    
-    print("\n" + "="*80)
+
+    print("\n" + "=" * 80)

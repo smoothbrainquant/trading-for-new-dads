@@ -19,10 +19,10 @@ from data.scripts.coinalyze_client import CoinalyzeClient
 
 
 def resolve_output_dir() -> Path:
-    for c in [Path('data/raw'), Path('/workspace/data/raw'), Path('.')]:
+    for c in [Path("data/raw"), Path("/workspace/data/raw"), Path(".")]:
         if c.exists() and c.is_dir():
             return c
-    return Path('.')
+    return Path(".")
 
 
 def get_all_perp_symbols(client: CoinalyzeClient) -> Dict[str, str]:
@@ -35,15 +35,15 @@ def get_all_perp_symbols(client: CoinalyzeClient) -> Dict[str, str]:
     if not futures:
         return {}
 
-    preferred_exchanges = ['A', '6', '3', '0', '2']
+    preferred_exchanges = ["A", "6", "3", "0", "2"]
     by_base: Dict[str, List[Dict]] = {}
     for f in futures:
-        if not f.get('is_perpetual'):
+        if not f.get("is_perpetual"):
             continue
-        base = f.get('base_asset')
-        quote = f.get('quote_asset')
-        exch = f.get('exchange')
-        if not base or quote not in {'USDT','USD','USDC'}:
+        base = f.get("base_asset")
+        quote = f.get("quote_asset")
+        exch = f.get("exchange")
+        if not base or quote not in {"USDT", "USD", "USDC"}:
             continue
         by_base.setdefault(base, []).append(f)
 
@@ -51,13 +51,19 @@ def get_all_perp_symbols(client: CoinalyzeClient) -> Dict[str, str]:
     for base, items in by_base.items():
         items_sorted = sorted(
             items,
-            key=lambda x: (preferred_exchanges.index(x.get('exchange')) if x.get('exchange') in preferred_exchanges else 999)
+            key=lambda x: (
+                preferred_exchanges.index(x.get("exchange"))
+                if x.get("exchange") in preferred_exchanges
+                else 999
+            ),
         )
-        best[base] = items_sorted[0]['symbol']
+        best[base] = items_sorted[0]["symbol"]
     return best
 
 
-def fetch_oi_daily_history(client: CoinalyzeClient, symbol: str, start_year: int = 2020) -> List[Dict]:
+def fetch_oi_daily_history(
+    client: CoinalyzeClient, symbol: str, start_year: int = 2020
+) -> List[Dict]:
     from datetime import datetime as _dt
 
     start_ts = int(_dt(start_year, 1, 1).timestamp())
@@ -66,35 +72,37 @@ def fetch_oi_daily_history(client: CoinalyzeClient, symbol: str, start_year: int
     try:
         res = client.get_open_interest_history(
             symbols=symbol,
-            interval='daily',
+            interval="daily",
             from_ts=start_ts,
             to_ts=end_ts,
             convert_to_usd=True,
         )
         rows: List[Dict] = []
         if res and len(res) > 0:
-            hist = res[0].get('history', [])
+            hist = res[0].get("history", [])
             for pt in hist:
-                rows.append({
-                    'symbol': symbol,
-                    'timestamp': pt['t'],
-                    'date': _dt.fromtimestamp(pt['t']).strftime('%Y-%m-%d'),
-                    'oi_open': pt.get('o'),
-                    'oi_high': pt.get('h'),
-                    'oi_low': pt.get('l'),
-                    'oi_close': pt.get('c'),
-                })
+                rows.append(
+                    {
+                        "symbol": symbol,
+                        "timestamp": pt["t"],
+                        "date": _dt.fromtimestamp(pt["t"]).strftime("%Y-%m-%d"),
+                        "oi_open": pt.get("o"),
+                        "oi_high": pt.get("h"),
+                        "oi_low": pt.get("l"),
+                        "oi_close": pt.get("c"),
+                    }
+                )
         return rows
     except Exception:
         return []
 
 
 def main():
-    print("="*80)
+    print("=" * 80)
     print("FETCH OI SINCE 2020 - ALL PERPETUAL BASES")
-    print("="*80)
+    print("=" * 80)
 
-    if not os.environ.get('COINALYZE_API'):
+    if not os.environ.get("COINALYZE_API"):
         print("ERROR: COINALYZE_API env var not set")
         return
 
@@ -112,7 +120,7 @@ def main():
         rows = fetch_oi_daily_history(client, c_sym, start_year=2020)
         if rows:
             for r in rows:
-                r['coin_symbol'] = base
+                r["coin_symbol"] = base
             all_rows.extend(rows)
         time.sleep(wait_s)
 
@@ -121,19 +129,21 @@ def main():
         return
 
     df = pd.DataFrame(all_rows)
-    df = df[['coin_symbol','symbol','date','timestamp','oi_open','oi_high','oi_low','oi_close']]
-    df = df.sort_values(['coin_symbol','date']).reset_index(drop=True)
+    df = df[
+        ["coin_symbol", "symbol", "date", "timestamp", "oi_open", "oi_high", "oi_low", "oi_close"]
+    ]
+    df = df.sort_values(["coin_symbol", "date"]).reset_index(drop=True)
 
     out_dir = resolve_output_dir()
-    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     out_path = out_dir / f"historical_open_interest_all_perps_since2020_{ts}.csv"
     df.to_csv(out_path, index=False)
 
     print("\nSaved:", out_path)
-    print("Date range:", df['date'].min(), '→', df['date'].max())
-    print("Unique bases:", df['coin_symbol'].nunique())
+    print("Date range:", df["date"].min(), "→", df["date"].max())
+    print("Unique bases:", df["coin_symbol"].nunique())
     print("Total rows:", len(df))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

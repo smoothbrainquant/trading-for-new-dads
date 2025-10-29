@@ -5,7 +5,9 @@ import pandas as pd
 from .utils import calculate_days_from_200d_high, calculate_rolling_30d_volatility, calc_weights
 
 
-def strategy_days_from_high(historical_data: Dict[str, pd.DataFrame], notional: float, max_days: int = 20) -> Dict[str, float]:
+def strategy_days_from_high(
+    historical_data: Dict[str, pd.DataFrame], notional: float, max_days: int = 20
+) -> Dict[str, float]:
     days_from_high = calculate_days_from_200d_high(historical_data)
     selected_symbols = [s for s, d in days_from_high.items() if d <= max_days]
     if not selected_symbols:
@@ -23,5 +25,7 @@ def strategy_days_from_high(historical_data: Dict[str, pd.DataFrame], notional: 
         return {}
 
     target_positions = {symbol: weight * notional for symbol, weight in weights.items()}
-    print(f"  Allocated ${notional:,.2f} to days_from_high (LONG-only) across {len(target_positions)} symbols")
+    print(
+        f"  Allocated ${notional:,.2f} to days_from_high (LONG-only) across {len(target_positions)} symbols"
+    )
     return target_positions

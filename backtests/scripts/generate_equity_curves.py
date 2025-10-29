@@ -85,7 +85,9 @@ def plot_equity_curve(csv_path: Path, output_dir: Path) -> Path:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate equity curve PNGs from backtest portfolio value CSVs.")
+    parser = argparse.ArgumentParser(
+        description="Generate equity curve PNGs from backtest portfolio value CSVs."
+    )
     parser.add_argument(
         "--input-dir",
         type=Path,
