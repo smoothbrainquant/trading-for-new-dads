@@ -1042,6 +1042,12 @@ def main():
         default=60,
         help='ADF calculation window in days'
     )
+    parser.add_argument(
+        '--skip-slow',
+        action='store_true',
+        default=False,
+        help='Skip slow backtests (ADF, Beta, Kurtosis) for faster execution'
+    )
     
     args = parser.parse_args()
     
@@ -1058,7 +1064,47 @@ def main():
     print(f"  End date: {args.end_date or 'Last available'}")
     print(f"  Output file: {args.output_file}")
     print(f"  OI mode: {args.oi_mode}")
+    if args.skip_slow:
+        print(f"  PERFORMANCE MODE: Skipping slow backtests (ADF, Beta, Kurtosis)")
     print("="*120)
+    
+    # OPTIMIZATION: Load all data files ONCE and cache them
+    print("\n⏱️  Loading data files (this happens only once)...")
+    import time
+    data_load_start = time.time()
+    
+    # Cache for loaded data
+    cached_data = {}
+    
+    # Load main price data
+    if os.path.exists(args.data_file):
+        print(f"  📊 Loading price data from {args.data_file}...")
+        cached_data['price_data'] = load_data(args.data_file)
+        print(f"     ✓ Loaded {len(cached_data['price_data'])} rows")
+    
+    # Load market cap data
+    if args.run_size and os.path.exists(args.marketcap_file):
+        print(f"  📊 Loading market cap data from {args.marketcap_file}...")
+        cached_data['marketcap_data'] = load_marketcap_data(filepath=args.marketcap_file)
+        if cached_data['marketcap_data'] is not None:
+            print(f"     ✓ Loaded {len(cached_data['marketcap_data'])} rows")
+    
+    # Load funding rates data
+    if args.run_carry and os.path.exists(args.funding_rates_file):
+        print(f"  📊 Loading funding rates from {args.funding_rates_file}...")
+        cached_data['funding_data'] = load_funding_rates(args.funding_rates_file)
+        if cached_data['funding_data'] is not None:
+            print(f"     ✓ Loaded {len(cached_data['funding_data'])} rows")
+    
+    # Load OI data
+    if args.run_oi_divergence and os.path.exists(args.oi_data_file):
+        print(f"  📊 Loading OI data from {args.oi_data_file}...")
+        cached_data['oi_data'] = load_oi_data(args.oi_data_file)
+        if cached_data['oi_data'] is not None:
+            print(f"     ✓ Loaded {len(cached_data['oi_data'])} rows")
+    
+    data_load_time = time.time() - data_load_start
+    print(f"\n✅ All data loaded in {data_load_time:.2f} seconds\n")
     
     # Common parameters
     common_params = {
@@ -1071,12 +1117,24 @@ def main():
         'volatility_window': 30
     }
     
-    # Run all backtests
+    # Run all backtests with timing
     all_results = []
+    timing_results = []
+    
+    def time_backtest(name, func, *args, **kwargs):
+        """Wrapper to time backtest execution."""
+        start = time.time()
+        result = func(*args, **kwargs)
+        elapsed = time.time() - start
+        timing_results.append({'strategy': name, 'time_seconds': elapsed})
+        print(f"    ⏱️  Completed in {elapsed:.2f} seconds")
+        return result
     
     # 1. Breakout Signal
     if args.run_breakout:
-        result = run_breakout_backtest(
+        result = time_backtest(
+            'Breakout Signal',
+            run_breakout_backtest,
             args.data_file,
             entry_window=50,
             exit_window=70,
@@ -1087,7 +1145,9 @@ def main():
     
     # 2. Mean Reversion
     if args.run_mean_reversion:
-        result = run_mean_reversion_backtest(
+        result = time_backtest(
+            'Mean Reversion',
+            run_mean_reversion_backtest,
             args.data_file,
             lookback_window=30,
             return_threshold=1.0,
@@ -1099,7 +1159,9 @@ def main():
     
     # 3. Size Factor
     if args.run_size and os.path.exists(args.marketcap_file):
-        result = run_size_factor_backtest(
+        result = time_backtest(
+            'Size Factor',
+            run_size_factor_backtest,
             args.data_file,
             args.marketcap_file,
             strategy='long_small_short_large',
@@ -1112,7 +1174,9 @@ def main():
     
     # 4. Carry Factor
     if args.run_carry and os.path.exists(args.funding_rates_file):
-        result = run_carry_factor_backtest(
+        result = time_backtest(
+            'Carry Factor',
+            run_carry_factor_backtest,
             args.data_file,
             args.funding_rates_file,
             top_n=10,
@@ -1125,7 +1189,9 @@ def main():
     
     # 5. Days from High
     if args.run_days_from_high:
-        result = run_days_from_high_backtest(
+        result = time_backtest(
+            'Days from High',
+            run_days_from_high_backtest,
             args.data_file,
             days_threshold=20,
             **common_params
@@ -1135,7 +1201,9 @@ def main():
     
     # 6. OI Divergence
     if args.run_oi_divergence and os.path.exists(args.oi_data_file):
-        result = run_oi_divergence_backtest(
+        result = time_backtest(
+            f'OI Divergence ({args.oi_mode})',
+            run_oi_divergence_backtest,
             args.data_file,
             args.oi_data_file,
             oi_mode=args.oi_mode,
@@ -1150,7 +1218,9 @@ def main():
     
     # 7. Volatility Factor
     if args.run_volatility:
-        result = run_volatility_factor_backtest(
+        result = time_backtest(
+            'Volatility Factor',
+            run_volatility_factor_backtest,
             args.data_file,
             strategy=args.volatility_strategy,
             num_quintiles=5,
@@ -1161,9 +1231,12 @@ def main():
         if result:
             all_results.append(result)
     
-    # 8. Kurtosis Factor
-    if args.run_kurtosis:
-        result = run_kurtosis_factor_backtest(
+    # 8. Kurtosis Factor (SLOW - can be skipped with --skip-slow)
+    if args.run_kurtosis and not args.skip_slow:
+        print("\n⚠️  WARNING: Kurtosis backtest is computationally expensive (use --skip-slow to skip)")
+        result = time_backtest(
+            'Kurtosis Factor',
+            run_kurtosis_factor_backtest,
             args.data_file,
             strategy=args.kurtosis_strategy,
             kurtosis_window=30,
@@ -1175,10 +1248,15 @@ def main():
         )
         if result:
             all_results.append(result)
+    elif args.run_kurtosis and args.skip_slow:
+        print("\n⏩ SKIPPING Kurtosis Factor (--skip-slow enabled)")
     
-    # 9. Beta Factor (BAB with Risk Parity, Daily Rebalancing)
-    if args.run_beta:
-        result = run_beta_factor_backtest(
+    # 9. Beta Factor (SLOW - can be skipped with --skip-slow)
+    if args.run_beta and not args.skip_slow:
+        print("\n⚠️  WARNING: Beta backtest is computationally expensive (use --skip-slow to skip)")
+        result = time_backtest(
+            'Beta Factor (BAB)',
+            run_beta_factor_backtest,
             args.data_file,
             strategy=args.beta_strategy,
             beta_window=90,
@@ -1190,10 +1268,15 @@ def main():
         )
         if result:
             all_results.append(result)
+    elif args.run_beta and args.skip_slow:
+        print("\n⏩ SKIPPING Beta Factor (--skip-slow enabled)")
     
-    # 10. ADF Factor (Trend Following)
-    if args.run_adf:
-        result = run_adf_factor_backtest(
+    # 10. ADF Factor (VERY SLOW - can be skipped with --skip-slow)
+    if args.run_adf and not args.skip_slow:
+        print("\n⚠️  WARNING: ADF backtest is VERY computationally expensive (use --skip-slow to skip)")
+        result = time_backtest(
+            f'ADF Factor ({args.adf_strategy})',
+            run_adf_factor_backtest,
             args.data_file,
             strategy=args.adf_strategy,
             adf_window=args.adf_window,
@@ -1208,10 +1291,32 @@ def main():
         )
         if result:
             all_results.append(result)
+    elif args.run_adf and args.skip_slow:
+        print("\n⏩ SKIPPING ADF Factor (--skip-slow enabled)")
     
     # Create and display summary table
     summary_df = create_summary_table(all_results)
     print_summary_table(summary_df)
+    
+    # Print timing summary
+    if timing_results:
+        print("\n" + "="*120)
+        print("⏱️  EXECUTION TIME SUMMARY")
+        print("="*120)
+        timing_df = pd.DataFrame(timing_results)
+        timing_df = timing_df.sort_values('time_seconds', ascending=False)
+        total_time = timing_df['time_seconds'].sum()
+        
+        print(f"\nBacktest Execution Times:")
+        print("-"*80)
+        for idx, row in timing_df.iterrows():
+            pct = (row['time_seconds'] / total_time) * 100
+            print(f"  {row['strategy']:<30} {row['time_seconds']:>8.2f}s  ({pct:>5.1f}%)")
+        print("-"*80)
+        print(f"  {'Total Backtest Time':<30} {total_time:>8.2f}s  (100.0%)")
+        print(f"  {'Data Loading Time':<30} {data_load_time:>8.2f}s")
+        print(f"  {'Grand Total':<30} {total_time + data_load_time:>8.2f}s")
+        print("="*120)
     
     # Save results
     if not summary_df.empty:
