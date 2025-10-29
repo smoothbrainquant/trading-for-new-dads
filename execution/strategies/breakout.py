@@ -2,10 +2,16 @@ from typing import Dict
 
 import pandas as pd
 
-from .utils import calculate_breakout_signals_from_data, calculate_rolling_30d_volatility, calc_weights
+from .utils import (
+    calculate_breakout_signals_from_data,
+    calculate_rolling_30d_volatility,
+    calc_weights,
+)
 
 
-def strategy_breakout(historical_data: Dict[str, pd.DataFrame], notional: float) -> Dict[str, float]:
+def strategy_breakout(
+    historical_data: Dict[str, pd.DataFrame], notional: float
+) -> Dict[str, float]:
     signals = calculate_breakout_signals_from_data(historical_data)
     longs = [s for s, d in signals.items() if d == 1]
     shorts = [s for s, d in signals.items() if d == -1]

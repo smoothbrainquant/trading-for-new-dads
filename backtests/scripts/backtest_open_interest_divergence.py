@@ -37,45 +37,50 @@ class BacktestConfig:
 
 def load_price_data(path: str) -> pd.DataFrame:
     df = pd.read_csv(path)
-    df['date'] = pd.to_datetime(df['date'])
+    df["date"] = pd.to_datetime(df["date"])
 
     # Prefer base coin symbols for alignment with OI ('BTC', 'ETH', ...)
-    if 'base' in df.columns:
-        df['symbol'] = df['base']
-    elif 'symbol' in df.columns:
+    if "base" in df.columns:
+        df["symbol"] = df["base"]
+    elif "symbol" in df.columns:
         # If trading pairs are present like 'BTC/USD', extract the base
-        if isinstance(df['symbol'].iloc[0], str) and '/' in str(df['symbol'].iloc[0]):
-            df['symbol'] = df['symbol'].astype(str).str.extract(r'^([^/]+)')[0]
+        if isinstance(df["symbol"].iloc[0], str) and "/" in str(df["symbol"].iloc[0]):
+            df["symbol"] = df["symbol"].astype(str).str.extract(r"^([^/]+)")[0]
     else:
         raise ValueError("price data must contain 'base' or 'symbol' column")
 
-    df = df[['date', 'symbol', 'close']].dropna().sort_values(['symbol', 'date']).reset_index(drop=True)
+    df = (
+        df[["date", "symbol", "close"]]
+        .dropna()
+        .sort_values(["symbol", "date"])
+        .reset_index(drop=True)
+    )
     return df
 
 
 def load_oi_data(path: str) -> pd.DataFrame:
     df = pd.read_csv(path)
-    df['date'] = pd.to_datetime(df['date'])
+    df["date"] = pd.to_datetime(df["date"])
     # prefer coin_symbol if present to align bases; else derive from symbol
-    if 'coin_symbol' in df.columns:
-        sym_col = 'coin_symbol'
+    if "coin_symbol" in df.columns:
+        sym_col = "coin_symbol"
     else:
-        sym_col = 'symbol'
-        if '/' in str(df[sym_col].iloc[0]):
-            df['coin_symbol'] = df[sym_col].astype(str).str.extract(r'^([^/]+)')[0]
-            sym_col = 'coin_symbol'
-    keep = ['date', sym_col]
-    if 'oi_close' in df.columns:
-        keep.append('oi_close')
+        sym_col = "symbol"
+        if "/" in str(df[sym_col].iloc[0]):
+            df["coin_symbol"] = df[sym_col].astype(str).str.extract(r"^([^/]+)")[0]
+            sym_col = "coin_symbol"
+    keep = ["date", sym_col]
+    if "oi_close" in df.columns:
+        keep.append("oi_close")
     else:
         # Coinalyze scripts save columns with oi_close, ensure fallback
-        if 'oi' in df.columns:
-            df = df.rename(columns={'oi': 'oi_close'})
-            keep.append('oi_close')
+        if "oi" in df.columns:
+            df = df.rename(columns={"oi": "oi_close"})
+            keep.append("oi_close")
         else:
             raise ValueError("OI CSV must contain 'oi_close' or 'oi' column")
-    df = df[keep].rename(columns={sym_col: 'symbol'})
-    df = df.dropna().sort_values(['symbol','date']).reset_index(drop=True)
+    df = df[keep].rename(columns={sym_col: "symbol"})
+    df = df.dropna().sort_values(["symbol", "date"]).reset_index(drop=True)
     return df
 
 
@@ -84,7 +89,7 @@ def calculate_portfolio_returns(weights: dict, returns_df: pd.DataFrame) -> floa
         return 0.0
     ret = 0.0
     for sym, w in weights.items():
-        vals = returns_df[returns_df['symbol'] == sym]['log_return'].values
+        vals = returns_df[returns_df["symbol"] == sym]["log_return"].values
         if len(vals) > 0 and not np.isnan(vals[0]):
             ret += w * vals[0]
     return ret
@@ -92,8 +97,8 @@ def calculate_portfolio_returns(weights: dict, returns_df: pd.DataFrame) -> floa
 
 def backtest(price_df: pd.DataFrame, oi_df: pd.DataFrame, cfg: BacktestConfig):
     # Overlap dates
-    dates_price = set(price_df['date'].unique())
-    dates_oi = set(oi_df['date'].unique())
+    dates_price = set(price_df["date"].unique())
+    dates_oi = set(oi_df["date"].unique())
     common_dates = sorted(list(dates_price.intersection(dates_oi)))
     if len(common_dates) < (cfg.lookback + 10):
         raise ValueError("Insufficient overlapping history for backtest")
@@ -103,11 +108,13 @@ def backtest(price_df: pd.DataFrame, oi_df: pd.DataFrame, cfg: BacktestConfig):
 
     # Precompute daily log returns for next-day application
     p = price_df.copy()
-    p['log_return'] = p.groupby('symbol')['close'].transform(lambda x: np.log(x) - np.log(x.shift(1)))
+    p["log_return"] = p.groupby("symbol")["close"].transform(
+        lambda x: np.log(x) - np.log(x.shift(1))
+    )
 
     start_idx = cfg.lookback
     tracking_dates = common_dates[start_idx:]
-    rebalance_dates = tracking_dates[::cfg.rebalance_days]
+    rebalance_dates = tracking_dates[:: cfg.rebalance_days]
     if not rebalance_dates:
         rebalance_dates = [tracking_dates[-1]]
 
@@ -120,19 +127,19 @@ def backtest(price_df: pd.DataFrame, oi_df: pd.DataFrame, cfg: BacktestConfig):
         # Rebalance if needed
         if (last_rebalance is None) or (dt in rebalance_dates):
             # Select portfolio (ensure we only use non-null score rows)
-            df_day = scores[scores['date'] == dt]
+            df_day = scores[scores["date"] == dt]
             if df_day.empty:
                 longs, shorts = [], []
             else:
-                col = 'score_trend' if cfg.mode == 'trend' else 'score_divergence'
+                col = "score_trend" if cfg.mode == "trend" else "score_divergence"
                 sel = (
-                    df_day[['symbol', col]]
+                    df_day[["symbol", col]]
                     .dropna()
-                    .drop_duplicates(subset=['symbol'], keep='first')
+                    .drop_duplicates(subset=["symbol"], keep="first")
                     .sort_values(col, ascending=False)
                 )
-                longs = sel.head(cfg.top_n)['symbol'].tolist()
-                shorts = sel.tail(cfg.bottom_n)['symbol'].tolist()
+                longs = sel.head(cfg.top_n)["symbol"].tolist()
+                shorts = sel.tail(cfg.bottom_n)["symbol"].tolist()
                 # Avoid overlapping symbols between longs and shorts which cancels exposure
                 overlap = set(longs) & set(shorts)
                 if overlap:
@@ -140,81 +147,95 @@ def backtest(price_df: pd.DataFrame, oi_df: pd.DataFrame, cfg: BacktestConfig):
 
             # Build weights (risk parity within sides)
             weights = build_equal_or_risk_parity_weights(
-                price_df=price_df, long_symbols=longs, short_symbols=shorts,
-                notional=1.0, volatility_window=cfg.volatility_window, use_risk_parity=True
+                price_df=price_df,
+                long_symbols=longs,
+                short_symbols=shorts,
+                notional=1.0,
+                volatility_window=cfg.volatility_window,
+                use_risk_parity=True,
             )
             last_rebalance = dt
 
         # Apply NEXT day's returns
         if i < len(tracking_dates) - 1 and weights:
-            next_dt = tracking_dates[i+1]
+            next_dt = tracking_dates[i + 1]
             # Use next-day returns on the same set of symbols to avoid look-ahead
-            ret_df = p[p['date'] == next_dt]
+            ret_df = p[p["date"] == next_dt]
             port_log_ret = calculate_portfolio_returns(weights, ret_df)
             capital = capital * np.exp(port_log_ret)
 
         long_exposure = sum(w for w in weights.values() if w > 0)
         short_exposure = abs(sum(w for w in weights.values() if w < 0))
-        portfolio_values.append({
-            'date': dt,
-            'portfolio_value': capital,
-            'long_exposure': long_exposure,
-            'short_exposure': short_exposure,
-            'net_exposure': long_exposure - short_exposure,
-            'gross_exposure': long_exposure + short_exposure,
-        })
+        portfolio_values.append(
+            {
+                "date": dt,
+                "portfolio_value": capital,
+                "long_exposure": long_exposure,
+                "short_exposure": short_exposure,
+                "net_exposure": long_exposure - short_exposure,
+                "gross_exposure": long_exposure + short_exposure,
+            }
+        )
 
     pv = pd.DataFrame(portfolio_values)
     metrics = _metrics(pv, cfg.initial_capital)
-    return {'portfolio_values': pv, 'metrics': metrics}
+    return {"portfolio_values": pv, "metrics": metrics}
 
 
 def _metrics(portfolio_df: pd.DataFrame, initial_capital: float):
     out = {}
     portfolio_df = portfolio_df.copy()
-    portfolio_df['daily_return'] = portfolio_df['portfolio_value'].pct_change()
-    portfolio_df['log_return'] = np.log(portfolio_df['portfolio_value'] / portfolio_df['portfolio_value'].shift(1))
+    portfolio_df["daily_return"] = portfolio_df["portfolio_value"].pct_change()
+    portfolio_df["log_return"] = np.log(
+        portfolio_df["portfolio_value"] / portfolio_df["portfolio_value"].shift(1)
+    )
 
-    final_value = portfolio_df['portfolio_value'].iloc[-1]
-    out['final_value'] = final_value
-    out['total_return'] = final_value / initial_capital - 1.0
+    final_value = portfolio_df["portfolio_value"].iloc[-1]
+    out["final_value"] = final_value
+    out["total_return"] = final_value / initial_capital - 1.0
 
-    dr = portfolio_df['log_return'].dropna()
+    dr = portfolio_df["log_return"].dropna()
     if len(dr) > 2:
         vol = dr.std() * np.sqrt(365)
         years = len(portfolio_df) / 365.25
         ann_return = (final_value / initial_capital) ** (1 / years) - 1 if years > 0 else 0
-        out['annualized_return'] = ann_return
-        out['annualized_volatility'] = vol
-        out['sharpe_ratio'] = ann_return / vol if vol > 0 else 0
+        out["annualized_return"] = ann_return
+        out["annualized_volatility"] = vol
+        out["sharpe_ratio"] = ann_return / vol if vol > 0 else 0
     else:
-        out['annualized_return'] = 0.0
-        out['annualized_volatility'] = 0.0
-        out['sharpe_ratio'] = 0.0
+        out["annualized_return"] = 0.0
+        out["annualized_volatility"] = 0.0
+        out["sharpe_ratio"] = 0.0
 
-    cum = (1 + portfolio_df['daily_return'].fillna(0)).cumprod()
+    cum = (1 + portfolio_df["daily_return"].fillna(0)).cumprod()
     roll_max = cum.expanding().max()
     dd = (cum - roll_max) / roll_max
-    out['max_drawdown'] = float(dd.min())
+    out["max_drawdown"] = float(dd.min())
 
     return out
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Backtest Open Interest Divergence/Trend Strategy',
+        description="Backtest Open Interest Divergence/Trend Strategy",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument('--price-data', type=str, default='data/raw/combined_coinbase_coinmarketcap_daily.csv')
-    parser.add_argument('--oi-data', type=str, required=True,
-                        help='Path to OI daily CSV with columns including date, coin_symbol/symbol, oi_close')
-    parser.add_argument('--mode', type=str, default='trend', choices=['trend','divergence'])
-    parser.add_argument('--lookback', type=int, default=30)
-    parser.add_argument('--volatility-window', type=int, default=30)
-    parser.add_argument('--rebalance-days', type=int, default=7)
-    parser.add_argument('--top-n', type=int, default=10)
-    parser.add_argument('--bottom-n', type=int, default=10)
-    parser.add_argument('--initial-capital', type=float, default=10000.0)
+    parser.add_argument(
+        "--price-data", type=str, default="data/raw/combined_coinbase_coinmarketcap_daily.csv"
+    )
+    parser.add_argument(
+        "--oi-data",
+        type=str,
+        required=True,
+        help="Path to OI daily CSV with columns including date, coin_symbol/symbol, oi_close",
+    )
+    parser.add_argument("--mode", type=str, default="trend", choices=["trend", "divergence"])
+    parser.add_argument("--lookback", type=int, default=30)
+    parser.add_argument("--volatility-window", type=int, default=30)
+    parser.add_argument("--rebalance-days", type=int, default=7)
+    parser.add_argument("--top-n", type=int, default=10)
+    parser.add_argument("--bottom-n", type=int, default=10)
+    parser.add_argument("--initial-capital", type=float, default=10000.0)
     args = parser.parse_args()
 
     price_df = load_price_data(args.price_data)
@@ -232,10 +253,10 @@ def main():
 
     results = backtest(price_df, oi_df, cfg)
 
-    print("\n" + "="*80)
+    print("\n" + "=" * 80)
     print(f"OI {args.mode.upper()} BACKTEST RESULTS")
-    print("="*80)
-    m = results['metrics']
+    print("=" * 80)
+    m = results["metrics"]
     print(f"Final Value:         ${m['final_value']:,.2f}")
     print(f"Total Return:        {m['total_return']*100:,.2f}%")
     print(f"Annualized Return:   {m['annualized_return']*100:,.2f}%")
@@ -245,11 +266,11 @@ def main():
 
     # Save outputs
     out_prefix = f"backtest_open_interest_{args.mode}"
-    pv = results['portfolio_values']
+    pv = results["portfolio_values"]
     pv.to_csv(f"backtests/results/{out_prefix}_portfolio_values.csv", index=False)
     pd.DataFrame([m]).to_csv(f"backtests/results/{out_prefix}_metrics.csv", index=False)
     print(f"Saved results to backtests/results/{out_prefix}_*.csv")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
