@@ -1,4 +1,7 @@
 from typing import Dict, List
+import os
+import json
+from datetime import datetime, timedelta
 
 import pandas as pd
 
@@ -12,6 +15,7 @@ def strategy_carry(
     exchange_id: str = "hyperliquid",
     top_n: int = 10,
     bottom_n: int = 10,
+    rebalance_days: int = 7,
 ) -> Dict[str, float]:
     """
     Carry strategy using AGGREGATED market-wide funding rates from Coinalyze.
@@ -21,7 +25,52 @@ def strategy_carry(
 
     We are trading the funding rate signal (market sentiment), not the actual
     funding payments themselves.
+    
+    Args:
+        rebalance_days: Number of days between rebalances (default: 7 per backtest results)
     """
+    # Check if we should rebalance based on last execution date
+    state_file = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        ".carry_strategy_state.json"
+    )
+    
+    today = datetime.now().date()
+    should_rebalance = True
+    cached_positions = {}
+    
+    if os.path.exists(state_file):
+        try:
+            with open(state_file, 'r') as f:
+                state = json.load(f)
+            
+            last_rebalance = datetime.fromisoformat(state.get('last_rebalance_date', '2000-01-01')).date()
+            cached_positions = state.get('positions', {})
+            days_since_rebalance = (today - last_rebalance).days
+            
+            if days_since_rebalance < rebalance_days:
+                should_rebalance = False
+                print(f"  📅 Carry strategy: Using cached positions (last rebalance: {last_rebalance}, {days_since_rebalance}d ago)")
+                print(f"     Next rebalance in {rebalance_days - days_since_rebalance} days")
+                
+                # Scale cached positions to current notional
+                if cached_positions and 'notional' in state:
+                    old_notional = state['notional']
+                    if old_notional > 0:
+                        scale_factor = notional / old_notional
+                        scaled_positions = {k: v * scale_factor for k, v in cached_positions.items()}
+                        print(f"     Scaled positions from ${old_notional:,.2f} to ${notional:,.2f} (factor: {scale_factor:.4f})")
+                        return scaled_positions
+                
+                return cached_positions
+            else:
+                print(f"  🔄 Carry strategy: Rebalancing (last: {last_rebalance}, {days_since_rebalance}d ago, threshold: {rebalance_days}d)")
+        except Exception as e:
+            print(f"  ⚠️  Could not read carry strategy state: {e}, forcing rebalance")
+            should_rebalance = True
+    else:
+        print(f"  🔄 Carry strategy: First run, calculating positions (will rebalance every {rebalance_days}d)")
+    
     # Filter to top 150 by market cap to reduce API calls
     print(f"  Filtering universe from {len(universe_symbols)} to top 150 by market cap...")
     try:
@@ -164,5 +213,21 @@ def strategy_carry(
         )
     else:
         print("  No carry SHORT candidates (positive funding).")
+
+    # Save state for next execution
+    try:
+        state = {
+            'last_rebalance_date': today.isoformat(),
+            'positions': target_positions,
+            'notional': notional,
+            'rebalance_days': rebalance_days,
+            'top_n': top_n,
+            'bottom_n': bottom_n
+        }
+        with open(state_file, 'w') as f:
+            json.dump(state, f, indent=2)
+        print(f"  ✓ Saved carry strategy state (next rebalance: {(today + timedelta(days=rebalance_days)).isoformat()})")
+    except Exception as e:
+        print(f"  ⚠️  Could not save carry strategy state: {e}")
 
     return target_positions

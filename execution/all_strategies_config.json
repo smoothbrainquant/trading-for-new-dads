@@ -31,7 +31,8 @@
     "carry": {
       "exchange_id": "hyperliquid",
       "top_n": 10,
-      "bottom_n": 10
+      "bottom_n": 10,
+      "rebalance_days": 7
     },
     "oi_divergence": {
       "mode": "divergence",

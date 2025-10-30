@@ -11,3 +11,5 @@ __pycache__/
 .idea/
 *.swp
 *.swo
+# Carry strategy state file (generated at runtime)
+execution/.carry_strategy_state.json
