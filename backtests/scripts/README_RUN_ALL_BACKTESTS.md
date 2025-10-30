@@ -35,6 +35,9 @@ The script runs the following backtests:
 5. **Days from High** - Long coins within 20 days of 200-day high
 6. **OI Divergence** - Open interest divergence signals (contrarian or momentum)
 7. **Volatility Factor** - Long low volatility / short high volatility strategy
+8. **Kurtosis Factor** - Multiple rebalance periods [1, 2, 3, 5, 7, 10, 30 days] testing momentum/mean reversion on tail-fatness
+9. **Beta Factor** - Betting Against Beta (BAB) strategy
+10. **ADF Factor** - Mean reversion premium / trend following based on unit root tests
 
 ## Usage
 
@@ -60,6 +63,18 @@ python3 backtests/scripts/run_all_backtests.py \
     --output-file backtests/results/all_backtests_summary.csv
 ```
 
+### Customizing Kurtosis Rebalance Periods
+
+Test different rebalance frequencies for the kurtosis factor:
+
+```bash
+python3 backtests/scripts/run_all_backtests.py \
+    --kurtosis-rebalance-periods 1 3 7 14 \
+    --kurtosis-strategy momentum
+```
+
+This will run 4 separate kurtosis backtests with 1-day, 3-day, 7-day, and 14-day rebalancing.
+
 ### Command Line Arguments
 
 - `--data-file`: Path to historical OHLCV price data CSV file
@@ -76,8 +91,18 @@ python3 backtests/scripts/run_all_backtests.py \
 - `--run-days-from-high`: Run days from high backtest (default: True)
 - `--run-oi-divergence`: Run OI divergence backtest (default: True)
 - `--run-volatility`: Run volatility factor backtest (default: True)
+- `--run-kurtosis`: Run kurtosis factor backtest (default: True)
+- `--run-beta`: Run beta factor backtest (default: True)
+- `--run-adf`: Run ADF factor backtest (default: True)
 - `--oi-mode`: OI divergence mode: 'divergence' or 'trend' (default: divergence)
 - `--volatility-strategy`: Volatility factor strategy: 'long_low_short_high', 'long_low_vol', 'long_high_vol', or 'long_high_short_low' (default: long_low_short_high)
+- `--kurtosis-strategy`: Kurtosis factor strategy: 'momentum' or 'mean_reversion' (default: momentum)
+- `--kurtosis-rebalance-periods`: List of rebalance periods for kurtosis factor in days (default: [1, 2, 3, 5, 7, 10, 30])
+- `--beta-strategy`: Beta factor strategy type (default: betting_against_beta)
+- `--beta-weighting`: Beta factor weighting method (default: risk_parity)
+- `--beta-rebalance-days`: Beta rebalance frequency in days (default: 1)
+- `--adf-strategy`: ADF factor strategy type (default: trend_following_premium)
+- `--adf-window`: ADF calculation window in days (default: 60)
 
 ## Output
 

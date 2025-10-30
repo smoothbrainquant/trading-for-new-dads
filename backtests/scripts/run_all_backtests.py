@@ -985,10 +985,11 @@ def main():
         help="Kurtosis factor strategy type",
     )
     parser.add_argument(
-        "--kurtosis-rebalance-days",
+        "--kurtosis-rebalance-periods",
         type=int,
-        default=1,
-        help="Kurtosis rebalance frequency in days",
+        nargs="+",
+        default=[1, 2, 3, 5, 7, 10, 30],
+        help="List of kurtosis rebalance periods to test (in days)",
     )
     parser.add_argument(
         "--run-beta", action="store_true", default=True, help="Run beta factor backtest"
@@ -1047,6 +1048,7 @@ def main():
     print(f"  End date: {args.end_date or 'Last available'}")
     print(f"  Output file: {args.output_file}")
     print(f"  OI mode: {args.oi_mode}")
+    print(f"  Kurtosis rebalance periods: {args.kurtosis_rebalance_periods}")
     print("=" * 120)
 
     # Common parameters
@@ -1143,20 +1145,26 @@ def main():
         if result:
             all_results.append(result)
 
-    # 8. Kurtosis Factor
+    # 8. Kurtosis Factor (Multiple Rebalance Periods)
     if args.run_kurtosis:
-        result = run_kurtosis_factor_backtest(
-            args.data_file,
-            strategy=args.kurtosis_strategy,
-            kurtosis_window=30,
-            rebalance_days=args.kurtosis_rebalance_days,
-            weighting="risk_parity",
-            long_percentile=20,
-            short_percentile=80,
-            **common_params,
-        )
-        if result:
-            all_results.append(result)
+        for rebal_days in args.kurtosis_rebalance_periods:
+            result = run_kurtosis_factor_backtest(
+                args.data_file,
+                strategy=args.kurtosis_strategy,
+                kurtosis_window=30,
+                rebalance_days=rebal_days,
+                weighting="risk_parity",
+                long_percentile=20,
+                short_percentile=80,
+                **common_params,
+            )
+            if result:
+                # Update strategy name to include rebalance period
+                result["strategy"] = f"Kurtosis ({rebal_days}d)"
+                result["description"] = (
+                    f"Strategy: {args.kurtosis_strategy}, Rebal: {rebal_days}d"
+                )
+                all_results.append(result)
 
     # 9. Beta Factor (BAB with Risk Parity, Daily Rebalancing)
     if args.run_beta:
