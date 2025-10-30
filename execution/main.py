@@ -10,6 +10,8 @@ Supported signals (handlers implemented or stubbed):
 - mean_reversion: Long-only extreme dips with high volume (2d lookback, optimal per backtest)
 - size: Placeholder (prints notice if selected but not implemented)
 - trendline_breakout: Momentum continuation based on trendline analysis (daily rebalance, 5d holding)
+- beta: Betting Against Beta strategy (long low beta, short high beta, 5d rebalance)
+- volatility: Low volatility anomaly (long low vol, short high vol, 3d rebalance optimal)
 
 Weights can be provided via an external JSON config file so the backtesting suite
 can update them without code changes. Example config structure:
@@ -75,6 +77,7 @@ from execution.strategies import (
     # strategy_oi_divergence,  # Removed: OI data not used
     strategy_beta,
     strategy_trendline_breakout,
+    strategy_volatility,
 )
 
 # Import shared strategy utilities for legacy path
@@ -109,6 +112,7 @@ STRATEGY_REGISTRY = {
     # "oi_divergence": strategy_oi_divergence,  # Removed: OI data not used
     "beta": strategy_beta,
     "trendline_breakout": strategy_trendline_breakout,
+    "volatility": strategy_volatility,
 }
 
 
@@ -227,6 +231,24 @@ def _build_strategy_params(
             "max_pvalue": max_pvalue,
             "max_positions": max_positions,
             "rebalance_days": rebalance_days,
+            "weighting_method": weighting_method,
+            "long_allocation": long_allocation,
+            "short_allocation": short_allocation,
+        }
+
+    elif strategy_name == "volatility":
+        volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
+        rebalance_days = int(p.get("rebalance_days", 3)) if isinstance(p, dict) else 3
+        num_quintiles = int(p.get("num_quintiles", 5)) if isinstance(p, dict) else 5
+        strategy_type = p.get("strategy_type", "long_low_short_high") if isinstance(p, dict) else "long_low_short_high"
+        weighting_method = p.get("weighting_method", "equal_weight") if isinstance(p, dict) else "equal_weight"
+        long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            "volatility_window": volatility_window,
+            "rebalance_days": rebalance_days,
+            "num_quintiles": num_quintiles,
+            "strategy_type": strategy_type,
             "weighting_method": weighting_method,
             "long_allocation": long_allocation,
             "short_allocation": short_allocation,
