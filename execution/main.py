@@ -8,9 +8,10 @@ Supported signals (handlers implemented or stubbed):
 - breakout: Long/short based on 50d breakout with 70d exits (inverse-vol weighted)
 - carry: Long negative-funding symbols, short positive-funding symbols (basic)
 - mean_reversion: Long-only extreme dips with high volume (2d lookback, optimal per backtest)
-- size: Placeholder (prints notice if selected but not implemented)
+- size: Long small-cap / short large-cap strategy
 - oi_divergence: Open interest divergence signals (contrarian or momentum)
 - kurtosis: Long/short based on return distribution tail-fatness (momentum or mean reversion)
+- beta: Betting Against Beta (BAB) - long low-beta / short high-beta strategy
 
 Weights can be provided via an external JSON config file so the backtesting suite
 can update them without code changes. Example config structure:
@@ -31,7 +32,8 @@ can update them without code changes. Example config structure:
     "size": {"top_n": 10, "bottom_n": 10},
     "carry": {"exchange_id": "hyperliquid"},
     "oi_divergence": {"mode": "trend", "lookback": 30, "exchange_code": "A"},
-    "kurtosis": {"strategy": "momentum", "kurtosis_window": 30, "long_percentile": 20, "short_percentile": 80, "max_positions": 10}
+    "kurtosis": {"strategy": "momentum", "kurtosis_window": 30, "long_percentile": 20, "short_percentile": 80, "max_positions": 10},
+    "beta": {"beta_window": 90, "rebalance_days": 5, "weighting_method": "equal_weight"}
   }
 }
 
@@ -78,6 +80,7 @@ from execution.strategies import (
     strategy_size,
     strategy_oi_divergence,
     strategy_kurtosis,
+    strategy_beta,
 )
 
 # Import shared strategy utilities for legacy path
@@ -111,6 +114,7 @@ STRATEGY_REGISTRY = {
     "size": strategy_size,
     "oi_divergence": strategy_oi_divergence,
     "kurtosis": strategy_kurtosis,
+    "beta": strategy_beta,
 }
 
 
@@ -182,10 +186,32 @@ def _build_strategy_params(
         top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
         bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
         limit = int(p.get("limit", 100)) if isinstance(p, dict) else 100
+        rebalance_days = int(p.get("rebalance_days", 10)) if isinstance(p, dict) else 10
         return (historical_data, list(historical_data.keys()), strategy_notional), {
             "top_n": top_n,
             "bottom_n": bottom_n,
             "limit": limit,
+            "rebalance_days": rebalance_days,
+        }
+
+    elif strategy_name == "beta":
+        beta_window = int(p.get("beta_window", 90)) if isinstance(p, dict) else 90
+        volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
+        rebalance_days = int(p.get("rebalance_days", 5)) if isinstance(p, dict) else 5
+        long_percentile = int(p.get("long_percentile", 20)) if isinstance(p, dict) else 20
+        short_percentile = int(p.get("short_percentile", 80)) if isinstance(p, dict) else 80
+        weighting_method = p.get("weighting_method", "equal_weight") if isinstance(p, dict) else "equal_weight"
+        long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            "beta_window": beta_window,
+            "volatility_window": volatility_window,
+            "rebalance_days": rebalance_days,
+            "long_percentile": long_percentile,
+            "short_percentile": short_percentile,
+            "weighting_method": weighting_method,
+            "long_allocation": long_allocation,
+            "short_allocation": short_allocation,
         }
 
     elif strategy_name == "kurtosis":
@@ -242,31 +268,31 @@ def update_market_data():
         return None
 
 
-def check_and_refresh_oi_data_if_needed():
-    """
-    Check OI data freshness and automatically refresh if stale.
-
-    Triggers automatic download if:
-    - OI data is 1+ days behind current date
-    - OI data file is >8 hours old
-
-    Returns:
-        dict: OI data status information after check/refresh
-    """
-    try:
-        from data.scripts.refresh_oi_data import check_and_refresh_oi_data
-
-        # Check and auto-refresh if needed
-        result = check_and_refresh_oi_data(force=False, start_year=2020)
-
-        return result
-
-    except Exception as e:
-        print(f"\n⚠️  Error in OI data check/refresh: {e}")
-        import traceback
-
-        traceback.print_exc()
-        return {"status": "error", "error": str(e), "refreshed": False}
+# def check_and_refresh_oi_data_if_needed():  # Removed: OI data not used
+#     """
+#     Check OI data freshness and automatically refresh if stale.
+#
+#     Triggers automatic download if:
+#     - OI data is 1+ days behind current date
+#     - OI data file is >8 hours old
+#
+#     Returns:
+#         dict: OI data status information after check/refresh
+#     """
+#     try:
+#         from data.scripts.refresh_oi_data import check_and_refresh_oi_data
+#
+#         # Check and auto-refresh if needed
+#         result = check_and_refresh_oi_data(force=False, start_year=2020)
+#
+#         return result
+#
+#     except Exception as e:
+#         print(f"\n⚠️  Error in OI data check/refresh: {e}")
+#         import traceback
+#
+#         traceback.print_exc()
+#         return {"status": "error", "error": str(e), "refreshed": False}
 
 
 def check_cache_freshness():
@@ -843,7 +869,7 @@ def main():
         "--signals",
         type=str,
         default=None,
-        help="Comma-separated list of signals to blend (e.g., days_from_high,breakout,mean_reversion,size,carry,oi_divergence,kurtosis)",
+        help="Comma-separated list of signals to blend (e.g., days_from_high,breakout,mean_reversion,size,carry,oi_divergence,kurtosis,beta)",
     )
     parser.add_argument(
         "--signal-config",
@@ -879,36 +905,36 @@ def main():
     print("\n[Pre-flight checks]")
     update_market_data()
 
-    # Check and auto-refresh OI data if OI strategy is being used
-    if (
-        blend_weights
-        and "oi_divergence" in blend_weights
-        and blend_weights.get("oi_divergence", 0) > 0
-    ):
-        print("\n[OI Data Check] OI Divergence strategy active - checking data freshness...")
-        oi_result = check_and_refresh_oi_data_if_needed()
-
-        # Check result
-        if oi_result.get("refreshed"):
-            print("\n" + "✓" * 80)
-            print("✓ OI DATA AUTOMATICALLY REFRESHED")
-            print(f"✓ Fresh data downloaded and ready for trading")
-            print("✓" * 80)
-        elif oi_result.get("status") == "current":
-            print("\n✓ OI data is current - no refresh needed")
-        elif oi_result.get("status") in ["refresh_failed", "error"]:
-            # Refresh failed - issue strong warning
-            print("\n" + "!" * 80)
-            print("⚠️  CRITICAL: OI DATA REFRESH FAILED")
-            print(f"   Strategy weight: {blend_weights.get('oi_divergence', 0)*100:.1f}%")
-            print("   Impact: Will use existing data (potentially stale)")
-            print("   Recommendation: Check COINALYZE_API credentials and network")
-            if oi_result.get("error"):
-                print(f"   Error: {oi_result.get('error')}")
-            print("!" * 80)
-        else:
-            # Unknown status - warn but continue
-            print(f"\n⚠️  Warning: Unexpected OI data status: {oi_result.get('status')}")
+    # # Check and auto-refresh OI data if OI strategy is being used  # Removed: OI data not used
+    # if (
+    #     blend_weights
+    #     and "oi_divergence" in blend_weights
+    #     and blend_weights.get("oi_divergence", 0) > 0
+    # ):
+    #     print("\n[OI Data Check] OI Divergence strategy active - checking data freshness...")
+    #     oi_result = check_and_refresh_oi_data_if_needed()
+    #
+    #     # Check result
+    #     if oi_result.get("refreshed"):
+    #         print("\n" + "✓" * 80)
+    #         print("✓ OI DATA AUTOMATICALLY REFRESHED")
+    #         print(f"✓ Fresh data downloaded and ready for trading")
+    #         print("✓" * 80)
+    #     elif oi_result.get("status") == "current":
+    #         print("\n✓ OI data is current - no refresh needed")
+    #     elif oi_result.get("status") in ["refresh_failed", "error"]:
+    #         # Refresh failed - issue strong warning
+    #         print("\n" + "!" * 80)
+    #         print("⚠️  CRITICAL: OI DATA REFRESH FAILED")
+    #         print(f"   Strategy weight: {blend_weights.get('oi_divergence', 0)*100:.1f}%")
+    #         print("   Impact: Will use existing data (potentially stale)")
+    #         print("   Recommendation: Check COINALYZE_API credentials and network")
+    #         if oi_result.get("error"):
+    #             print(f"   Error: {oi_result.get('error')}")
+    #         print("!" * 80)
+    #     else:
+    #         # Unknown status - warn but continue
+    #         print(f"\n⚠️  Warning: Unexpected OI data status: {oi_result.get('status')}")
 
     check_cache_freshness()
 

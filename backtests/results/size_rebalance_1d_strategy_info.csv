@@ -1,0 +1,2 @@
+strategy,num_buckets,long_symbols,short_symbols
+long_small_short_large,5,"['BTC', 'ETH', 'USDT', 'BNB', 'XRP', 'SOL', 'DOGE', 'ADA', 'LINK', 'BCH', 'XLM', 'SUI', 'AVAX', 'HBAR', 'LTC', 'SHIB', 'ZEC', 'CRO', 'DAI', 'DOT', 'UNI', 'TAO', 'ENA', 'AAVE', 'PEPE', 'NEAR', 'ETC', 'APT', 'ONDO', 'POL', 'WLD', 'ARB', 'ICP', 'ALGO', 'ATOM', 'VET']","['ZRX', 'YFI', 'BIO', 'POPCAT', 'SUSHI', 'KAVA', 'CELO', 'T', 'PNUT', 'MINA', 'BLUR', 'ZETA', 'ROSE', 'CFG', 'VTHO']"
