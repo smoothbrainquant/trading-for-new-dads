@@ -62,7 +62,7 @@ def load_data(filepath):
     return df
 
 
-def calculate_rolling_adf(data, window=60, regression="ct"):
+def calculate_rolling_adf(data, window=60, regression="ct", maxlag=4, cache_file=None):
     """
     Calculate rolling ADF test statistic for each cryptocurrency.
 
@@ -78,10 +78,24 @@ def calculate_rolling_adf(data, window=60, regression="ct"):
             - 'ct': constant + trend (recommended for crypto)
             - 'ctt': constant + linear/quadratic trend
             - 'n': no constant, no trend
+        maxlag (int): Maximum lag for ADF test (default: 4)
+            - Use fixed maxlag for speed (2-3x faster than autolag="AIC")
+            - 4-5 lags is typically sufficient for daily crypto data
+            - Set to None to use autolag="AIC" (slower but more optimal)
+        cache_file (str): Path to cache file for ADF results (optional)
+            - If file exists, load cached results instead of recalculating
+            - If None, no caching is used
 
     Returns:
         pd.DataFrame: DataFrame with adf_stat and supporting columns
     """
+    # Check cache first
+    if cache_file and os.path.exists(cache_file):
+        print(f"  Loading ADF statistics from cache: {cache_file}")
+        df_cached = pd.read_csv(cache_file, parse_dates=['date'])
+        print(f"  Loaded {len(df_cached):,} rows from cache")
+        return df_cached
+    
     df = data.copy()
     df = df.sort_values(["symbol", "date"]).reset_index(drop=True)
 
@@ -105,7 +119,12 @@ def calculate_rolling_adf(data, window=60, regression="ct"):
 
             # Run ADF test
             try:
-                result = adfuller(window_prices, regression=regression, autolag="AIC")
+                if maxlag is None:
+                    # Use autolag="AIC" (slower but more optimal)
+                    result = adfuller(window_prices, regression=regression, autolag="AIC")
+                else:
+                    # Use fixed maxlag (faster)
+                    result = adfuller(window_prices, regression=regression, maxlag=maxlag)
                 adf_statistic = result[0]  # ADF test statistic
                 adf_pvalue = result[1]  # p-value
 
@@ -154,6 +173,12 @@ def calculate_rolling_adf(data, window=60, regression="ct"):
     df_with_adf["returns_std_60d"] = df_with_adf.groupby("symbol")["daily_return"].transform(
         lambda x: x.rolling(window=window, min_periods=int(window * 0.8)).std()
     )
+
+    # Save to cache if requested
+    if cache_file:
+        print(f"  Saving ADF statistics to cache: {cache_file}")
+        df_with_adf.to_csv(cache_file, index=False)
+        print(f"  Saved {len(df_with_adf):,} rows to cache")
 
     return df_with_adf
 
@@ -364,6 +389,7 @@ def run_backtest(
     long_percentile=20,
     short_percentile=80,
     regression="ct",
+    maxlag=4,
     weighting_method="equal_weight",
     initial_capital=10000,
     leverage=1.0,
@@ -373,6 +399,7 @@ def run_backtest(
     min_market_cap=50_000_000,
     start_date=None,
     end_date=None,
+    cache_file=None,
 ):
     """
     Run the ADF factor backtest.
@@ -387,6 +414,8 @@ def run_backtest(
         long_percentile (int): Percentile threshold for longs
         short_percentile (int): Percentile threshold for shorts
         regression (str): ADF regression type ('c', 'ct', 'ctt', 'n')
+        maxlag (int): Maximum lag for ADF test (default: 4, None for autolag="AIC")
+        cache_file (str): Path to cache file for ADF results (optional)
         weighting_method (str): Position weighting method
         initial_capital (float): Starting capital
         leverage (float): Leverage multiplier
@@ -406,6 +435,10 @@ def run_backtest(
     print(f"\nStrategy: {strategy}")
     print(f"ADF Window: {adf_window} days")
     print(f"ADF Regression Type: {regression}")
+    if maxlag is None:
+        print(f"ADF Maxlag: autolag='AIC' (slower, more optimal)")
+    else:
+        print(f"ADF Maxlag: {maxlag} (faster)")
     print(f"Volatility Window: {volatility_window} days")
     print(f"Rebalance Frequency: {rebalance_days} days")
     print(f"Weighting Method: {weighting_method}")
@@ -419,7 +452,13 @@ def run_backtest(
     # Step 1: Calculate ADF statistics
     print("\n" + "-" * 80)
     print("Step 1: Calculating rolling ADF statistics...")
-    adf_data = calculate_rolling_adf(data, window=adf_window, regression=regression)
+    adf_data = calculate_rolling_adf(
+        data, 
+        window=adf_window, 
+        regression=regression, 
+        maxlag=maxlag,
+        cache_file=cache_file
+    )
     print(f"  Total data points with ADF: {adf_data['adf_stat'].notna().sum()}")
     print(f"  ADF range: [{adf_data['adf_stat'].min():.2f}, {adf_data['adf_stat'].max():.2f}]")
     print(f"  ADF mean: {adf_data['adf_stat'].mean():.2f}")
@@ -874,6 +913,18 @@ def main():
         help="ADF regression type (c=constant, ct=constant+trend)",
     )
     parser.add_argument(
+        "--maxlag",
+        type=int,
+        default=4,
+        help="Maximum lag for ADF test (default: 4 for speed, use 0 for autolag='AIC')",
+    )
+    parser.add_argument(
+        "--cache-file",
+        type=str,
+        default=None,
+        help="Path to cache file for ADF results (speeds up repeated runs)",
+    )
+    parser.add_argument(
         "--volatility-window", type=int, default=30, help="Volatility calculation window in days"
     )
 
@@ -936,12 +987,16 @@ def main():
     print(f"Loaded {len(data)} data points for {data['symbol'].nunique()} symbols")
     print(f"Date range: {data['date'].min().date()} to {data['date'].max().date()}")
 
+    # Convert maxlag=0 to None (for autolag="AIC")
+    maxlag = None if args.maxlag == 0 else args.maxlag
+    
     # Run backtest
     results = run_backtest(
         data=data,
         strategy=args.strategy,
         adf_window=args.adf_window,
         regression=args.regression,
+        maxlag=maxlag,
         volatility_window=args.volatility_window,
         rebalance_days=args.rebalance_days,
         num_quintiles=args.num_quintiles,
@@ -956,6 +1011,7 @@ def main():
         min_market_cap=args.min_market_cap,
         start_date=args.start_date,
         end_date=args.end_date,
+        cache_file=args.cache_file,
     )
 
     # Print results
