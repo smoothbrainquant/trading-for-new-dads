@@ -5,6 +5,7 @@ from .mean_reversion import strategy_mean_reversion
 from .size import strategy_size
 from .open_interest_divergence import strategy_oi_divergence
 from .beta import strategy_beta
+from .trendline_breakout import strategy_trendline_breakout
 
 __all__ = [
     "strategy_days_from_high",
@@ -14,4 +15,5 @@ __all__ = [
     "strategy_size",
     "strategy_oi_divergence",
     "strategy_beta",
+    "strategy_trendline_breakout",
 ]
