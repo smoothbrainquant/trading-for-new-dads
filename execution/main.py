@@ -9,6 +9,7 @@ Supported signals (handlers implemented or stubbed):
 - carry: Long negative-funding symbols, short positive-funding symbols (basic)
 - mean_reversion: Long-only extreme dips with high volume (2d lookback, optimal per backtest)
 - size: Placeholder (prints notice if selected but not implemented)
+- trendline_breakout: Momentum continuation based on trendline analysis (daily rebalance, 5d holding)
 
 Weights can be provided via an external JSON config file so the backtesting suite
 can update them without code changes. Example config structure:
@@ -73,6 +74,7 @@ from execution.strategies import (
     strategy_size,
     # strategy_oi_divergence,  # Removed: OI data not used
     strategy_beta,
+    strategy_trendline_breakout,
 )
 
 # Import shared strategy utilities for legacy path
@@ -106,6 +108,7 @@ STRATEGY_REGISTRY = {
     "size": strategy_size,
     # "oi_divergence": strategy_oi_divergence,  # Removed: OI data not used
     "beta": strategy_beta,
+    "trendline_breakout": strategy_trendline_breakout,
 }
 
 
@@ -200,6 +203,30 @@ def _build_strategy_params(
             "rebalance_days": rebalance_days,
             "long_percentile": long_percentile,
             "short_percentile": short_percentile,
+            "weighting_method": weighting_method,
+            "long_allocation": long_allocation,
+            "short_allocation": short_allocation,
+        }
+
+    elif strategy_name == "trendline_breakout":
+        trendline_window = int(p.get("trendline_window", 30)) if isinstance(p, dict) else 30
+        volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
+        breakout_threshold = float(p.get("breakout_threshold", 1.5)) if isinstance(p, dict) else 1.5
+        min_r2 = float(p.get("min_r2", 0.5)) if isinstance(p, dict) else 0.5
+        max_pvalue = float(p.get("max_pvalue", 0.05)) if isinstance(p, dict) else 0.05
+        max_positions = int(p.get("max_positions", 10)) if isinstance(p, dict) else 10
+        rebalance_days = int(p.get("rebalance_days", 1)) if isinstance(p, dict) else 1
+        weighting_method = p.get("weighting_method", "equal_weight") if isinstance(p, dict) else "equal_weight"
+        long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        return (historical_data, strategy_notional), {
+            "trendline_window": trendline_window,
+            "volatility_window": volatility_window,
+            "breakout_threshold": breakout_threshold,
+            "min_r2": min_r2,
+            "max_pvalue": max_pvalue,
+            "max_positions": max_positions,
+            "rebalance_days": rebalance_days,
             "weighting_method": weighting_method,
             "long_allocation": long_allocation,
             "short_allocation": short_allocation,

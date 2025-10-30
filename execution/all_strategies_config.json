@@ -5,7 +5,8 @@
     "carry": 0.0987777777777777,
     "breakout": 0.0535,
     "days_from_high": 0.0535,
-    "beta": 0.0
+    "beta": 0.0,
+    "trendline_breakout": 0.0
   },
   "_removed_strategy": {
     "_comment": "oi_divergence strategy removed - OI data not used anymore",
@@ -49,6 +50,19 @@
       "long_allocation": 0.5,
       "short_allocation": 0.5,
       "_comment": "Optimal rebalance_days=5 based on backtest (Sharpe: 0.68, Return: 26.98%). Betting Against Beta strategy: long low-beta coins, short high-beta coins."
+    },
+    "trendline_breakout": {
+      "trendline_window": 30,
+      "volatility_window": 30,
+      "breakout_threshold": 1.5,
+      "min_r2": 0.5,
+      "max_pvalue": 0.05,
+      "max_positions": 10,
+      "rebalance_days": 1,
+      "weighting_method": "equal_weight",
+      "long_allocation": 0.5,
+      "short_allocation": 0.5,
+      "_comment": "Optimal params from backtest (2020-2025): rebalance_days=1 (daily), holding_period=5 days, Total Return: +93.44%, Sharpe: 0.36. Momentum continuation strategy: long uptrend breakouts, short downtrend breakouts."
     }
   }
 }
