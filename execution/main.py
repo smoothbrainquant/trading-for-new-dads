@@ -176,10 +176,12 @@ def _build_strategy_params(
         top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
         bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
         limit = int(p.get("limit", 100)) if isinstance(p, dict) else 100
+        rebalance_days = int(p.get("rebalance_days", 10)) if isinstance(p, dict) else 10
         return (historical_data, list(historical_data.keys()), strategy_notional), {
             "top_n": top_n,
             "bottom_n": bottom_n,
             "limit": limit,
+            "rebalance_days": rebalance_days,
         }
 
     else:
