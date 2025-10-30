@@ -1,12 +1,19 @@
 {
   "strategy_weights": {
-    "mean_reversion": 0.6833333333333332,
-    "size": 0.1108888888888888,
-    "carry": 0.0987777777777777,
-    "breakout": 0.0535,
-    "days_from_high": 0.0535,
-    "beta": 0.0,
-    "trendline_breakout": 0.0
+    "mean_reversion": 0.413702239789196,
+    "size": 0.051383399209486,
+    "carry": 0.100131752305665,
+    "beta": 0.089591567852437,
+    "trendline_breakout": 0.047430830039526,
+    "volatility": 0.185770750988142,
+    "kurtosis": 0.111989459815547,
+    "breakout": 0.0,
+    "days_from_high": 0.0
+  },
+  "_weights_updated": {
+    "_comment": "Weights updated based on Sharpe ratios: Size=0.39, Carry=0.76, Mean Reversion=3.14, Beta=0.68, Volatility=1.41, TLBO=0.36, Kurtosis=0.85",
+    "_date": "2025-10-30",
+    "_total_sharpe": 7.59
   },
   "_removed_strategy": {
     "_comment": "oi_divergence strategy removed - OI data not used anymore",
@@ -65,6 +72,26 @@
       "long_allocation": 0.5,
       "short_allocation": 0.5,
       "_comment": "Optimal params from backtest (2020-2025): rebalance_days=1 (daily), holding_period=5 days, Total Return: +93.44%, Sharpe: 0.36. Momentum continuation strategy: long uptrend breakouts, short downtrend breakouts."
+    },
+    "volatility": {
+      "volatility_window": 30,
+      "num_quintiles": 5,
+      "rebalance_days": 3,
+      "weighting_method": "equal_weight",
+      "long_allocation": 0.5,
+      "short_allocation": 0.5,
+      "_comment": "Optimal rebalance_days=3 based on backtest (Sharpe: 1.41, Return: 41.77%). Low volatility anomaly: long stable coins, short volatile coins. Sweet spot between capturing vol regime changes and avoiding noise."
+    },
+    "kurtosis": {
+      "kurtosis_window": 30,
+      "rebalance_days": 14,
+      "long_percentile": 20,
+      "short_percentile": 80,
+      "weighting_method": "risk_parity",
+      "long_allocation": 0.5,
+      "short_allocation": 0.5,
+      "strategy_type": "momentum",
+      "_comment": "Optimal params from backtest (2022-2025): rebalance_days=14 (bi-weekly), window=30d, Total Return: +181%, Sharpe: 0.81. Momentum strategy: long high kurtosis (volatile), short low kurtosis (stable)."
     }
   }
 }
