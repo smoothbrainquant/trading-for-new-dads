@@ -40,6 +40,7 @@ signals:
       long_only: true            # Long-only (shorting rallies loses money)
     carry:
       lookback_days: 7
+      rebalance_days: 7
       top_n: 10
       bottom_n: 0
     size:
