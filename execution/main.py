@@ -72,6 +72,7 @@ from execution.strategies import (
     strategy_mean_reversion,
     strategy_size,
     # strategy_oi_divergence,  # Removed: OI data not used
+    strategy_beta,
 )
 
 # Import shared strategy utilities for legacy path
@@ -104,6 +105,7 @@ STRATEGY_REGISTRY = {
     "mean_reversion": strategy_mean_reversion,
     "size": strategy_size,
     # "oi_divergence": strategy_oi_divergence,  # Removed: OI data not used
+    "beta": strategy_beta,
 }
 
 
@@ -181,6 +183,26 @@ def _build_strategy_params(
             "bottom_n": bottom_n,
             "limit": limit,
             "rebalance_days": rebalance_days,
+        }
+
+    elif strategy_name == "beta":
+        beta_window = int(p.get("beta_window", 90)) if isinstance(p, dict) else 90
+        volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
+        rebalance_days = int(p.get("rebalance_days", 5)) if isinstance(p, dict) else 5
+        long_percentile = int(p.get("long_percentile", 20)) if isinstance(p, dict) else 20
+        short_percentile = int(p.get("short_percentile", 80)) if isinstance(p, dict) else 80
+        weighting_method = p.get("weighting_method", "equal_weight") if isinstance(p, dict) else "equal_weight"
+        long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            "beta_window": beta_window,
+            "volatility_window": volatility_window,
+            "rebalance_days": rebalance_days,
+            "long_percentile": long_percentile,
+            "short_percentile": short_percentile,
+            "weighting_method": weighting_method,
+            "long_allocation": long_allocation,
+            "short_allocation": short_allocation,
         }
 
     else:

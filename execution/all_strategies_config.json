@@ -4,7 +4,8 @@
     "size": 0.1108888888888888,
     "carry": 0.0987777777777777,
     "breakout": 0.0535,
-    "days_from_high": 0.0535
+    "days_from_high": 0.0535,
+    "beta": 0.0
   },
   "_removed_strategy": {
     "_comment": "oi_divergence strategy removed - OI data not used anymore",
@@ -37,6 +38,17 @@
       "exchange_id": "hyperliquid",
       "top_n": 10,
       "bottom_n": 10
+    },
+    "beta": {
+      "beta_window": 90,
+      "volatility_window": 30,
+      "rebalance_days": 5,
+      "long_percentile": 20,
+      "short_percentile": 80,
+      "weighting_method": "equal_weight",
+      "long_allocation": 0.5,
+      "short_allocation": 0.5,
+      "_comment": "Optimal rebalance_days=5 based on backtest (Sharpe: 0.68, Return: 26.98%). Betting Against Beta strategy: long low-beta coins, short high-beta coins."
     }
   }
 }
