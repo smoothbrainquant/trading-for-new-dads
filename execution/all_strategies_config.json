@@ -5,6 +5,7 @@
     "carry": 0.0987777777777777,
     "breakout": 0.0535,
     "days_from_high": 0.0535,
+    "durbin_watson": 0.0,
     "beta": 0.0,
     "trendline_breakout": 0.0
   },
@@ -65,6 +66,14 @@
       "long_allocation": 0.5,
       "short_allocation": 0.5,
       "_comment": "Optimal params from backtest (2020-2025): rebalance_days=1 (daily), holding_period=5 days, Total Return: +93.44%, Sharpe: 0.36. Momentum continuation strategy: long uptrend breakouts, short downtrend breakouts."
+    },
+    "durbin_watson": {
+      "dw_window": 30,
+      "rebalance_days": 7,
+      "long_percentile": 80,
+      "short_percentile": 20,
+      "top_n_market_cap": 100,
+      "_comment": "Optimal rebalance: 7 days (weekly). Long high DW (mean-reverting), short low DW (momentum). Sharpe: 0.67, Return: +26.33% (2021-2025)."
     }
   }
 }
