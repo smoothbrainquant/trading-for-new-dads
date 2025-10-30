@@ -84,7 +84,7 @@ def strategy_beta(
         print(f"  Using {btc_symbol} as benchmark")
         
         # Calculate BTC returns
-        btc_data = btc_data.sort_values("timestamp").reset_index(drop=True)
+        btc_data = btc_data.sort_values("date").reset_index(drop=True)
         btc_data["btc_return"] = np.log(btc_data["close"] / btc_data["close"].shift(1))
         
         # Step 2: Calculate beta for all symbols
@@ -98,16 +98,16 @@ def strategy_beta(
             if len(df) < beta_window:
                 continue
             
-            # Sort by timestamp
-            df = df.sort_values("timestamp").reset_index(drop=True)
+            # Sort by date
+            df = df.sort_values("date").reset_index(drop=True)
             
             # Calculate returns
             df["daily_return"] = np.log(df["close"] / df["close"].shift(1))
             
             # Merge with BTC returns
             df = df.merge(
-                btc_data[["timestamp", "btc_return"]],
-                on="timestamp",
+                btc_data[["date", "btc_return"]],
+                on="date",
                 how="left"
             )
             

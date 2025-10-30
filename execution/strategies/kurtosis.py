@@ -83,8 +83,8 @@ def strategy_kurtosis(
             if len(df) < kurtosis_window + 10:
                 continue
             
-            # Sort by timestamp
-            df = df.sort_values("timestamp").reset_index(drop=True)
+            # Sort by date
+            df = df.sort_values("date").reset_index(drop=True)
             
             # Calculate daily log returns
             df["daily_return"] = np.log(df["close"] / df["close"].shift(1))
