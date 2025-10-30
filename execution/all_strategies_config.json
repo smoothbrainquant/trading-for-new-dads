@@ -37,7 +37,9 @@
     "carry": {
       "exchange_id": "hyperliquid",
       "top_n": 10,
-      "bottom_n": 10
+      "bottom_n": 10,
+      "rebalance_days": 7,
+      "_comment": "Optimal rebalance frequency: 7 days (weekly). Medium-changing factor based on funding rates."
     },
     "beta": {
       "beta_window": 90,
