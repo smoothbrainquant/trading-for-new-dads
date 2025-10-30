@@ -59,6 +59,7 @@ from backtests.scripts.backtest_volatility_factor import backtest as backtest_vo
 from backtests.scripts.backtest_kurtosis_factor import backtest as backtest_kurtosis, load_data
 from backtests.scripts.backtest_beta_factor import run_backtest as backtest_beta, load_data
 from backtests.scripts.backtest_adf_factor import run_backtest as run_adf_backtest, load_data
+from backtests.scripts.backtest_durbin_watson_factor import run_backtest as run_dw_backtest, load_data
 
 
 def calculate_comprehensive_metrics(portfolio_df, initial_capital, benchmark_returns=None):
@@ -667,6 +668,56 @@ def run_adf_factor_backtest(data_file, **kwargs):
         return None
 
 
+def run_dw_factor_backtest(data_file, **kwargs):
+    """Run Durbin-Watson factor backtest."""
+    print("\n" + "=" * 80)
+    print(f"Running DW Factor Backtest - {kwargs.get('strategy', 'mean_reversion_premium')}")
+    print("=" * 80)
+
+    try:
+        price_data = load_data(data_file)
+
+        results = run_dw_backtest(
+            data=price_data,
+            strategy=kwargs.get("strategy", "mean_reversion_premium"),
+            dw_window=kwargs.get("dw_window", 30),
+            directional_window=kwargs.get("directional_window", 5),
+            directional_threshold=kwargs.get("directional_threshold", 10),
+            volatility_window=kwargs.get("volatility_window", 30),
+            rebalance_days=kwargs.get("rebalance_days", 7),
+            num_quintiles=kwargs.get("num_quintiles", 5),
+            long_percentile=kwargs.get("long_percentile", 20),
+            short_percentile=kwargs.get("short_percentile", 80),
+            weighting_method=kwargs.get("weighting_method", "equal_weight"),
+            initial_capital=kwargs.get("initial_capital", 10000),
+            leverage=kwargs.get("leverage", 1.0),
+            long_allocation=kwargs.get("long_allocation", 0.5),
+            short_allocation=kwargs.get("short_allocation", 0.5),
+            min_volume=kwargs.get("min_volume", 1_000_000),
+            min_market_cap=kwargs.get("min_market_cap", 10_000_000),
+            start_date=kwargs.get("start_date"),
+            end_date=kwargs.get("end_date"),
+        )
+
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results["portfolio_values"], kwargs.get("initial_capital", 10000)
+        )
+
+        return {
+            "strategy": f'DW Factor ({kwargs.get("strategy", "mean_reversion_premium")})',
+            "description": f"DW window: {kwargs.get('dw_window', 30)}d, Rebal: {kwargs.get('rebalance_days', 7)}d",
+            "metrics": metrics,
+            "results": results,
+        }
+    except Exception as e:
+        print(f"Error in DW Factor backtest: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return None
+
+
 def create_summary_table(all_results):
     """
     Create summary table with all metrics.
@@ -1031,6 +1082,23 @@ def main():
         help="ADF factor strategy type",
     )
     parser.add_argument("--adf-window", type=int, default=60, help="ADF calculation window in days")
+    parser.add_argument(
+        "--run-dw", action="store_true", default=True, help="Run Durbin-Watson factor backtest"
+    )
+    parser.add_argument(
+        "--dw-strategy",
+        type=str,
+        default="mean_reversion_premium",
+        choices=[
+            "regime_adaptive",
+            "momentum_premium",
+            "mean_reversion_premium",
+            "long_momentum",
+            "long_mean_reversion",
+        ],
+        help="DW factor strategy type",
+    )
+    parser.add_argument("--dw-window", type=int, default=30, help="DW calculation window in days")
 
     args = parser.parse_args()
 
@@ -1186,6 +1254,25 @@ def main():
             short_percentile=80,
             min_volume=5_000_000,
             min_market_cap=50_000_000,
+            **common_params,
+        )
+        if result:
+            all_results.append(result)
+
+    # 11. Durbin-Watson Factor (Mean Reversion)
+    if args.run_dw:
+        result = run_dw_factor_backtest(
+            args.data_file,
+            strategy=args.dw_strategy,
+            dw_window=args.dw_window,
+            directional_window=5,
+            directional_threshold=10,
+            rebalance_days=7,
+            weighting_method="equal_weight",
+            long_percentile=20,
+            short_percentile=80,
+            min_volume=1_000_000,
+            min_market_cap=10_000_000,
             **common_params,
         )
         if result:
