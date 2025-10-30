@@ -135,10 +135,12 @@ def _build_strategy_params(
         exchange_id = p.get("exchange_id", "hyperliquid") if isinstance(p, dict) else "hyperliquid"
         top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
         bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
+        rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
         return (historical_data, list(historical_data.keys()), strategy_notional), {
             "exchange_id": exchange_id,
             "top_n": top_n,
             "bottom_n": bottom_n,
+            "rebalance_days": rebalance_days,
         }
 
     elif strategy_name == "mean_reversion":

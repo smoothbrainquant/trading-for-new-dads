@@ -36,7 +36,9 @@
     "carry": {
       "exchange_id": "hyperliquid",
       "top_n": 10,
-      "bottom_n": 10
+      "bottom_n": 10,
+      "rebalance_days": 7,
+      "_comment": "Weekly rebalancing: Run strategy every 7 days for carry factor trades."
     }
   }
 }
