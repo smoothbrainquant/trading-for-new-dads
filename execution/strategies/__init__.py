@@ -6,6 +6,7 @@ from .size import strategy_size
 from .open_interest_divergence import strategy_oi_divergence
 from .beta import strategy_beta
 from .trendline_breakout import strategy_trendline_breakout
+from .kurtosis import strategy_kurtosis
 from .volatility import strategy_volatility
 
 __all__ = [
@@ -17,5 +18,6 @@ __all__ = [
     "strategy_oi_divergence",
     "strategy_beta",
     "strategy_trendline_breakout",
+    "strategy_kurtosis",
     "strategy_volatility",
 ]
