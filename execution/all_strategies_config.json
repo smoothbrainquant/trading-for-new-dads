@@ -1,11 +1,14 @@
 {
   "strategy_weights": {
-    "mean_reversion": 0.6370925523838878,
-    "size": 0.1032488189960471,
-    "carry": 0.0919692268871264,
-    "oi_divergence": 0.0676894017329385,
-    "breakout": 0.0499999999999999,
-    "days_from_high": 0.0499999999999999
+    "mean_reversion": 0.6833333333333332,
+    "size": 0.1108888888888888,
+    "carry": 0.0987777777777777,
+    "breakout": 0.0535,
+    "days_from_high": 0.0535
+  },
+  "_removed_strategy": {
+    "_comment": "oi_divergence strategy removed - OI data not used anymore",
+    "_old_weight": 0.0676894017329385
   },
   "params": {
     "days_from_high": {
@@ -32,14 +35,6 @@
       "exchange_id": "hyperliquid",
       "top_n": 10,
       "bottom_n": 10
-    },
-    "oi_divergence": {
-      "mode": "divergence",
-      "lookback": 30,
-      "top_n": 10,
-      "bottom_n": 10,
-      "exchange_code": "A",
-      "_comment": "exchange_code 'A' = aggregate OI across all exchanges (recommended). Use 'daily' interval per Coinalyze API."
     }
   }
 }
