@@ -40,6 +40,15 @@
       "bottom_n": 10,
       "exchange_code": "A",
       "_comment": "exchange_code 'A' = aggregate OI across all exchanges (recommended). Use 'daily' interval per Coinalyze API."
+    },
+    "trendline_breakout": {
+      "trendline_window": 30,
+      "breakout_threshold": 1.5,
+      "min_r2": 0.5,
+      "max_pvalue": 0.05,
+      "slope_direction": "any",
+      "max_positions": 10,
+      "_comment": "Trendline breakout strategy using 30-day window with 1-day rebalancing. Detects breakouts from clean trendlines (R² >= 0.5)."
     }
   }
 }

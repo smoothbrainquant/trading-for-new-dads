@@ -59,6 +59,7 @@ from backtests.scripts.backtest_volatility_factor import backtest as backtest_vo
 from backtests.scripts.backtest_kurtosis_factor import backtest as backtest_kurtosis, load_data
 from backtests.scripts.backtest_beta_factor import run_backtest as backtest_beta, load_data
 from backtests.scripts.backtest_adf_factor import run_backtest as run_adf_backtest, load_data
+from backtests.scripts.backtest_trendline_breakout import run_backtest as run_trendline_breakout, load_data
 
 
 def calculate_comprehensive_metrics(portfolio_df, initial_capital, benchmark_returns=None):
@@ -667,6 +668,56 @@ def run_adf_factor_backtest(data_file, **kwargs):
         return None
 
 
+def run_trendline_breakout_backtest(data_file, **kwargs):
+    """Run trendline breakout backtest."""
+    print("\n" + "=" * 80)
+    print("Running Trendline Breakout Backtest")
+    print("=" * 80)
+
+    try:
+        price_data = load_data(data_file)
+
+        results = run_trendline_breakout(
+            data=price_data,
+            trendline_window=kwargs.get("trendline_window", 30),
+            volatility_window=kwargs.get("volatility_window", 30),
+            breakout_threshold=kwargs.get("breakout_threshold", 1.5),
+            min_r2=kwargs.get("min_r2", 0.5),
+            max_pvalue=kwargs.get("max_pvalue", 0.05),
+            slope_direction=kwargs.get("slope_direction", "any"),
+            rebalance_days=kwargs.get("rebalance_days", 1),
+            max_positions=kwargs.get("max_positions", 10),
+            holding_period=kwargs.get("holding_period", 5),
+            weighting_method=kwargs.get("weighting_method", "equal_weight"),
+            initial_capital=kwargs.get("initial_capital", 10000),
+            leverage=kwargs.get("leverage", 1.0),
+            long_allocation=kwargs.get("long_allocation", 0.5),
+            short_allocation=kwargs.get("short_allocation", 0.5),
+            min_volume=kwargs.get("min_volume", 5_000_000),
+            min_market_cap=kwargs.get("min_market_cap", 50_000_000),
+            start_date=kwargs.get("start_date"),
+            end_date=kwargs.get("end_date"),
+        )
+
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results["portfolio_values"], kwargs.get("initial_capital", 10000)
+        )
+
+        return {
+            "strategy": "Trendline Breakout",
+            "description": f"Trendline: {kwargs.get('trendline_window', 30)}d, Rebal: {kwargs.get('rebalance_days', 1)}d, Hold: {kwargs.get('holding_period', 5)}d",
+            "metrics": metrics,
+            "results": results,
+        }
+    except Exception as e:
+        print(f"Error in Trendline Breakout backtest: {e}")
+        import traceback
+
+        traceback.print_exc()
+        return None
+
+
 def create_summary_table(all_results):
     """
     Create summary table with all metrics.
@@ -1031,6 +1082,27 @@ def main():
         help="ADF factor strategy type",
     )
     parser.add_argument("--adf-window", type=int, default=60, help="ADF calculation window in days")
+    parser.add_argument(
+        "--run-trendline-breakout",
+        action="store_true",
+        default=True,
+        help="Run trendline breakout backtest",
+    )
+    parser.add_argument(
+        "--trendline-window", type=int, default=30, help="Trendline calculation window in days"
+    )
+    parser.add_argument(
+        "--trendline-rebalance-days",
+        type=int,
+        default=1,
+        help="Trendline breakout rebalance frequency in days",
+    )
+    parser.add_argument(
+        "--trendline-holding-period",
+        type=int,
+        default=5,
+        help="Trendline breakout holding period in days",
+    )
 
     args = parser.parse_args()
 
@@ -1184,6 +1256,26 @@ def main():
             weighting_method="equal_weight",
             long_percentile=20,
             short_percentile=80,
+            min_volume=5_000_000,
+            min_market_cap=50_000_000,
+            **common_params,
+        )
+        if result:
+            all_results.append(result)
+
+    # 11. Trendline Breakout (with 1-day rebalancing)
+    if args.run_trendline_breakout:
+        result = run_trendline_breakout_backtest(
+            args.data_file,
+            trendline_window=args.trendline_window,
+            breakout_threshold=1.5,
+            min_r2=0.5,
+            max_pvalue=0.05,
+            slope_direction="any",
+            rebalance_days=args.trendline_rebalance_days,
+            max_positions=10,
+            holding_period=args.trendline_holding_period,
+            weighting_method="equal_weight",
             min_volume=5_000_000,
             min_market_cap=50_000_000,
             **common_params,

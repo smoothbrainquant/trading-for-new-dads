@@ -73,6 +73,7 @@ from execution.strategies import (
     strategy_mean_reversion,
     strategy_size,
     strategy_oi_divergence,
+    strategy_trendline_breakout,
 )
 
 # Import shared strategy utilities for legacy path
@@ -105,6 +106,7 @@ STRATEGY_REGISTRY = {
     "mean_reversion": strategy_mean_reversion,
     "size": strategy_size,
     "oi_divergence": strategy_oi_divergence,
+    "trendline_breakout": strategy_trendline_breakout,
 }
 
 
@@ -180,6 +182,22 @@ def _build_strategy_params(
             "top_n": top_n,
             "bottom_n": bottom_n,
             "limit": limit,
+        }
+
+    elif strategy_name == "trendline_breakout":
+        trendline_window = int(p.get("trendline_window", 30)) if isinstance(p, dict) else 30
+        breakout_threshold = float(p.get("breakout_threshold", 1.5)) if isinstance(p, dict) else 1.5
+        min_r2 = float(p.get("min_r2", 0.5)) if isinstance(p, dict) else 0.5
+        max_pvalue = float(p.get("max_pvalue", 0.05)) if isinstance(p, dict) else 0.05
+        slope_direction = p.get("slope_direction", "any") if isinstance(p, dict) else "any"
+        max_positions = int(p.get("max_positions", 10)) if isinstance(p, dict) else 10
+        return (historical_data, strategy_notional), {
+            "trendline_window": trendline_window,
+            "breakout_threshold": breakout_threshold,
+            "min_r2": min_r2,
+            "max_pvalue": max_pvalue,
+            "slope_direction": slope_direction,
+            "max_positions": max_positions,
         }
 
     else:
