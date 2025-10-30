@@ -5,7 +5,8 @@
     "carry": 0.0919692268871264,
     "oi_divergence": 0.0676894017329385,
     "breakout": 0.0499999999999999,
-    "days_from_high": 0.0499999999999999
+    "days_from_high": 0.0499999999999999,
+    "beta": 0.0
   },
   "params": {
     "days_from_high": {
@@ -40,6 +41,17 @@
       "bottom_n": 10,
       "exchange_code": "A",
       "_comment": "exchange_code 'A' = aggregate OI across all exchanges (recommended). Use 'daily' interval per Coinalyze API."
+    },
+    "beta": {
+      "beta_window": 90,
+      "volatility_window": 30,
+      "rebalance_days": 5,
+      "long_percentile": 20,
+      "short_percentile": 80,
+      "weighting_method": "equal_weight",
+      "long_allocation": 0.5,
+      "short_allocation": 0.5,
+      "_comment": "Optimal rebalance_days=5 based on backtest (Sharpe: 0.68, Return: 26.98%). Betting Against Beta strategy: long low-beta coins, short high-beta coins."
     }
   }
 }
