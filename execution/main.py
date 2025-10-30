@@ -812,7 +812,7 @@ def get_base_symbol(symbol):
 # Note: Strategy functions are now imported from execution.strategies package
 
 
-def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive=False):
+def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive=True):
     """
     Send orders to adjust positions based on calculated trade amounts.
 
@@ -822,7 +822,8 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive
     Args:
         trades (dict): Dictionary of symbols to trade amounts (positive = buy, negative = sell)
         dry_run (bool): If True, only prints orders without executing (default: True)
-        aggressive (bool): If True, uses aggressive execution strategy (default: False)
+        aggressive (bool): If True, uses limit order execution with tick-based strategy (default: True)
+                          If False, uses simple market orders
 
     Returns:
         list: List of order results (empty if dry_run=True) or dict for aggressive execution
@@ -833,9 +834,9 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive
         print("\nNo trades to execute.")
         return []
 
-    # Use aggressive execution if enabled
+    # Use limit order execution if enabled (default)
     if aggressive:
-        print("\nUsing AGGRESSIVE ORDER EXECUTION strategy (tick-based)...")
+        print("\nUsing LIMIT ORDER EXECUTION strategy (tick-based)...")
         result = aggressive_execute_orders(
             trades=trades,
             tick_interval=2.0,  # Poll every 2 seconds
@@ -845,7 +846,7 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive
         )
         return result
 
-    # Default execution (simple market orders)
+    # Market order execution (only if --market flag specified)
     print(f"\n{'='*80}")
     print(f"ORDER EXECUTION {'(DRY RUN)' if dry_run else '(LIVE)'}")
     print(f"{'='*80}")
@@ -897,8 +898,8 @@ def main():
     parser.add_argument(
         "--threshold",
         type=float,
-        default=0.05,
-        help="Rebalance threshold as decimal (e.g., 0.05 for 5%%)",
+        default=0.03,
+        help="Rebalance threshold as decimal (e.g., 0.03 for 3%%)",
     )
     parser.add_argument(
         "--dry-run",
@@ -909,14 +910,20 @@ def main():
     parser.add_argument(
         "--leverage",
         type=float,
-        default=1.5,
+        default=2.0,
         help="Leverage multiplier for notional value (e.g., 2.0 for 2x leverage)",
     )
     parser.add_argument(
-        "--aggressive",
+        "--market",
         action="store_true",
         default=False,
-        help="Use aggressive order execution strategy (tick-based: continuously move limit orders to best bid/ask)",
+        help="Use market orders instead of limit orders (default is limit orders with tick-based execution)",
+    )
+    parser.add_argument(
+        "--limits",
+        action="store_true",
+        default=True,
+        help="Use limit order execution strategy (tick-based: continuously move limit orders to best bid/ask) - THIS IS THE DEFAULT",
     )
     parser.add_argument(
         "--signals",
@@ -995,7 +1002,7 @@ def main():
     print(f"  Days since high (Strategy 1 default): {args.days_since_high}")
     print(f"  Rebalance threshold: {args.threshold*100:.1f}%")
     print(f"  Leverage: {args.leverage}x")
-    print(f"  Aggressive execution: {args.aggressive}")
+    print(f"  Order type: {'Market' if args.market else 'Limit (tick-based)'}")
     print(f"  Dry run: {args.dry_run}")
     if blend_weights:
         print("\nSelected signals and weights:")
@@ -1476,9 +1483,9 @@ def main():
             side = "BUY" if amount > 0 else "SELL"
             print(f"  {symbol}: {side} ${abs(amount):,.2f}")
 
-        # Execute orders
+        # Execute orders (use limit orders by default, market orders only if --market specified)
         send_orders_if_difference_exceeds_threshold(
-            trades, dry_run=args.dry_run, aggressive=args.aggressive
+            trades, dry_run=args.dry_run, aggressive=not args.market
         )
 
         if args.dry_run:
