@@ -9,6 +9,8 @@ Supported signals (handlers implemented or stubbed):
 - carry: Long negative-funding symbols, short positive-funding symbols (basic)
 - mean_reversion: Long-only extreme dips with high volume (2d lookback, optimal per backtest)
 - size: Placeholder (prints notice if selected but not implemented)
+- oi_divergence: Open interest divergence signals (contrarian or momentum)
+- kurtosis: Long/short based on return distribution tail-fatness (momentum or mean reversion)
 
 Weights can be provided via an external JSON config file so the backtesting suite
 can update them without code changes. Example config structure:
@@ -19,7 +21,8 @@ can update them without code changes. Example config structure:
     "breakout": 0.4,
     "mean_reversion": 0.2,
     "size": 0.1,
-    "carry": 0.1
+    "carry": 0.1,
+    "kurtosis": 0.1
   },
   "params": {
     "days_from_high": {"max_days": 20},
@@ -27,7 +30,8 @@ can update them without code changes. Example config structure:
     "mean_reversion": {"zscore_threshold": 1.5, "volume_threshold": 1.0, "period_days": 2},
     "size": {"top_n": 10, "bottom_n": 10},
     "carry": {"exchange_id": "hyperliquid"},
-    "oi_divergence": {"mode": "trend", "lookback": 30, "exchange_code": "A"}
+    "oi_divergence": {"mode": "trend", "lookback": 30, "exchange_code": "A"},
+    "kurtosis": {"strategy": "momentum", "kurtosis_window": 30, "long_percentile": 20, "short_percentile": 80, "max_positions": 10}
   }
 }
 
@@ -73,6 +77,7 @@ from execution.strategies import (
     strategy_mean_reversion,
     strategy_size,
     strategy_oi_divergence,
+    strategy_kurtosis,
 )
 
 # Import shared strategy utilities for legacy path
@@ -105,6 +110,7 @@ STRATEGY_REGISTRY = {
     "mean_reversion": strategy_mean_reversion,
     "size": strategy_size,
     "oi_divergence": strategy_oi_divergence,
+    "kurtosis": strategy_kurtosis,
 }
 
 
@@ -180,6 +186,20 @@ def _build_strategy_params(
             "top_n": top_n,
             "bottom_n": bottom_n,
             "limit": limit,
+        }
+
+    elif strategy_name == "kurtosis":
+        strategy_type = p.get("strategy", "momentum") if isinstance(p, dict) else "momentum"
+        kurtosis_window = int(p.get("kurtosis_window", 30)) if isinstance(p, dict) else 30
+        long_percentile = float(p.get("long_percentile", 20)) if isinstance(p, dict) else 20
+        short_percentile = float(p.get("short_percentile", 80)) if isinstance(p, dict) else 80
+        max_positions = int(p.get("max_positions", 10)) if isinstance(p, dict) else 10
+        return (historical_data, strategy_notional), {
+            "strategy": strategy_type,
+            "kurtosis_window": kurtosis_window,
+            "long_percentile": long_percentile,
+            "short_percentile": short_percentile,
+            "max_positions": max_positions,
         }
 
     else:
@@ -823,7 +843,7 @@ def main():
         "--signals",
         type=str,
         default=None,
-        help="Comma-separated list of signals to blend (e.g., days_from_high,breakout,mean_reversion,size,carry)",
+        help="Comma-separated list of signals to blend (e.g., days_from_high,breakout,mean_reversion,size,carry,oi_divergence,kurtosis)",
     )
     parser.add_argument(
         "--signal-config",
