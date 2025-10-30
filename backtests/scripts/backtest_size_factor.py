@@ -20,9 +20,15 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import argparse
-from calc_vola import calculate_rolling_30d_volatility
-from calc_weights import calculate_weights
-from fetch_coinmarketcap_data import fetch_coinmarketcap_data, fetch_mock_marketcap_data
+import sys
+import os
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+
+from signals.calc_vola import calculate_rolling_30d_volatility
+from signals.calc_weights import calculate_weights
+from data.scripts.fetch_coinmarketcap_data import fetch_coinmarketcap_data, fetch_mock_marketcap_data
 
 
 def calculate_rolling_volatility_custom(data, window=30):

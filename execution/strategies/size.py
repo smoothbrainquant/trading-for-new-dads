@@ -1,4 +1,7 @@
 from typing import Dict, List
+import os
+import json
+from datetime import datetime, timedelta
 
 import pandas as pd
 
@@ -12,6 +15,7 @@ def strategy_size(
     top_n: int = 10,
     bottom_n: int = 10,
     limit: int = 100,
+    rebalance_days: int = 10,
 ) -> Dict[str, float]:
     """Size factor via market capitalization (CoinMarketCap).
 
@@ -20,6 +24,19 @@ def strategy_size(
     - SHORT top `top_n` (largest caps)
     - Intersect with tradable `universe_symbols`
     - Weight by inverse 30d volatility
+    - Caches results and only recalculates every `rebalance_days` days
+    
+    Args:
+        historical_data: Dictionary of symbol -> DataFrame with OHLCV data
+        universe_symbols: List of tradable symbols
+        notional: Total notional to allocate
+        top_n: Number of large caps to short
+        bottom_n: Number of small caps to long
+        limit: Number of coins to fetch from CMC
+        rebalance_days: Days between rebalancing (default: 10, optimal per backtest)
+    
+    Returns:
+        Dictionary of symbol -> target notional (positive=long, negative=short)
     """
     try:
         from data.scripts.fetch_coinmarketcap_data import (
@@ -29,6 +46,45 @@ def strategy_size(
     except Exception as e:
         print(f"  Size handler unavailable (CMC import error): {e}")
         return {}
+    
+    # Check cache and skip recalculation if within rebalance period
+    workspace_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    cache_dir = os.path.join(workspace_root, "execution", ".cache")
+    os.makedirs(cache_dir, exist_ok=True)
+    cache_file = os.path.join(cache_dir, "size_strategy_cache.json")
+    
+    # Try to load cached weights
+    if os.path.exists(cache_file):
+        try:
+            with open(cache_file, 'r') as f:
+                cache_data = json.load(f)
+            
+            last_calc_date = datetime.fromisoformat(cache_data.get('last_calculation_date', '2000-01-01'))
+            days_since_calc = (datetime.now() - last_calc_date).days
+            cached_weights = cache_data.get('weights', {})
+            cached_notional = cache_data.get('notional', 0)
+            
+            if days_since_calc < rebalance_days and cached_weights:
+                # Use cached weights, but scale to current notional
+                print(f"  ⚡ Using cached SIZE weights (calculated {days_since_calc} days ago)")
+                print(f"     Next recalculation in {rebalance_days - days_since_calc} days")
+                
+                # Scale cached weights to current notional
+                scale_factor = notional / cached_notional if cached_notional > 0 else 1.0
+                scaled_weights = {sym: weight * scale_factor for sym, weight in cached_weights.items()}
+                
+                # Filter to only symbols in current universe
+                filtered_weights = {sym: weight for sym, weight in scaled_weights.items() 
+                                   if sym in universe_symbols}
+                
+                print(f"     Using {len(filtered_weights)} cached positions (scaled to ${notional:,.2f})")
+                return filtered_weights
+            else:
+                print(f"  🔄 Cache expired ({days_since_calc} days old) - recalculating SIZE weights")
+        except Exception as e:
+            print(f"  ⚠️  Error loading cache: {e} - recalculating")
+    else:
+        print(f"  🔄 No cache found - calculating SIZE weights (will cache for {rebalance_days} days)")
 
     try:
         df_mc = fetch_coinmarketcap_data(limit=limit)
@@ -81,5 +137,24 @@ def strategy_size(
         )
     else:
         print("  No SIZE SHORT candidates (large caps).")
+
+    # Save to cache for future runs
+    try:
+        cache_data = {
+            'last_calculation_date': datetime.now().isoformat(),
+            'weights': target_positions,
+            'notional': notional,
+            'rebalance_days': rebalance_days,
+            'params': {
+                'top_n': top_n,
+                'bottom_n': bottom_n,
+                'limit': limit
+            }
+        }
+        with open(cache_file, 'w') as f:
+            json.dump(cache_data, f, indent=2)
+        print(f"  💾 Cached SIZE weights (valid for {rebalance_days} days)")
+    except Exception as e:
+        print(f"  ⚠️  Warning: Could not save cache: {e}")
 
     return target_positions
