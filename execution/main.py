@@ -26,8 +26,7 @@ can update them without code changes. Example config structure:
     "breakout": {"entry_lookback": 50, "exit_lookback": 70},
     "mean_reversion": {"zscore_threshold": 1.5, "volume_threshold": 1.0, "period_days": 2},
     "size": {"top_n": 10, "bottom_n": 10},
-    "carry": {"exchange_id": "hyperliquid"},
-    "oi_divergence": {"mode": "trend", "lookback": 30, "exchange_code": "A"}
+    "carry": {"exchange_id": "hyperliquid"}
   }
 }
 
@@ -72,7 +71,7 @@ from execution.strategies import (
     strategy_carry,
     strategy_mean_reversion,
     strategy_size,
-    strategy_oi_divergence,
+    # strategy_oi_divergence,  # Removed: OI data not used
     strategy_beta,
 )
 
@@ -105,7 +104,7 @@ STRATEGY_REGISTRY = {
     "carry": strategy_carry,
     "mean_reversion": strategy_mean_reversion,
     "size": strategy_size,
-    "oi_divergence": strategy_oi_divergence,
+    # "oi_divergence": strategy_oi_divergence,  # Removed: OI data not used
     "beta": strategy_beta,
 }
 
@@ -160,28 +159,30 @@ def _build_strategy_params(
             "long_only": long_only,
         }
 
-    elif strategy_name == "oi_divergence":
-        mode = p.get("mode", "trend") if isinstance(p, dict) else "trend"
-        lookback = int(p.get("lookback", 30)) if isinstance(p, dict) else 30
-        top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
-        bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
-        exchange_code = p.get("exchange_code", "A") if isinstance(p, dict) else "A"
-        return (historical_data, strategy_notional), {
-            "mode": mode,
-            "lookback": lookback,
-            "top_n": top_n,
-            "bottom_n": bottom_n,
-            "exchange_code": exchange_code,
-        }
+    # elif strategy_name == "oi_divergence":  # Removed: OI data not used
+    #     mode = p.get("mode", "trend") if isinstance(p, dict) else "trend"
+    #     lookback = int(p.get("lookback", 30)) if isinstance(p, dict) else 30
+    #     top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
+    #     bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
+    #     exchange_code = p.get("exchange_code", "A") if isinstance(p, dict) else "A"
+    #     return (historical_data, strategy_notional), {
+    #         "mode": mode,
+    #         "lookback": lookback,
+    #         "top_n": top_n,
+    #         "bottom_n": bottom_n,
+    #         "exchange_code": exchange_code,
+    #     }
 
     elif strategy_name == "size":
         top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
         bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
         limit = int(p.get("limit", 100)) if isinstance(p, dict) else 100
+        rebalance_days = int(p.get("rebalance_days", 10)) if isinstance(p, dict) else 10
         return (historical_data, list(historical_data.keys()), strategy_notional), {
             "top_n": top_n,
             "bottom_n": bottom_n,
             "limit": limit,
+            "rebalance_days": rebalance_days,
         }
 
     elif strategy_name == "beta":
@@ -244,31 +245,31 @@ def update_market_data():
         return None
 
 
-def check_and_refresh_oi_data_if_needed():
-    """
-    Check OI data freshness and automatically refresh if stale.
-
-    Triggers automatic download if:
-    - OI data is 1+ days behind current date
-    - OI data file is >8 hours old
-
-    Returns:
-        dict: OI data status information after check/refresh
-    """
-    try:
-        from data.scripts.refresh_oi_data import check_and_refresh_oi_data
-
-        # Check and auto-refresh if needed
-        result = check_and_refresh_oi_data(force=False, start_year=2020)
-
-        return result
-
-    except Exception as e:
-        print(f"\n⚠️  Error in OI data check/refresh: {e}")
-        import traceback
-
-        traceback.print_exc()
-        return {"status": "error", "error": str(e), "refreshed": False}
+# def check_and_refresh_oi_data_if_needed():  # Removed: OI data not used
+#     """
+#     Check OI data freshness and automatically refresh if stale.
+#
+#     Triggers automatic download if:
+#     - OI data is 1+ days behind current date
+#     - OI data file is >8 hours old
+#
+#     Returns:
+#         dict: OI data status information after check/refresh
+#     """
+#     try:
+#         from data.scripts.refresh_oi_data import check_and_refresh_oi_data
+#
+#         # Check and auto-refresh if needed
+#         result = check_and_refresh_oi_data(force=False, start_year=2020)
+#
+#         return result
+#
+#     except Exception as e:
+#         print(f"\n⚠️  Error in OI data check/refresh: {e}")
+#         import traceback
+#
+#         traceback.print_exc()
+#         return {"status": "error", "error": str(e), "refreshed": False}
 
 
 def check_cache_freshness():
@@ -881,36 +882,36 @@ def main():
     print("\n[Pre-flight checks]")
     update_market_data()
 
-    # Check and auto-refresh OI data if OI strategy is being used
-    if (
-        blend_weights
-        and "oi_divergence" in blend_weights
-        and blend_weights.get("oi_divergence", 0) > 0
-    ):
-        print("\n[OI Data Check] OI Divergence strategy active - checking data freshness...")
-        oi_result = check_and_refresh_oi_data_if_needed()
-
-        # Check result
-        if oi_result.get("refreshed"):
-            print("\n" + "✓" * 80)
-            print("✓ OI DATA AUTOMATICALLY REFRESHED")
-            print(f"✓ Fresh data downloaded and ready for trading")
-            print("✓" * 80)
-        elif oi_result.get("status") == "current":
-            print("\n✓ OI data is current - no refresh needed")
-        elif oi_result.get("status") in ["refresh_failed", "error"]:
-            # Refresh failed - issue strong warning
-            print("\n" + "!" * 80)
-            print("⚠️  CRITICAL: OI DATA REFRESH FAILED")
-            print(f"   Strategy weight: {blend_weights.get('oi_divergence', 0)*100:.1f}%")
-            print("   Impact: Will use existing data (potentially stale)")
-            print("   Recommendation: Check COINALYZE_API credentials and network")
-            if oi_result.get("error"):
-                print(f"   Error: {oi_result.get('error')}")
-            print("!" * 80)
-        else:
-            # Unknown status - warn but continue
-            print(f"\n⚠️  Warning: Unexpected OI data status: {oi_result.get('status')}")
+    # # Check and auto-refresh OI data if OI strategy is being used  # Removed: OI data not used
+    # if (
+    #     blend_weights
+    #     and "oi_divergence" in blend_weights
+    #     and blend_weights.get("oi_divergence", 0) > 0
+    # ):
+    #     print("\n[OI Data Check] OI Divergence strategy active - checking data freshness...")
+    #     oi_result = check_and_refresh_oi_data_if_needed()
+    #
+    #     # Check result
+    #     if oi_result.get("refreshed"):
+    #         print("\n" + "✓" * 80)
+    #         print("✓ OI DATA AUTOMATICALLY REFRESHED")
+    #         print(f"✓ Fresh data downloaded and ready for trading")
+    #         print("✓" * 80)
+    #     elif oi_result.get("status") == "current":
+    #         print("\n✓ OI data is current - no refresh needed")
+    #     elif oi_result.get("status") in ["refresh_failed", "error"]:
+    #         # Refresh failed - issue strong warning
+    #         print("\n" + "!" * 80)
+    #         print("⚠️  CRITICAL: OI DATA REFRESH FAILED")
+    #         print(f"   Strategy weight: {blend_weights.get('oi_divergence', 0)*100:.1f}%")
+    #         print("   Impact: Will use existing data (potentially stale)")
+    #         print("   Recommendation: Check COINALYZE_API credentials and network")
+    #         if oi_result.get("error"):
+    #             print(f"   Error: {oi_result.get('error')}")
+    #         print("!" * 80)
+    #     else:
+    #         # Unknown status - warn but continue
+    #         print(f"\n⚠️  Warning: Unexpected OI data status: {oi_result.get('status')}")
 
     check_cache_freshness()
 

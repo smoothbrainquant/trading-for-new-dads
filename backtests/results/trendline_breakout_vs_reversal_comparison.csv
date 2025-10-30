@@ -1,0 +1,6 @@
+Strategy,Type,Total Return,Annual Return,Sharpe,Max DD,Win Rate,Trades,Avg R²
+"BREAKOUT: R²≥0.5, Z≥1.5σ, 5d",breakout,93.44%,12.31%,0.36,-40.27%,8.5%,129,0.655
+"BREAKOUT: R²≥0.7, Z≥2.0σ, 5d",breakout,12.21%,2.05%,0.09,-30.60%,2.1%,23,0.785
+"REVERSAL: R²≥0.5, Z≥1.5σ, 5d",reversal,-57.59%,-14.01%,-0.32,-77.37%,21.8%,456,0.744
+"REVERSAL: R²≥0.7, Z≥2.0σ, 5d",reversal,-71.02%,-19.58%,-0.71,-81.26%,8.6%,162,0.818
+"REVERSAL: R²≥0.6, Z≥1.5σ, 10d",reversal,-62.45%,-15.83%,-0.30,-79.97%,28.0%,318,0.781

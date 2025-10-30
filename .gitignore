@@ -11,3 +11,6 @@ __pycache__/
 .idea/
 *.swp
 *.swo
+
+# Strategy cache files
+execution/.cache/

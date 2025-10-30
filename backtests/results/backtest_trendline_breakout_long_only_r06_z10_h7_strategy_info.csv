@@ -1,0 +1,2 @@
+trendline_window,breakout_threshold,min_r2,max_pvalue,slope_direction,rebalance_days,max_positions,holding_period,weighting_method,initial_capital,leverage,long_allocation,short_allocation
+30,1.0,0.6,0.05,positive,1,15,7,equal_weight,10000,1.0,0.5,0.5
