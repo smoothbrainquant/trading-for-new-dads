@@ -10,6 +10,8 @@ Supported signals (handlers implemented or stubbed):
 - mean_reversion: Long-only extreme dips with high volume (2d lookback, optimal per backtest)
 - size: Placeholder (prints notice if selected but not implemented)
 - trendline_breakout: Momentum continuation based on trendline analysis (daily rebalance, 5d holding)
+- beta: Betting Against Beta - Long low beta coins, short high beta coins (5d rebalance optimal)
+- kurtosis: Kurtosis factor - Long/short based on return distribution kurtosis (14d rebalance optimal)
 
 Weights can be provided via an external JSON config file so the backtesting suite
 can update them without code changes. Example config structure:
@@ -75,6 +77,7 @@ from execution.strategies import (
     # strategy_oi_divergence,  # Removed: OI data not used
     strategy_beta,
     strategy_trendline_breakout,
+    strategy_kurtosis,
 )
 
 # Import shared strategy utilities for legacy path
@@ -109,6 +112,7 @@ STRATEGY_REGISTRY = {
     # "oi_divergence": strategy_oi_divergence,  # Removed: OI data not used
     "beta": strategy_beta,
     "trendline_breakout": strategy_trendline_breakout,
+    "kurtosis": strategy_kurtosis,
 }
 
 
@@ -230,6 +234,30 @@ def _build_strategy_params(
             "weighting_method": weighting_method,
             "long_allocation": long_allocation,
             "short_allocation": short_allocation,
+        }
+
+    elif strategy_name == "kurtosis":
+        kurtosis_window = int(p.get("kurtosis_window", 30)) if isinstance(p, dict) else 30
+        volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
+        rebalance_days = int(p.get("rebalance_days", 14)) if isinstance(p, dict) else 14
+        long_percentile = int(p.get("long_percentile", 20)) if isinstance(p, dict) else 20
+        short_percentile = int(p.get("short_percentile", 80)) if isinstance(p, dict) else 80
+        strategy_type = p.get("strategy_type", "momentum") if isinstance(p, dict) else "momentum"
+        weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"
+        long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        max_positions = int(p.get("max_positions", 10)) if isinstance(p, dict) else 10
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            "kurtosis_window": kurtosis_window,
+            "volatility_window": volatility_window,
+            "rebalance_days": rebalance_days,
+            "long_percentile": long_percentile,
+            "short_percentile": short_percentile,
+            "strategy_type": strategy_type,
+            "weighting_method": weighting_method,
+            "long_allocation": long_allocation,
+            "short_allocation": short_allocation,
+            "max_positions": max_positions,
         }
 
     else:
