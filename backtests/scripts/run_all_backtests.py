@@ -1105,12 +1105,12 @@ def main():
     parser.add_argument(
         "--beta-weighting",
         type=str,
-        default="risk_parity",
+        default="equal_weight",
         choices=["equal_weight", "risk_parity", "beta_weighted"],
         help="Beta factor weighting method",
     )
     parser.add_argument(
-        "--beta-rebalance-days", type=int, default=1, help="Beta rebalance frequency in days"
+        "--beta-rebalance-days", type=int, default=5, help="Beta rebalance frequency in days (optimal: 5 days, Sharpe: 0.68)"
     )
     # parser.add_argument(
     #     "--run-adf", action="store_true", default=True, help="Run ADF factor backtest"
@@ -1187,7 +1187,7 @@ def main():
             args.marketcap_file,
             strategy="long_small_short_large",
             num_buckets=5,
-            rebalance_days=7,
+            rebalance_days=10,  # Optimal: 10 days (Sharpe: 0.39)
             **common_params,
         )
         if result:
@@ -1233,7 +1233,7 @@ def main():
             args.data_file,
             strategy=args.volatility_strategy,
             num_quintiles=5,
-            rebalance_days=1,  # Daily rebalancing
+            rebalance_days=3,  # Optimal: 3 days (Sharpe: 1.41)
             weighting_method="equal",
             **common_params,
         )
@@ -1255,7 +1255,7 @@ def main():
         if result:
             all_results.append(result)
 
-    # 9. Beta Factor (BAB with Risk Parity, Daily Rebalancing)
+    # 9. Beta Factor (BAB with Equal Weight, 5-day Rebalancing)
     if args.run_beta:
         result = run_beta_factor_backtest(
             args.data_file,
