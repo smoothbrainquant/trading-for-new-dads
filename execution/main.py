@@ -13,6 +13,7 @@ Supported signals (handlers implemented or stubbed):
 - beta: Betting Against Beta - Long low beta coins, short high beta coins (5d rebalance optimal)
 - kurtosis: Kurtosis factor - Long/short based on return distribution kurtosis (14d rebalance optimal)
 - volatility: Low volatility anomaly (long low vol, short high vol, 3d rebalance optimal)
+- adf: ADF factor (trend following vs mean reversion, 7d rebalance optimal) [COMMENTED OUT - not active]
 
 Weights can be provided via an external JSON config file so the backtesting suite
 can update them without code changes. Example config structure:
@@ -80,6 +81,7 @@ from execution.strategies import (
     strategy_trendline_breakout,
     strategy_kurtosis,
     strategy_volatility,
+    # strategy_adf,  # COMMENTED OUT: Not active yet (integrate but disable)
 )
 
 # Import shared strategy utilities for legacy path
@@ -116,6 +118,7 @@ STRATEGY_REGISTRY = {
     "trendline_breakout": strategy_trendline_breakout,
     "kurtosis": strategy_kurtosis,
     "volatility": strategy_volatility,
+    # "adf": strategy_adf,  # COMMENTED OUT: Not active yet (integrate but disable)
 }
 
 
@@ -281,6 +284,30 @@ def _build_strategy_params(
             "short_allocation": short_allocation,
         }
 
+    # elif strategy_name == "adf":  # COMMENTED OUT: Not active yet
+    #     adf_window = int(p.get("adf_window", 60)) if isinstance(p, dict) else 60
+    #     regression = p.get("regression", "ct") if isinstance(p, dict) else "ct"
+    #     volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
+    #     rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
+    #     long_percentile = int(p.get("long_percentile", 20)) if isinstance(p, dict) else 20
+    #     short_percentile = int(p.get("short_percentile", 80)) if isinstance(p, dict) else 80
+    #     strategy_type = p.get("strategy_type", "trend_following_premium") if isinstance(p, dict) else "trend_following_premium"
+    #     weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"
+    #     long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
+    #     short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
+    #     return (historical_data, list(historical_data.keys()), strategy_notional), {
+    #         "adf_window": adf_window,
+    #         "regression": regression,
+    #         "volatility_window": volatility_window,
+    #         "rebalance_days": rebalance_days,
+    #         "long_percentile": long_percentile,
+    #         "short_percentile": short_percentile,
+    #         "strategy_type": strategy_type,
+    #         "weighting_method": weighting_method,
+    #         "long_allocation": long_allocation,
+    #         "short_allocation": short_allocation,
+    #     }
+
     else:
         # Default: just pass historical_data and notional
         return (historical_data, strategy_notional), {}
@@ -311,13 +338,13 @@ def update_market_data():
             os.makedirs(out_dir, exist_ok=True)
             out_path = os.path.join(out_dir, "crypto_marketcap_latest.csv")
             df_marketcap.to_csv(out_path, index=False)
-            print(f"✓ Saved {len(df_marketcap)} market cap records to: {out_path}")
+            print(f"? Saved {len(df_marketcap)} market cap records to: {out_path}")
             return df_marketcap
         else:
-            print("⚠️  No market cap data available (using mock data)")
+            print("??  No market cap data available (using mock data)")
             return None
     except Exception as e:
-        print(f"⚠️  Error updating market cap data: {e}")
+        print(f"??  Error updating market cap data: {e}")
         return None
 
 
@@ -341,7 +368,7 @@ def update_market_data():
 #         return result
 #
 #     except Exception as e:
-#         print(f"\n⚠️  Error in OI data check/refresh: {e}")
+#         print(f"\n??  Error in OI data check/refresh: {e}")
 #         import traceback
 #
 #         traceback.print_exc()
@@ -363,7 +390,7 @@ def check_cache_freshness():
     print("=" * 80)
 
     if CoinalyzeCache is None:
-        print("⚠️  CoinalyzeCache not available - skipping cache check")
+        print("??  CoinalyzeCache not available - skipping cache check")
         return {"status": "unavailable"}
 
     try:
@@ -377,7 +404,7 @@ def check_cache_freshness():
         print(f"Cache TTL: {info['ttl_hours']} hour(s)")
 
         if not info["files"]:
-            print("\n⚠️  No cached data found")
+            print("\n??  No cached data found")
             print("   Coinalyze data will be fetched from API when needed")
             return {"status": "empty", "files": []}
 
@@ -389,7 +416,7 @@ def check_cache_freshness():
         expired_count = 0
 
         for f in info["files"]:
-            status = "✓ VALID" if f["is_valid"] else "✗ EXPIRED"
+            status = "? VALID" if f["is_valid"] else "? EXPIRED"
             age_str = f"{f['age_hours']:.2f}h"
             size_kb = f["size"] / 1024
 
@@ -415,9 +442,9 @@ def check_cache_freshness():
         print(f"\nSummary: {valid_count} valid, {expired_count} expired")
 
         if expired_count > 0:
-            print("\n⚠️  Some cached data is expired and will be refreshed from API when needed")
+            print("\n??  Some cached data is expired and will be refreshed from API when needed")
         else:
-            print("\n✓ All cached data is fresh and will be used")
+            print("\n? All cached data is fresh and will be used")
 
         return {
             "status": "ok",
@@ -428,7 +455,7 @@ def check_cache_freshness():
         }
 
     except Exception as e:
-        print(f"\n⚠️  Error checking cache: {e}")
+        print(f"\n??  Error checking cache: {e}")
         return {"status": "error", "error": str(e)}
 
 
@@ -743,20 +770,20 @@ def calculate_trade_amounts(target_positions, current_positions, notional_value,
             trades[symbol] = difference
             if side == "short":
                 print(
-                    f"  ✓ NEUTRALIZE SHORT: Position not in target weights (BUY ${abs(difference):,.2f} to close short)"
+                    f"  ? NEUTRALIZE SHORT: Position not in target weights (BUY ${abs(difference):,.2f} to close short)"
                 )
             else:
                 print(
-                    f"  ✓ NEUTRALIZE LONG: Position not in target weights (SELL ${abs(difference):,.2f})"
+                    f"  ? NEUTRALIZE LONG: Position not in target weights (SELL ${abs(difference):,.2f})"
                 )
         # Only trade if difference exceeds threshold
         elif pct_difference > threshold:
             trades[symbol] = difference
             print(
-                f"  ✓ Trade needed: ${abs(difference):,.2f} ({'BUY' if difference > 0 else 'SELL'})"
+                f"  ? Trade needed: ${abs(difference):,.2f} ({'BUY' if difference > 0 else 'SELL'})"
             )
         else:
-            print(f"  ✗ No trade needed (below {threshold*100:.0f}% threshold)")
+            print(f"  ? No trade needed (below {threshold*100:.0f}% threshold)")
 
     return trades
 
@@ -867,9 +894,9 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive
                     symbol=symbol, notional_amount=notional, side=side, order_type="market"
                 )
                 orders.append(order)
-                print(f"  ✓ Order placed successfully")
+                print(f"  ? Order placed successfully")
             except Exception as e:
-                print(f"  ✗ Error placing order: {str(e)}")
+                print(f"  ? Error placing order: {str(e)}")
 
     return orders
 
@@ -976,16 +1003,16 @@ def main():
     #
     #     # Check result
     #     if oi_result.get("refreshed"):
-    #         print("\n" + "✓" * 80)
-    #         print("✓ OI DATA AUTOMATICALLY REFRESHED")
-    #         print(f"✓ Fresh data downloaded and ready for trading")
-    #         print("✓" * 80)
+    #         print("\n" + "?" * 80)
+    #         print("? OI DATA AUTOMATICALLY REFRESHED")
+    #         print(f"? Fresh data downloaded and ready for trading")
+    #         print("?" * 80)
     #     elif oi_result.get("status") == "current":
-    #         print("\n✓ OI data is current - no refresh needed")
+    #         print("\n? OI data is current - no refresh needed")
     #     elif oi_result.get("status") in ["refresh_failed", "error"]:
     #         # Refresh failed - issue strong warning
     #         print("\n" + "!" * 80)
-    #         print("⚠️  CRITICAL: OI DATA REFRESH FAILED")
+    #         print("??  CRITICAL: OI DATA REFRESH FAILED")
     #         print(f"   Strategy weight: {blend_weights.get('oi_divergence', 0)*100:.1f}%")
     #         print("   Impact: Will use existing data (potentially stale)")
     #         print("   Recommendation: Check COINALYZE_API credentials and network")
@@ -994,7 +1021,7 @@ def main():
     #         print("!" * 80)
     #     else:
     #         # Unknown status - warn but continue
-    #         print(f"\n⚠️  Warning: Unexpected OI data status: {oi_result.get('status')}")
+    #         print(f"\n??  Warning: Unexpected OI data status: {oi_result.get('status')}")
 
     check_cache_freshness()
 
@@ -1052,7 +1079,7 @@ def main():
     notional_value = base_notional_value * args.leverage
     if args.leverage != 1.0:
         print(
-            f"Applying {args.leverage}x leverage: ${base_notional_value:,.2f} → ${notional_value:,.2f}"
+            f"Applying {args.leverage}x leverage: ${base_notional_value:,.2f} ? ${notional_value:,.2f}"
         )
 
     # Step 4: Build target positions either via blend or legacy 50/50
@@ -1160,7 +1187,7 @@ def main():
             print("CAPITAL REALLOCATION: Some strategies returned no positions")
             print("=" * 80)
             for name, orig_weight in inactive_strategies.items():
-                print(f"  ❌ {name}: No positions found (original weight: {orig_weight*100:.2f}%)")
+                print(f"  ? {name}: No positions found (original weight: {orig_weight*100:.2f}%)")
 
             if active_strategies:
                 # Separate fixed and flexible strategies
@@ -1209,7 +1236,7 @@ def main():
                         new_weight = weight * scale_factor
                         rebalanced_weights[name] = new_weight
                         print(
-                            f"    {name}: {weight*100:.2f}% → {new_weight*100:.2f}% "
+                            f"    {name}: {weight*100:.2f}% ? {new_weight*100:.2f}% "
                             f"(+{(new_weight - weight)*100:.2f}pp)"
                         )
 
@@ -1217,7 +1244,7 @@ def main():
                     total_weight = sum(rebalanced_weights.values())
                     if abs(total_weight - 1.0) > 0.0001:
                         print(
-                            f"\n  ⚠️  WARNING: Total weight = {total_weight*100:.2f}% (expected 100%)"
+                            f"\n  ??  WARNING: Total weight = {total_weight*100:.2f}% (expected 100%)"
                         )
 
                     # Recalculate positions with new weights
@@ -1234,7 +1261,7 @@ def main():
                             print(f"    Allocation: ${old_notional:,.2f} (unchanged)")
                         else:
                             print(f"\n  Strategy: {strategy_name}")
-                            print(f"    Allocation: ${old_notional:,.2f} → ${new_notional:,.2f}")
+                            print(f"    Allocation: ${old_notional:,.2f} ? ${new_notional:,.2f}")
 
                             # Scale the initial contributions by the weight ratio
                             ratio = new_weight / old_weight if old_weight > 0 else 0
@@ -1261,7 +1288,7 @@ def main():
                     print(f"\n  No capital to redistribute (all inactive strategies are fixed)")
                     print("=" * 80)
             else:
-                print("\n  ⚠️  WARNING: No strategies returned any positions!")
+                print("\n  ??  WARNING: No strategies returned any positions!")
                 print("=" * 80)
 
         # Build target positions from (potentially rebalanced) contributions
@@ -1322,7 +1349,7 @@ def main():
 
         # Warn if severely underallocated
         if utilization_pct < 50:
-            print(f"\n⚠️  WARNING: LOW CAPITAL UTILIZATION ({utilization_pct:.1f}%)")
+            print(f"\n??  WARNING: LOW CAPITAL UTILIZATION ({utilization_pct:.1f}%)")
             print(
                 f"    Expected ~100% utilization with leverage, but only {utilization_pct:.1f}% is allocated."
             )
@@ -1334,7 +1361,7 @@ def main():
                     for sym in target_positions.keys()
                 )
                 strat_util = (actual_alloc / expected_alloc * 100) if expected_alloc > 0 else 0
-                status = "✓" if strat_util > 80 else "⚠️" if strat_util > 20 else "❌"
+                status = "?" if strat_util > 80 else "??" if strat_util > 20 else "?"
                 print(
                     f"      {status} {strategy_name:20s}: {strat_util:>5.1f}% (${actual_alloc:>12,.2f} / ${expected_alloc:>12,.2f})"
                 )
