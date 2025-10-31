@@ -58,7 +58,7 @@ from backtests.scripts.backtest_20d_from_200d_high import (
 from backtests.scripts.backtest_volatility_factor import backtest as backtest_volatility, load_data
 from backtests.scripts.backtest_kurtosis_factor import backtest as backtest_kurtosis, load_data
 from backtests.scripts.backtest_beta_factor import run_backtest as backtest_beta, load_data
-from backtests.scripts.backtest_adf_factor import run_backtest as run_adf_backtest, load_data
+# from backtests.scripts.backtest_adf_factor import run_backtest as run_adf_backtest, load_data
 
 
 def calculate_comprehensive_metrics(portfolio_df, initial_capital, benchmark_returns=None):
@@ -209,12 +209,19 @@ def run_breakout_backtest(data_file, **kwargs):
         metrics = calculate_comprehensive_metrics(
             results["portfolio_values"], kwargs.get("initial_capital", 10000)
         )
+        
+        # Extract daily returns
+        portfolio_df = results["portfolio_values"].copy()
+        portfolio_df["daily_return"] = portfolio_df["portfolio_value"].pct_change()
+        daily_returns = portfolio_df[["date", "daily_return"]].copy()
+        daily_returns.columns = ["date", "Breakout Signal"]
 
         return {
             "strategy": "Breakout Signal",
             "description": f"Entry: {kwargs.get('entry_window', 50)}d, Exit: {kwargs.get('exit_window', 70)}d",
             "metrics": metrics,
             "results": results,
+            "daily_returns": daily_returns,
         }
     except Exception as e:
         print(f"Error in Breakout backtest: {e}")
@@ -277,12 +284,18 @@ def run_mean_reversion_backtest(data_file, **kwargs):
                 # Calculate metrics
                 portfolio_df = strategy_data[["date", "portfolio_value"]].copy()
                 metrics = calculate_comprehensive_metrics(portfolio_df, initial_capital)
+                
+                # Extract daily returns
+                portfolio_df["daily_return"] = portfolio_df["portfolio_value"].pct_change()
+                daily_returns = portfolio_df[["date", "daily_return"]].copy()
+                daily_returns.columns = ["date", "Mean Reversion"]
 
                 return {
                     "strategy": "Mean Reversion",
                     "description": f"Best category: {best_strategy['category']}",
                     "metrics": metrics,
                     "results": results,
+                    "daily_returns": daily_returns,
                 }
 
         print("Insufficient data for mean reversion backtest")
@@ -337,12 +350,19 @@ def run_size_factor_backtest(data_file, marketcap_file, **kwargs):
         metrics = calculate_comprehensive_metrics(
             results["portfolio_values"], kwargs.get("initial_capital", 10000)
         )
+        
+        # Extract daily returns
+        portfolio_df = results["portfolio_values"].copy()
+        portfolio_df["daily_return"] = portfolio_df["portfolio_value"].pct_change()
+        daily_returns = portfolio_df[["date", "daily_return"]].copy()
+        daily_returns.columns = ["date", "Size Factor"]
 
         return {
             "strategy": "Size Factor",
             "description": f"Strategy: {kwargs.get('strategy', 'long_small_short_large')}",
             "metrics": metrics,
             "results": results,
+            "daily_returns": daily_returns,
         }
     except Exception as e:
         print(f"Error in Size Factor backtest: {e}")
@@ -385,12 +405,19 @@ def run_carry_factor_backtest(data_file, funding_rates_file, **kwargs):
         metrics = calculate_comprehensive_metrics(
             results["portfolio_values"], kwargs.get("initial_capital", 10000)
         )
+        
+        # Extract daily returns
+        portfolio_df = results["portfolio_values"].copy()
+        portfolio_df["daily_return"] = portfolio_df["portfolio_value"].pct_change()
+        daily_returns = portfolio_df[["date", "daily_return"]].copy()
+        daily_returns.columns = ["date", "Carry Factor"]
 
         return {
             "strategy": "Carry Factor",
             "description": f"Top {kwargs.get('top_n', 10)} short, Bottom {kwargs.get('bottom_n', 10)} long",
             "metrics": metrics,
             "results": results,
+            "daily_returns": daily_returns,
         }
     except Exception as e:
         print(f"Error in Carry Factor backtest: {e}")
@@ -421,12 +448,19 @@ def run_days_from_high_backtest(data_file, **kwargs):
         metrics = calculate_comprehensive_metrics(
             results["portfolio_values"], kwargs.get("initial_capital", 10000)
         )
+        
+        # Extract daily returns
+        portfolio_df = results["portfolio_values"].copy()
+        portfolio_df["daily_return"] = portfolio_df["portfolio_value"].pct_change()
+        daily_returns = portfolio_df[["date", "daily_return"]].copy()
+        daily_returns.columns = ["date", "Days from High"]
 
         return {
             "strategy": "Days from High",
             "description": f"Max {kwargs.get('days_threshold', 20)} days from 200d high",
             "metrics": metrics,
             "results": results,
+            "daily_returns": daily_returns,
         }
     except Exception as e:
         print(f"Error in Days from High backtest: {e}")
@@ -510,12 +544,19 @@ def run_volatility_factor_backtest(data_file, **kwargs):
         metrics = calculate_comprehensive_metrics(
             results["portfolio_values"], kwargs.get("initial_capital", 10000)
         )
+        
+        # Extract daily returns
+        portfolio_df = results["portfolio_values"].copy()
+        portfolio_df["daily_return"] = portfolio_df["portfolio_value"].pct_change()
+        daily_returns = portfolio_df[["date", "daily_return"]].copy()
+        daily_returns.columns = ["date", "Volatility Factor"]
 
         return {
             "strategy": "Volatility Factor",
             "description": f"Strategy: {kwargs.get('strategy', 'long_low_short_high')}",
             "metrics": metrics,
             "results": results,
+            "daily_returns": daily_returns,
         }
     except Exception as e:
         print(f"Error in Volatility Factor backtest: {e}")
@@ -555,12 +596,19 @@ def run_kurtosis_factor_backtest(data_file, **kwargs):
         metrics = calculate_comprehensive_metrics(
             results["portfolio_values"], kwargs.get("initial_capital", 10000)
         )
+        
+        # Extract daily returns
+        portfolio_df = results["portfolio_values"].copy()
+        portfolio_df["daily_return"] = portfolio_df["portfolio_value"].pct_change()
+        daily_returns = portfolio_df[["date", "daily_return"]].copy()
+        daily_returns.columns = ["date", "Kurtosis Factor"]
 
         return {
             "strategy": "Kurtosis Factor",
             "description": f"Strategy: {kwargs.get('strategy', 'momentum')}, Rebal: {kwargs.get('rebalance_days', 14)}d",
             "metrics": metrics,
             "results": results,
+            "daily_returns": daily_returns,
         }
     except Exception as e:
         print(f"Error in Kurtosis Factor backtest: {e}")
@@ -603,12 +651,19 @@ def run_beta_factor_backtest(data_file, **kwargs):
         metrics = calculate_comprehensive_metrics(
             results["portfolio_values"], kwargs.get("initial_capital", 10000)
         )
+        
+        # Extract daily returns
+        portfolio_df = results["portfolio_values"].copy()
+        portfolio_df["daily_return"] = portfolio_df["portfolio_value"].pct_change()
+        daily_returns = portfolio_df[["date", "daily_return"]].copy()
+        daily_returns.columns = ["date", "Beta Factor (BAB)"]
 
         return {
             "strategy": "Beta Factor (BAB)",
             "description": f"Strategy: BAB, Weighting: {kwargs.get('weighting_method', 'risk_parity')}, Rebal: {kwargs.get('rebalance_days', 1)}d",
             "metrics": metrics,
             "results": results,
+            "daily_returns": daily_returns,
         }
     except Exception as e:
         print(f"Error in Beta Factor backtest: {e}")
@@ -618,53 +673,95 @@ def run_beta_factor_backtest(data_file, **kwargs):
         return None
 
 
-def run_adf_factor_backtest(data_file, **kwargs):
-    """Run ADF factor backtest."""
-    print("\n" + "=" * 80)
-    print(f"Running ADF Factor Backtest - {kwargs.get('strategy', 'mean_reversion_premium')}")
-    print("=" * 80)
+# def run_adf_factor_backtest(data_file, **kwargs):
+#     """Run ADF factor backtest."""
+#     print("\n" + "=" * 80)
+#     print(f"Running ADF Factor Backtest - {kwargs.get('strategy', 'mean_reversion_premium')}")
+#     print("=" * 80)
+#
+#     try:
+#         price_data = load_data(data_file)
+#
+#         results = run_adf_backtest(
+#             data=price_data,
+#             strategy=kwargs.get("strategy", "mean_reversion_premium"),
+#             adf_window=kwargs.get("adf_window", 60),
+#             regression=kwargs.get("regression", "ct"),
+#             volatility_window=kwargs.get("volatility_window", 30),
+#             rebalance_days=kwargs.get("rebalance_days", 7),
+#             num_quintiles=kwargs.get("num_quintiles", 5),
+#             long_percentile=kwargs.get("long_percentile", 20),
+#             short_percentile=kwargs.get("short_percentile", 80),
+#             weighting_method=kwargs.get("weighting_method", "equal_weight"),
+#             initial_capital=kwargs.get("initial_capital", 10000),
+#             leverage=kwargs.get("leverage", 1.0),
+#             long_allocation=kwargs.get("long_allocation", 0.5),
+#             short_allocation=kwargs.get("short_allocation", 0.5),
+#             min_volume=kwargs.get("min_volume", 5_000_000),
+#             min_market_cap=kwargs.get("min_market_cap", 50_000_000),
+#             start_date=kwargs.get("start_date"),
+#             end_date=kwargs.get("end_date"),
+#         )
+#
+#         # Calculate comprehensive metrics
+#         metrics = calculate_comprehensive_metrics(
+#             results["portfolio_values"], kwargs.get("initial_capital", 10000)
+#         )
+#         
+#         # Extract daily returns
+#         portfolio_df = results["portfolio_values"].copy()
+#         portfolio_df["daily_return"] = portfolio_df["portfolio_value"].pct_change()
+#         daily_returns = portfolio_df[["date", "daily_return"]].copy()
+#         strategy_name = f'ADF Factor ({kwargs.get("strategy", "mean_reversion_premium")})'
+#         daily_returns.columns = ["date", strategy_name]
+#
+#         return {
+#             "strategy": strategy_name,
+#             "description": f"ADF window: {kwargs.get('adf_window', 60)}d, Rebal: {kwargs.get('rebalance_days', 7)}d",
+#             "metrics": metrics,
+#             "results": results,
+#             "daily_returns": daily_returns,
+#         }
+#     except Exception as e:
+#         print(f"Error in ADF Factor backtest: {e}")
+#         import traceback
+#
+#         traceback.print_exc()
+#         return None
 
-    try:
-        price_data = load_data(data_file)
 
-        results = run_adf_backtest(
-            data=price_data,
-            strategy=kwargs.get("strategy", "mean_reversion_premium"),
-            adf_window=kwargs.get("adf_window", 60),
-            regression=kwargs.get("regression", "ct"),
-            volatility_window=kwargs.get("volatility_window", 30),
-            rebalance_days=kwargs.get("rebalance_days", 7),
-            num_quintiles=kwargs.get("num_quintiles", 5),
-            long_percentile=kwargs.get("long_percentile", 20),
-            short_percentile=kwargs.get("short_percentile", 80),
-            weighting_method=kwargs.get("weighting_method", "equal_weight"),
-            initial_capital=kwargs.get("initial_capital", 10000),
-            leverage=kwargs.get("leverage", 1.0),
-            long_allocation=kwargs.get("long_allocation", 0.5),
-            short_allocation=kwargs.get("short_allocation", 0.5),
-            min_volume=kwargs.get("min_volume", 5_000_000),
-            min_market_cap=kwargs.get("min_market_cap", 50_000_000),
-            start_date=kwargs.get("start_date"),
-            end_date=kwargs.get("end_date"),
-        )
+def combine_daily_returns(all_results):
+    """
+    Combine daily returns from all strategies into a single DataFrame.
 
-        # Calculate comprehensive metrics
-        metrics = calculate_comprehensive_metrics(
-            results["portfolio_values"], kwargs.get("initial_capital", 10000)
-        )
+    Args:
+        all_results (list): List of dictionaries with backtest results
 
-        return {
-            "strategy": f'ADF Factor ({kwargs.get("strategy", "mean_reversion_premium")})',
-            "description": f"ADF window: {kwargs.get('adf_window', 60)}d, Rebal: {kwargs.get('rebalance_days', 7)}d",
-            "metrics": metrics,
-            "results": results,
-        }
-    except Exception as e:
-        print(f"Error in ADF Factor backtest: {e}")
-        import traceback
+    Returns:
+        pd.DataFrame: DataFrame with date column and one column per strategy
+    """
+    if not all_results:
+        return pd.DataFrame()
 
-        traceback.print_exc()
-        return None
+    # Collect all daily returns DataFrames
+    daily_returns_list = []
+    for result in all_results:
+        if result is None or "daily_returns" not in result:
+            continue
+        daily_returns_list.append(result["daily_returns"])
+
+    if not daily_returns_list:
+        return pd.DataFrame()
+
+    # Merge all daily returns on date
+    combined_df = daily_returns_list[0].copy()
+    for df in daily_returns_list[1:]:
+        combined_df = pd.merge(combined_df, df, on="date", how="outer")
+
+    # Sort by date
+    combined_df = combined_df.sort_values("date").reset_index(drop=True)
+
+    return combined_df
 
 
 def create_summary_table(all_results):
@@ -1015,22 +1112,22 @@ def main():
     parser.add_argument(
         "--beta-rebalance-days", type=int, default=1, help="Beta rebalance frequency in days"
     )
-    parser.add_argument(
-        "--run-adf", action="store_true", default=True, help="Run ADF factor backtest"
-    )
-    parser.add_argument(
-        "--adf-strategy",
-        type=str,
-        default="trend_following_premium",
-        choices=[
-            "mean_reversion_premium",
-            "trend_following_premium",
-            "long_stationary",
-            "long_trending",
-        ],
-        help="ADF factor strategy type",
-    )
-    parser.add_argument("--adf-window", type=int, default=60, help="ADF calculation window in days")
+    # parser.add_argument(
+    #     "--run-adf", action="store_true", default=True, help="Run ADF factor backtest"
+    # )
+    # parser.add_argument(
+    #     "--adf-strategy",
+    #     type=str,
+    #     default="trend_following_premium",
+    #     choices=[
+    #         "mean_reversion_premium",
+    #         "trend_following_premium",
+    #         "long_stationary",
+    #         "long_trending",
+    #     ],
+    #     help="ADF factor strategy type",
+    # )
+    # parser.add_argument("--adf-window", type=int, default=60, help="ADF calculation window in days")
 
     args = parser.parse_args()
 
@@ -1173,23 +1270,23 @@ def main():
         if result:
             all_results.append(result)
 
-    # 10. ADF Factor (Trend Following)
-    if args.run_adf:
-        result = run_adf_factor_backtest(
-            args.data_file,
-            strategy=args.adf_strategy,
-            adf_window=args.adf_window,
-            regression="ct",
-            rebalance_days=7,
-            weighting_method="equal_weight",
-            long_percentile=20,
-            short_percentile=80,
-            min_volume=5_000_000,
-            min_market_cap=50_000_000,
-            **common_params,
-        )
-        if result:
-            all_results.append(result)
+    # 10. ADF Factor (Trend Following) - COMMENTED OUT
+    # if args.run_adf:
+    #     result = run_adf_factor_backtest(
+    #         args.data_file,
+    #         strategy=args.adf_strategy,
+    #         adf_window=args.adf_window,
+    #         regression="ct",
+    #         rebalance_days=7,
+    #         weighting_method="equal_weight",
+    #         long_percentile=20,
+    #         short_percentile=80,
+    #         min_volume=5_000_000,
+    #         min_market_cap=50_000_000,
+    #         **common_params,
+    #     )
+    #     if result:
+    #         all_results.append(result)
 
     # Create and display summary table
     summary_df = create_summary_table(all_results)
@@ -1218,6 +1315,25 @@ def main():
 
             weights_df.to_csv(weights_file, index=False)
             print(f"\nSharpe-based weights saved to: {weights_file}")
+
+    # Combine and save daily returns from all strategies
+    daily_returns_df = combine_daily_returns(all_results)
+    if not daily_returns_df.empty:
+        # Ensure output directory exists
+        os.makedirs(os.path.dirname(args.output_file), exist_ok=True)
+
+        # Generate daily returns filename
+        daily_returns_file = args.output_file.replace("_summary.csv", "_daily_returns.csv")
+        if daily_returns_file == args.output_file:
+            daily_returns_file = args.output_file.replace(".csv", "_daily_returns.csv")
+
+        # Save daily returns
+        daily_returns_df.to_csv(daily_returns_file, index=False)
+        print(f"\n{'=' * 120}")
+        print(f"Daily returns for all strategies saved to: {daily_returns_file}")
+        print(f"Shape: {daily_returns_df.shape[0]} days x {daily_returns_df.shape[1]-1} strategies")
+        print(f"Date range: {daily_returns_df['date'].min()} to {daily_returns_df['date'].max()}")
+        print(f"{'=' * 120}")
 
     print("\n" + "=" * 120)
     print("ALL BACKTESTS COMPLETE")
