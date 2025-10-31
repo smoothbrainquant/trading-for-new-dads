@@ -11,3 +11,14 @@
 ## Backtesting Best Practices
 - When generating backtest, make sure to use next-day returns (`.shift(-1)`) to avoid lookahead bias
 - Signals generated on day T should be executed using returns from day T+1
+
+# Documentation Organization
+
+## Documentation Structure
+- All documentation files (*.md) must be placed in the `/workspace/docs/` directory
+- Do NOT create markdown files in the project root directory
+- Use the existing docs structure and subdirectories (e.g., `docs/robustness/`) for organization
+- When creating new documentation, check the docs/ directory first to understand the existing organization
+- Factor specifications should be named `*_FACTOR_SPEC.md`
+- Backtest results should be named `*_BACKTEST_RESULTS.md`
+- Implementation guides should use `*_IMPLEMENTATION_*.md` or `*_README.md` patterns
