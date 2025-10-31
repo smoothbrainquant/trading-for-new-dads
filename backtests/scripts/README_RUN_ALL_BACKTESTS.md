@@ -35,6 +35,10 @@ The script runs the following backtests:
 5. **Days from High** - Long coins within 20 days of 200-day high
 6. **OI Divergence** - Open interest divergence signals (contrarian or momentum)
 7. **Volatility Factor** - Long low volatility / short high volatility strategy
+8. **Kurtosis Factor** - Long/short based on return distribution kurtosis
+9. **Beta Factor** - Betting Against Beta (long low beta, short high beta)
+10. **ADF Factor** - Trend following based on stationarity (ADF test)
+11. **Durbin-Watson Factor** - Mean reversion based on autocorrelation (DW statistic)
 
 ## Usage
 
@@ -76,8 +80,16 @@ python3 backtests/scripts/run_all_backtests.py \
 - `--run-days-from-high`: Run days from high backtest (default: True)
 - `--run-oi-divergence`: Run OI divergence backtest (default: True)
 - `--run-volatility`: Run volatility factor backtest (default: True)
+- `--run-kurtosis`: Run kurtosis factor backtest (default: True)
+- `--run-beta`: Run beta factor backtest (default: True)
+- `--run-adf`: Run ADF factor backtest (default: True)
+- `--run-dw`: Run Durbin-Watson factor backtest (default: True)
 - `--oi-mode`: OI divergence mode: 'divergence' or 'trend' (default: divergence)
 - `--volatility-strategy`: Volatility factor strategy: 'long_low_short_high', 'long_low_vol', 'long_high_vol', or 'long_high_short_low' (default: long_low_short_high)
+- `--kurtosis-strategy`: Kurtosis strategy: 'mean_reversion' or 'momentum' (default: momentum)
+- `--beta-strategy`: Beta strategy: 'betting_against_beta', 'traditional_risk_premium', 'long_low_beta', or 'long_high_beta' (default: betting_against_beta)
+- `--adf-strategy`: ADF strategy: 'mean_reversion_premium', 'trend_following_premium', 'long_stationary', or 'long_trending' (default: trend_following_premium)
+- `--dw-strategy`: DW strategy: 'regime_adaptive', 'momentum_premium', 'mean_reversion_premium', 'long_momentum', or 'long_mean_reversion' (default: mean_reversion_premium)
 
 ## Output
 
