@@ -12,6 +12,12 @@ performance metrics including:
 - Information coefficient
 
 The results are compiled into a summary table for easy comparison.
+
+PERFORMANCE OPTIMIZATIONS:
+- Data is loaded once upfront and shared across all backtests (eliminates repetitive I/O)
+- Backtest functions are imported conditionally (avoids loading heavy dependencies)
+- scipy is only imported when kurtosis/trendline backtests are run
+- statsmodels is only imported when ADF backtests are run
 """
 
 import pandas as pd
@@ -27,38 +33,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "signals"
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "data", "scripts"))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "backtests", "scripts"))
 
-# Import backtest functions
-from backtests.scripts.backtest_breakout_signals import backtest as backtest_breakout, load_data
-from backtests.scripts.backtest_mean_reversion import (
-    calculate_z_scores,
-    categorize_moves,
-    analyze_mean_reversion,
-    load_data,
-)
-from backtests.scripts.backtest_size_factor import (
-    backtest as backtest_size,
-    load_marketcap_data,
-    load_data,
-)
-from backtests.scripts.backtest_carry_factor import (
-    backtest as backtest_carry,
-    load_funding_rates,
-    load_price_data,
-)
-from backtests.scripts.backtest_20d_from_200d_high import (
-    backtest as backtest_days_from_high,
-    load_data,
-)
-# from backtests.scripts.backtest_open_interest_divergence import (  # Removed: OI data not used
-#     backtest as backtest_oi_divergence,
-#     load_price_data as load_oi_price_data,
-#     load_oi_data,
-#     BacktestConfig as OIBacktestConfig,
-# )
-from backtests.scripts.backtest_volatility_factor import backtest as backtest_volatility, load_data
-from backtests.scripts.backtest_kurtosis_factor import backtest as backtest_kurtosis, load_data
-from backtests.scripts.backtest_beta_factor import run_backtest as backtest_beta, load_data
-# from backtests.scripts.backtest_adf_factor import run_backtest as run_adf_backtest, load_data
+# NOTE: Backtest functions are imported conditionally in main() to avoid
+# loading heavy dependencies (scipy, statsmodels) unless needed
 
 
 def calculate_comprehensive_metrics(portfolio_df, initial_capital, benchmark_returns=None):
@@ -184,16 +160,94 @@ def calculate_comprehensive_metrics(portfolio_df, initial_capital, benchmark_ret
     return metrics
 
 
-def run_breakout_backtest(data_file, **kwargs):
+def load_all_data(args):
+    """
+    Load all data files once to avoid repetitive I/O.
+    
+    Args:
+        args: Command line arguments with file paths
+        
+    Returns:
+        dict: Dictionary with all loaded data
+    """
+    print("\n" + "=" * 80)
+    print("LOADING DATA (ONE-TIME LOAD)")
+    print("=" * 80)
+    
+    data = {}
+    
+    # Load price data
+    if os.path.exists(args.data_file):
+        print(f"Loading price data from {args.data_file}...")
+        df = pd.read_csv(args.data_file)
+        df["date"] = pd.to_datetime(df["date"])
+        df = df.sort_values(["symbol", "date"]).reset_index(drop=True)
+        data["price_data"] = df
+        print(f"  ? Loaded {len(df)} rows, {df['symbol'].nunique()} symbols")
+    else:
+        print(f"  ? Price data file not found: {args.data_file}")
+        data["price_data"] = None
+    
+    # Load market cap data
+    if os.path.exists(args.marketcap_file):
+        print(f"Loading market cap data from {args.marketcap_file}...")
+        df = pd.read_csv(args.marketcap_file)
+        if "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"])
+        # Normalize column names
+        if "Market Cap" in df.columns:
+            df = df.rename(columns={"Market Cap": "market_cap", "Symbol": "symbol"})
+        if "symbol" not in df.columns and "Symbol" in df.columns:
+            df = df.rename(columns={"Symbol": "symbol"})
+        data["marketcap_data"] = df
+        print(f"  ? Loaded {len(df)} rows")
+    else:
+        print(f"  ? Market cap file not found: {args.marketcap_file}")
+        data["marketcap_data"] = None
+    
+    # Load funding rates data
+    if os.path.exists(args.funding_rates_file):
+        print(f"Loading funding rates from {args.funding_rates_file}...")
+        df = pd.read_csv(args.funding_rates_file)
+        if "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"])
+        elif "timestamp" in df.columns:
+            df["date"] = pd.to_datetime(df["timestamp"])
+        data["funding_data"] = df
+        print(f"  ? Loaded {len(df)} rows")
+    else:
+        print(f"  ? Funding rates file not found: {args.funding_rates_file}")
+        data["funding_data"] = None
+    
+    # Load OI data (if needed)
+    if hasattr(args, 'oi_data_file') and os.path.exists(args.oi_data_file):
+        print(f"Loading OI data from {args.oi_data_file}...")
+        df = pd.read_csv(args.oi_data_file)
+        if "date" in df.columns:
+            df["date"] = pd.to_datetime(df["date"])
+        data["oi_data"] = df
+        print(f"  ? Loaded {len(df)} rows")
+    else:
+        data["oi_data"] = None
+    
+    print("=" * 80)
+    print("DATA LOADING COMPLETE\n")
+    
+    return data
+
+
+def run_breakout_backtest(price_data, **kwargs):
     """Run breakout signal backtest."""
     print("\n" + "=" * 80)
     print("Running Breakout Signal Backtest")
     print("=" * 80)
 
     try:
-        data = load_data(data_file)
+        # Import backtest function
+        from backtests.scripts.backtest_breakout_signals import backtest as backtest_breakout
+        
         results = backtest_breakout(
-            data=data,
+            data=price_data,
             entry_window=kwargs.get("entry_window", 50),
             exit_window=kwargs.get("exit_window", 70),
             volatility_window=kwargs.get("volatility_window", 30),
@@ -231,14 +285,21 @@ def run_breakout_backtest(data_file, **kwargs):
         return None
 
 
-def run_mean_reversion_backtest(data_file, **kwargs):
+def run_mean_reversion_backtest(price_data, **kwargs):
     """Run mean reversion backtest."""
     print("\n" + "=" * 80)
     print("Running Mean Reversion Backtest")
     print("=" * 80)
 
     try:
-        data = load_data(data_file)
+        # Import backtest functions
+        from backtests.scripts.backtest_mean_reversion import (
+            calculate_z_scores,
+            categorize_moves,
+            analyze_mean_reversion,
+        )
+        
+        data = price_data
 
         # Calculate z-scores
         data_with_zscores = calculate_z_scores(
@@ -309,27 +370,19 @@ def run_mean_reversion_backtest(data_file, **kwargs):
         return None
 
 
-def run_size_factor_backtest(data_file, marketcap_file, **kwargs):
+def run_size_factor_backtest(price_data, marketcap_data, **kwargs):
     """Run size factor backtest."""
     print("\n" + "=" * 80)
     print("Running Size Factor Backtest")
     print("=" * 80)
 
     try:
-        price_data = load_data(data_file)
-        marketcap_data = load_marketcap_data(filepath=marketcap_file)
-
+        # Import backtest function
+        from backtests.scripts.backtest_size_factor import backtest as backtest_size
+        
         if marketcap_data is None or len(marketcap_data) == 0:
             print("No market cap data available")
             return None
-
-        # Normalize column names (handle both API and CSV formats)
-        if "Market Cap" in marketcap_data.columns:
-            marketcap_data = marketcap_data.rename(
-                columns={"Market Cap": "market_cap", "Symbol": "symbol"}
-            )
-        if "symbol" not in marketcap_data.columns and "Symbol" in marketcap_data.columns:
-            marketcap_data = marketcap_data.rename(columns={"Symbol": "symbol"})
 
         results = backtest_size(
             price_data=price_data,
@@ -372,15 +425,15 @@ def run_size_factor_backtest(data_file, marketcap_file, **kwargs):
         return None
 
 
-def run_carry_factor_backtest(data_file, funding_rates_file, **kwargs):
+def run_carry_factor_backtest(price_data, funding_data, **kwargs):
     """Run carry factor backtest."""
     print("\n" + "=" * 80)
     print("Running Carry Factor Backtest")
     print("=" * 80)
 
     try:
-        price_data = load_price_data(data_file)
-        funding_data = load_funding_rates(funding_rates_file)
+        # Import backtest function
+        from backtests.scripts.backtest_carry_factor import backtest as backtest_carry
 
         if funding_data is None or len(funding_data) == 0:
             print("No funding rates data available")
@@ -427,16 +480,18 @@ def run_carry_factor_backtest(data_file, funding_rates_file, **kwargs):
         return None
 
 
-def run_days_from_high_backtest(data_file, **kwargs):
+def run_days_from_high_backtest(price_data, **kwargs):
     """Run days from high backtest."""
     print("\n" + "=" * 80)
     print("Running Days from High Backtest")
     print("=" * 80)
 
     try:
-        data = load_data(data_file)
+        # Import backtest function
+        from backtests.scripts.backtest_20d_from_200d_high import backtest as backtest_days_from_high
+        
         results = backtest_days_from_high(
-            data=data,
+            data=price_data,
             days_threshold=kwargs.get("days_threshold", 20),
             volatility_window=kwargs.get("volatility_window", 30),
             initial_capital=kwargs.get("initial_capital", 10000),
@@ -516,14 +571,15 @@ def run_days_from_high_backtest(data_file, **kwargs):
 #         return None
 
 
-def run_volatility_factor_backtest(data_file, **kwargs):
+def run_volatility_factor_backtest(price_data, **kwargs):
     """Run volatility factor backtest."""
     print("\n" + "=" * 80)
     print("Running Volatility Factor Backtest")
     print("=" * 80)
 
     try:
-        price_data = load_data(data_file)
+        # Import backtest function
+        from backtests.scripts.backtest_volatility_factor import backtest as backtest_volatility
 
         results = backtest_volatility(
             price_data=price_data,
@@ -566,14 +622,15 @@ def run_volatility_factor_backtest(data_file, **kwargs):
         return None
 
 
-def run_kurtosis_factor_backtest(data_file, **kwargs):
+def run_kurtosis_factor_backtest(price_data, **kwargs):
     """Run kurtosis factor backtest."""
     print("\n" + "=" * 80)
     print("Running Kurtosis Factor Backtest")
     print("=" * 80)
 
     try:
-        price_data = load_data(data_file)
+        # Import backtest function (requires scipy)
+        from backtests.scripts.backtest_kurtosis_factor import backtest as backtest_kurtosis
 
         results = backtest_kurtosis(
             price_data=price_data,
@@ -618,14 +675,15 @@ def run_kurtosis_factor_backtest(data_file, **kwargs):
         return None
 
 
-def run_beta_factor_backtest(data_file, **kwargs):
+def run_beta_factor_backtest(price_data, **kwargs):
     """Run beta factor backtest."""
     print("\n" + "=" * 80)
     print("Running Beta Factor Backtest")
     print("=" * 80)
 
     try:
-        price_data = load_data(data_file)
+        # Import backtest function
+        from backtests.scripts.backtest_beta_factor import run_backtest as backtest_beta
 
         results = backtest_beta(
             data=price_data,
@@ -890,7 +948,7 @@ def print_sharpe_weights(weights_df, summary_df, min_weight=0.05):
     print("\nPortfolio Allocation:")
     print("-" * 120)
     for idx, row in weights_df.iterrows():
-        sharpe_indicator = "✓" if row["Sharpe Ratio"] > 0 else "✗"
+        sharpe_indicator = "?" if row["Sharpe Ratio"] > 0 else "?"
         print(
             f"  {sharpe_indicator} {row['Strategy']:<18} | Sharpe: {row['Sharpe Ratio']:>8.3f} | Weight: {row['Weight']:>8.4f} ({row['Weight_Pct']:>6.2f}%)"
         )
@@ -1146,6 +1204,9 @@ def main():
     print(f"  OI mode: {args.oi_mode}")
     print("=" * 120)
 
+    # Load all data once (eliminates repetitive I/O)
+    loaded_data = load_all_data(args)
+    
     # Common parameters
     common_params = {
         "initial_capital": args.initial_capital,
@@ -1162,113 +1223,142 @@ def main():
 
     # 1. Breakout Signal
     if args.run_breakout:
-        result = run_breakout_backtest(
-            args.data_file, entry_window=50, exit_window=70, **common_params
-        )
-        if result:
-            all_results.append(result)
+        if loaded_data["price_data"] is not None:
+            result = run_breakout_backtest(
+                loaded_data["price_data"], entry_window=50, exit_window=70, **common_params
+            )
+            if result:
+                all_results.append(result)
+        else:
+            print("? Skipping Breakout backtest: price data not available")
 
     # 2. Mean Reversion
     if args.run_mean_reversion:
-        result = run_mean_reversion_backtest(
-            args.data_file,
-            lookback_window=30,
-            return_threshold=1.0,
-            volume_threshold=1.0,
-            **common_params,
-        )
-        if result:
-            all_results.append(result)
+        if loaded_data["price_data"] is not None:
+            result = run_mean_reversion_backtest(
+                loaded_data["price_data"],
+                lookback_window=30,
+                return_threshold=1.0,
+                volume_threshold=1.0,
+                **common_params,
+            )
+            if result:
+                all_results.append(result)
+        else:
+            print("? Skipping Mean Reversion backtest: price data not available")
 
     # 3. Size Factor
-    if args.run_size and os.path.exists(args.marketcap_file):
-        result = run_size_factor_backtest(
-            args.data_file,
-            args.marketcap_file,
-            strategy="long_small_short_large",
-            num_buckets=5,
-            rebalance_days=10,  # Optimal: 10 days (Sharpe: 0.39)
-            **common_params,
-        )
-        if result:
-            all_results.append(result)
+    if args.run_size:
+        if loaded_data["price_data"] is not None and loaded_data["marketcap_data"] is not None:
+            result = run_size_factor_backtest(
+                loaded_data["price_data"],
+                loaded_data["marketcap_data"],
+                strategy="long_small_short_large",
+                num_buckets=5,
+                rebalance_days=10,  # Optimal: 10 days (Sharpe: 0.39)
+                **common_params,
+            )
+            if result:
+                all_results.append(result)
+        else:
+            print("? Skipping Size Factor backtest: price or marketcap data not available")
 
     # 4. Carry Factor
-    if args.run_carry and os.path.exists(args.funding_rates_file):
-        result = run_carry_factor_backtest(
-            args.data_file,
-            args.funding_rates_file,
-            top_n=10,
-            bottom_n=10,
-            rebalance_days=7,
-            **common_params,
-        )
-        if result:
-            all_results.append(result)
+    if args.run_carry:
+        if loaded_data["price_data"] is not None and loaded_data["funding_data"] is not None:
+            result = run_carry_factor_backtest(
+                loaded_data["price_data"],
+                loaded_data["funding_data"],
+                top_n=10,
+                bottom_n=10,
+                rebalance_days=7,
+                **common_params,
+            )
+            if result:
+                all_results.append(result)
+        else:
+            print("? Skipping Carry Factor backtest: price or funding data not available")
 
     # 5. Days from High
     if args.run_days_from_high:
-        result = run_days_from_high_backtest(args.data_file, days_threshold=20, **common_params)
-        if result:
-            all_results.append(result)
+        if loaded_data["price_data"] is not None:
+            result = run_days_from_high_backtest(
+                loaded_data["price_data"], days_threshold=20, **common_params
+            )
+            if result:
+                all_results.append(result)
+        else:
+            print("? Skipping Days from High backtest: price data not available")
 
     # # 6. OI Divergence  # Removed: OI data not used
-    # if args.run_oi_divergence and os.path.exists(args.oi_data_file):
-    #     result = run_oi_divergence_backtest(
-    #         args.data_file,
-    #         args.oi_data_file,
-    #         oi_mode=args.oi_mode,
-    #         lookback=30,
-    #         top_n=10,
-    #         bottom_n=10,
-    #         rebalance_days=7,
-    #         **common_params,
-    #     )
-    #     if result:
-    #         all_results.append(result)
+    # if args.run_oi_divergence:
+    #     if loaded_data["price_data"] is not None and loaded_data["oi_data"] is not None:
+    #         result = run_oi_divergence_backtest(
+    #             loaded_data["price_data"],
+    #             loaded_data["oi_data"],
+    #             oi_mode=args.oi_mode,
+    #             lookback=30,
+    #             top_n=10,
+    #             bottom_n=10,
+    #             rebalance_days=7,
+    #             **common_params,
+    #         )
+    #         if result:
+    #             all_results.append(result)
+    #     else:
+    #         print("? Skipping OI Divergence backtest: price or OI data not available")
 
     # 7. Volatility Factor
     if args.run_volatility:
-        result = run_volatility_factor_backtest(
-            args.data_file,
-            strategy=args.volatility_strategy,
-            num_quintiles=5,
-            rebalance_days=3,  # Optimal: 3 days (Sharpe: 1.41)
-            weighting_method="equal",
-            **common_params,
-        )
-        if result:
-            all_results.append(result)
+        if loaded_data["price_data"] is not None:
+            result = run_volatility_factor_backtest(
+                loaded_data["price_data"],
+                strategy=args.volatility_strategy,
+                num_quintiles=5,
+                rebalance_days=3,  # Optimal: 3 days (Sharpe: 1.41)
+                weighting_method="equal",
+                **common_params,
+            )
+            if result:
+                all_results.append(result)
+        else:
+            print("? Skipping Volatility Factor backtest: price data not available")
 
-    # 8. Kurtosis Factor
+    # 8. Kurtosis Factor (requires scipy)
     if args.run_kurtosis:
-        result = run_kurtosis_factor_backtest(
-            args.data_file,
-            strategy=args.kurtosis_strategy,
-            kurtosis_window=30,
-            rebalance_days=args.kurtosis_rebalance_days,
-            weighting="risk_parity",
-            long_percentile=20,
-            short_percentile=80,
-            **common_params,
-        )
-        if result:
-            all_results.append(result)
+        if loaded_data["price_data"] is not None:
+            result = run_kurtosis_factor_backtest(
+                loaded_data["price_data"],
+                strategy=args.kurtosis_strategy,
+                kurtosis_window=30,
+                rebalance_days=args.kurtosis_rebalance_days,
+                weighting="risk_parity",
+                long_percentile=20,
+                short_percentile=80,
+                **common_params,
+            )
+            if result:
+                all_results.append(result)
+        else:
+            print("? Skipping Kurtosis Factor backtest: price data not available")
 
     # 9. Beta Factor (BAB with Equal Weight, 5-day Rebalancing)
     if args.run_beta:
-        result = run_beta_factor_backtest(
-            args.data_file,
-            strategy=args.beta_strategy,
-            beta_window=90,
-            rebalance_days=args.beta_rebalance_days,
-            weighting_method=args.beta_weighting,
-            long_percentile=20,
-            short_percentile=80,
-            **common_params,
-        )
-        if result:
-            all_results.append(result)
+        if loaded_data["price_data"] is not None:
+            result = run_beta_factor_backtest(
+                loaded_data["price_data"],
+                strategy=args.beta_strategy,
+                beta_window=90,
+                rebalance_days=args.beta_rebalance_days,
+                weighting_method=args.beta_weighting,
+                long_percentile=20,
+                short_percentile=80,
+                **common_params,
+            )
+            if result:
+                all_results.append(result)
+        else:
+            print("? Skipping Beta Factor backtest: price data not available")
 
     # 10. ADF Factor (Trend Following) - COMMENTED OUT
     # if args.run_adf:
