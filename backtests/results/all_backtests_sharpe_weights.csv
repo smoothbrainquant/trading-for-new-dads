@@ -1,7 +1,4 @@
 Strategy,Description,Sharpe Ratio,Weight,Weight_Pct
-Mean Reversion,Best category: up_move_low_volume,6.382710069292282,0.6370925523838878,63.709255238388785
-Size Factor,Strategy: long_small_short_large,1.0343980229916634,0.10324881899604713,10.324881899604712
-Carry Factor,"Top 10 short, Bottom 10 long",0.9213934589581839,0.09196922688712646,9.196922688712645
-OI Divergence (divergence),"Mode: divergence, Top 10, Bottom 10",0.6781460941719898,0.06768940173293855,6.7689401732938554
-Volatility Factor,Strategy: long_low_short_high,-0.07099154485478604,0.04999999999999999,4.999999999999999
-Kurtosis Factor,"Strategy: momentum, Rebal: 14d",-0.06988364566102587,0.04999999999999999,4.999999999999999
+Beta Factor (BAB),"Strategy: BAB, Weighting: equal_weight, Rebal: 5d (VECTORIZED)",0.5595100925794301,0.6068618654153793,60.686186541537936
+Volatility Factor,Strategy: long_low_short_high (VECTORIZED),0.3163640037219392,0.3431381345846206,34.313813458462064
+Carry Factor,"Top 10 short, Bottom 10 long (VECTORIZED)",-0.49597999546817023,0.05,5.0

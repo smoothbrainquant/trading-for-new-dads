@@ -450,9 +450,12 @@ def run_carry_factor_backtest(price_data, funding_data, **kwargs):
 
         # Ensure funding data has the right format
         funding_df = funding_data.copy()
-        # Rename coin_symbol to symbol for consistency
-        if 'coin_symbol' in funding_df.columns and 'symbol' not in funding_df.columns:
+        # Use coin_symbol as the symbol column for consistency with price data
+        if 'coin_symbol' in funding_df.columns:
             funding_df['symbol'] = funding_df['coin_symbol']
+        elif 'symbol' in funding_df.columns and '/' in str(funding_df['symbol'].iloc[0]):
+            # Extract base symbol if needed
+            funding_df['symbol'] = funding_df['symbol'].apply(lambda x: x.split('/')[0] if '/' in str(x) else x)
 
         # Use vectorized backtest engine
         results = backtest_factor_vectorized(
@@ -1333,7 +1336,7 @@ def main():
                 strategy=args.volatility_strategy,
                 num_quintiles=5,
                 rebalance_days=3,  # Optimal: 3 days (Sharpe: 1.41)
-                weighting_method="equal",
+                weighting_method="equal_weight",
                 **common_params,
             )
             if result:

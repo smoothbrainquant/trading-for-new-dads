@@ -56,6 +56,13 @@ def prepare_price_data(
     """
     df = price_data.copy()
     df['date'] = pd.to_datetime(df['date'])
+    
+    # Extract base symbol if symbol is in format "BTC/USD"
+    if 'base' in df.columns:
+        df['symbol'] = df['base']
+    elif df['symbol'].iloc[0] and '/' in str(df['symbol'].iloc[0]):
+        df['symbol'] = df['symbol'].apply(lambda x: x.split('/')[0] if '/' in str(x) else x)
+    
     df = df.sort_values(['symbol', 'date']).reset_index(drop=True)
     
     # Filter by date range
