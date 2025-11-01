@@ -1,0 +1,813 @@
+"""
+Backtest for Entropy Factor Strategy
+
+This script backtests an entropy factor strategy that:
+1. Calculates rolling Shannon entropy of daily returns for each cryptocurrency
+2. Ranks cryptocurrencies by entropy values (randomness/unpredictability)
+3. Creates long/short portfolios based on entropy rankings:
+   - Momentum: Long low entropy (predictable), Short high entropy (random)
+   - Mean Reversion: Long high entropy (random), Short low entropy (predictable)
+4. Uses risk parity weighting within each bucket
+5. Rebalances periodically (daily, weekly, or monthly)
+6. Tracks portfolio performance over time
+
+Entropy hypothesis: Entropy measures unpredictability of return distributions.
+Low entropy = predictable/trending returns
+High entropy = random/unpredictable returns
+"""
+
+import pandas as pd
+import numpy as np
+from scipy import stats
+from datetime import datetime, timedelta
+import argparse
+import sys
+import os
+
+# Add parent directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../signals'))
+from calc_vola import calculate_rolling_30d_volatility
+from calc_weights import calculate_weights
+
+
+def load_data(filepath):
+    """
+    Load historical OHLCV data from CSV file.
+    
+    Args:
+        filepath (str): Path to CSV file with OHLCV data
+        
+    Returns:
+        pd.DataFrame: DataFrame with date, symbol, close, volume, market_cap
+    """
+    df = pd.read_csv(filepath)
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.sort_values(['symbol', 'date']).reset_index(drop=True)
+    
+    # Keep only relevant columns
+    required_cols = ['date', 'symbol', 'close']
+    optional_cols = ['volume', 'market_cap']
+    
+    cols_to_keep = required_cols.copy()
+    for col in optional_cols:
+        if col in df.columns:
+            cols_to_keep.append(col)
+    
+    df = df[cols_to_keep]
+    return df
+
+
+def calculate_shannon_entropy(returns, n_bins=10):
+    """
+    Calculate Shannon entropy of return distribution.
+    
+    Shannon entropy measures the amount of uncertainty/randomness in a distribution:
+    H(X) = -sum(p(x_i) * log2(p(x_i)))
+    
+    Args:
+        returns (array): Array of returns
+        n_bins (int): Number of bins for discretization
+        
+    Returns:
+        float: Shannon entropy in bits
+    """
+    # Remove NaN values
+    returns_clean = returns[~np.isnan(returns)]
+    
+    if len(returns_clean) < 5:
+        return np.nan
+    
+    # Create histogram (probability distribution)
+    counts, bin_edges = np.histogram(returns_clean, bins=n_bins)
+    
+    # Convert to probabilities
+    probabilities = counts / counts.sum()
+    
+    # Remove zero probabilities (log(0) is undefined)
+    probabilities = probabilities[probabilities > 0]
+    
+    if len(probabilities) == 0:
+        return np.nan
+    
+    # Calculate Shannon entropy
+    entropy = -np.sum(probabilities * np.log2(probabilities))
+    
+    return entropy
+
+
+def calculate_rolling_entropy(data, window=30, n_bins=10):
+    """
+    Calculate rolling entropy of daily returns.
+    
+    Args:
+        data (pd.DataFrame): DataFrame with date, symbol, close columns
+        window (int): Rolling window size for entropy calculation
+        n_bins (int): Number of bins for histogram
+        
+    Returns:
+        pd.DataFrame: DataFrame with entropy and supporting columns
+    """
+    df = data.copy()
+    df = df.sort_values(['symbol', 'date']).reset_index(drop=True)
+    
+    # Calculate daily log returns
+    df['daily_return'] = df.groupby('symbol')['close'].transform(
+        lambda x: np.log(x / x.shift(1))
+    )
+    
+    # Calculate rolling entropy
+    def rolling_entropy_func(x):
+        if len(x) < window or x.isna().all():
+            return np.nan
+        try:
+            return calculate_shannon_entropy(x.values, n_bins=n_bins)
+        except:
+            return np.nan
+    
+    df['entropy'] = df.groupby('symbol')['daily_return'].transform(
+        lambda x: x.rolling(window=window, min_periods=window).apply(
+            rolling_entropy_func, raw=False
+        )
+    )
+    
+    # Also calculate mean and std of returns in window for context
+    df['returns_mean_30d'] = df.groupby('symbol')['daily_return'].transform(
+        lambda x: x.rolling(window=window, min_periods=window).mean()
+    )
+    
+    df['returns_std_30d'] = df.groupby('symbol')['daily_return'].transform(
+        lambda x: x.rolling(window=window, min_periods=window).std()
+    )
+    
+    return df
+
+
+def calculate_volatility(data, window=30):
+    """
+    Calculate rolling volatility (annualized).
+    
+    Args:
+        data (pd.DataFrame): DataFrame with daily_return column
+        window (int): Rolling window size
+        
+    Returns:
+        pd.DataFrame: DataFrame with volatility column
+    """
+    df = data.copy()
+    
+    # Calculate annualized volatility
+    df['volatility'] = df.groupby('symbol')['daily_return'].transform(
+        lambda x: x.rolling(window=window, min_periods=window).std() * np.sqrt(365)
+    )
+    
+    return df
+
+
+def filter_universe(data, min_volume=5_000_000, min_market_cap=50_000_000):
+    """
+    Filter cryptocurrency universe by liquidity and market cap.
+    
+    Args:
+        data (pd.DataFrame): DataFrame with volume and market_cap columns
+        min_volume (float): Minimum 30-day average daily volume
+        min_market_cap (float): Minimum market cap
+        
+    Returns:
+        pd.DataFrame: Filtered data
+    """
+    df = data.copy()
+    
+    # Calculate 30-day rolling average volume
+    if 'volume' in df.columns:
+        df['volume_30d_avg'] = df.groupby('symbol')['volume'].transform(
+            lambda x: x.rolling(window=30, min_periods=20).mean()
+        )
+        df = df[df['volume_30d_avg'] >= min_volume]
+    
+    # Filter by market cap
+    if 'market_cap' in df.columns:
+        df = df[df['market_cap'] >= min_market_cap]
+    
+    return df
+
+
+def rank_by_entropy(data, current_date):
+    """
+    Rank symbols by entropy on a given date.
+    
+    Args:
+        data (pd.DataFrame): DataFrame with entropy values
+        current_date (pd.Timestamp): Date to rank on
+        
+    Returns:
+        pd.DataFrame: Ranked data for the date
+    """
+    date_data = data[data['date'] == current_date].copy()
+    
+    # Remove rows with missing entropy
+    date_data = date_data.dropna(subset=['entropy'])
+    
+    if len(date_data) == 0:
+        return pd.DataFrame()
+    
+    # Rank by entropy (1 = lowest entropy, N = highest entropy)
+    date_data['entropy_rank'] = date_data['entropy'].rank(method='average')
+    date_data['entropy_percentile'] = date_data['entropy_rank'] / len(date_data) * 100
+    
+    return date_data
+
+
+def select_symbols_by_entropy(ranked_data, strategy='momentum', 
+                               long_percentile=20, short_percentile=80,
+                               max_positions=10):
+    """
+    Select symbols for long/short based on entropy rankings.
+    
+    Args:
+        ranked_data (pd.DataFrame): Ranked data with entropy_percentile column
+        strategy (str): Strategy type:
+            - 'momentum': Long low entropy (predictable), Short high entropy (random)
+            - 'mean_reversion': Long high entropy (random), Short low entropy (predictable)
+            - 'long_only_predictable': Long low entropy only
+            - 'long_only_random': Long high entropy only
+        long_percentile (float): Percentile threshold for long positions
+        short_percentile (float): Percentile threshold for short positions
+        max_positions (int): Maximum positions per side
+        
+    Returns:
+        dict: Dictionary with 'long' and 'short' DataFrames
+    """
+    if ranked_data.empty:
+        return {'long': pd.DataFrame(), 'short': pd.DataFrame()}
+    
+    if strategy == 'momentum':
+        # Long: Low entropy (predictable/trending coins)
+        long_data = ranked_data[ranked_data['entropy_percentile'] <= long_percentile]
+        # Short: High entropy (random/choppy coins)
+        short_data = ranked_data[ranked_data['entropy_percentile'] >= short_percentile]
+        
+    elif strategy == 'mean_reversion':
+        # Long: High entropy (random coins expected to stabilize)
+        long_data = ranked_data[ranked_data['entropy_percentile'] >= short_percentile]
+        # Short: Low entropy (predictable coins expected to break down)
+        short_data = ranked_data[ranked_data['entropy_percentile'] <= long_percentile]
+        
+    elif strategy == 'long_only_predictable':
+        # Long: Low entropy only
+        long_data = ranked_data[ranked_data['entropy_percentile'] <= long_percentile]
+        short_data = pd.DataFrame()
+        
+    elif strategy == 'long_only_random':
+        # Long: High entropy only
+        long_data = ranked_data[ranked_data['entropy_percentile'] >= short_percentile]
+        short_data = pd.DataFrame()
+        
+    else:
+        raise ValueError(f"Unknown strategy: {strategy}")
+    
+    # Limit number of positions
+    if len(long_data) > max_positions:
+        # For momentum: take lowest entropy
+        # For mean reversion: take highest entropy
+        if strategy in ['momentum', 'long_only_predictable']:
+            long_data = long_data.nsmallest(max_positions, 'entropy')
+        else:
+            long_data = long_data.nlargest(max_positions, 'entropy')
+    
+    if len(short_data) > max_positions:
+        # For momentum: take highest entropy
+        # For mean reversion: take lowest entropy
+        if strategy == 'momentum':
+            short_data = short_data.nlargest(max_positions, 'entropy')
+        else:
+            short_data = short_data.nsmallest(max_positions, 'entropy')
+    
+    return {'long': long_data, 'short': short_data}
+
+
+def calculate_portfolio_returns(weights, returns_df):
+    """
+    Calculate portfolio returns based on weights and individual asset returns.
+    
+    Args:
+        weights (dict): Dictionary mapping symbols to portfolio weights
+        returns_df (pd.DataFrame): DataFrame with symbol and daily_return columns
+        
+    Returns:
+        float: Portfolio return for the period
+    """
+    if not weights or returns_df.empty:
+        return 0.0
+    
+    portfolio_return = 0.0
+    for symbol, weight in weights.items():
+        symbol_return = returns_df[returns_df['symbol'] == symbol]['daily_return'].values
+        if len(symbol_return) > 0 and not np.isnan(symbol_return[0]):
+            portfolio_return += weight * symbol_return[0]
+    
+    return portfolio_return
+
+
+def backtest(
+    price_data,
+    strategy='momentum',
+    entropy_window=30,
+    entropy_bins=10,
+    volatility_window=30,
+    rebalance_days=7,
+    long_percentile=20,
+    short_percentile=80,
+    max_positions=10,
+    weighting='risk_parity',
+    start_date=None,
+    end_date=None,
+    initial_capital=10000,
+    leverage=1.0,
+    long_allocation=0.5,
+    short_allocation=0.5,
+    min_volume=5_000_000,
+    min_market_cap=50_000_000
+):
+    """
+    Run backtest for the entropy factor strategy.
+    
+    Args:
+        price_data (pd.DataFrame): Historical OHLCV data
+        strategy (str): Strategy type ('momentum' or 'mean_reversion')
+        entropy_window (int): Window for entropy calculation
+        entropy_bins (int): Number of bins for entropy histogram
+        volatility_window (int): Window for volatility calculation
+        rebalance_days (int): Rebalance every N days
+        long_percentile (float): Percentile threshold for long positions
+        short_percentile (float): Percentile threshold for short positions
+        max_positions (int): Maximum positions per side
+        weighting (str): Weighting method ('risk_parity' or 'equal_weight')
+        start_date (str): Start date for backtest
+        end_date (str): End date for backtest
+        initial_capital (float): Initial portfolio capital
+        leverage (float): Leverage multiplier
+        long_allocation (float): Allocation to long side
+        short_allocation (float): Allocation to short side
+        min_volume (float): Minimum volume filter
+        min_market_cap (float): Minimum market cap filter
+        
+    Returns:
+        dict: Dictionary containing backtest results
+    """
+    print("\nStep 1: Calculating returns and entropy...")
+    data_with_entropy = calculate_rolling_entropy(
+        price_data, 
+        window=entropy_window,
+        n_bins=entropy_bins
+    )
+    
+    print("Step 2: Calculating volatility...")
+    data_with_volatility = calculate_volatility(data_with_entropy, window=volatility_window)
+    
+    print("Step 3: Filtering universe by liquidity and market cap...")
+    # Note: Filtering disabled if columns not available
+    if 'volume' in data_with_volatility.columns or 'market_cap' in data_with_volatility.columns:
+        filtered_data = filter_universe(data_with_volatility, min_volume, min_market_cap)
+        print(f"  Filtered from {data_with_volatility['symbol'].nunique()} to {filtered_data['symbol'].nunique()} symbols")
+    else:
+        filtered_data = data_with_volatility
+        print(f"  Skipping filtering (volume/market_cap not available)")
+    
+    # Filter by date range
+    if start_date:
+        filtered_data = filtered_data[filtered_data['date'] >= pd.to_datetime(start_date)]
+    if end_date:
+        filtered_data = filtered_data[filtered_data['date'] <= pd.to_datetime(end_date)]
+    
+    # Get unique dates
+    all_dates = sorted(filtered_data['date'].unique())
+    
+    # Need enough data for entropy calculation
+    min_required_days = max(entropy_window, volatility_window) + 10
+    
+    if len(all_dates) < min_required_days:
+        raise ValueError(f"Insufficient data. Need at least {min_required_days} days, have {len(all_dates)}")
+    
+    # Start backtest after minimum required period
+    backtest_start_idx = max(entropy_window, volatility_window)
+    backtest_dates = all_dates[backtest_start_idx::rebalance_days]
+    
+    if len(backtest_dates) == 0:
+        backtest_dates = [all_dates[-1]]
+    
+    print(f"\nBacktest Configuration:")
+    print(f"  Strategy: {strategy}")
+    print(f"  Period: {backtest_dates[0].date()} to {backtest_dates[-1].date()}")
+    print(f"  Trading days: {len(backtest_dates)}")
+    print(f"  Rebalance frequency: Every {rebalance_days} days")
+    print(f"  Entropy window: {entropy_window}d")
+    print(f"  Entropy bins: {entropy_bins}")
+    print(f"  Volatility window: {volatility_window}d")
+    print(f"  Long percentile: {long_percentile}%")
+    print(f"  Short percentile: {short_percentile}%")
+    print(f"  Max positions per side: {max_positions}")
+    print(f"  Weighting method: {weighting}")
+    print(f"  Initial capital: ${initial_capital:,.2f}")
+    print(f"  Leverage: {leverage}x")
+    print(f"  Long allocation: {long_allocation:.1%}")
+    print(f"  Short allocation: {short_allocation:.1%}")
+    print("=" * 80)
+    
+    # Initialize tracking
+    portfolio_values = []
+    trades_history = []
+    entropy_timeseries = []
+    current_weights = {}
+    current_capital = initial_capital
+    last_rebalance_date = None
+    
+    # Track daily portfolio value
+    daily_tracking_dates = all_dates[backtest_start_idx:]
+    
+    for date_idx, current_date in enumerate(daily_tracking_dates):
+        # Check if it's a rebalancing day
+        is_rebalance_day = (
+            last_rebalance_date is None or
+            current_date in backtest_dates or
+            (current_date - last_rebalance_date).days >= rebalance_days
+        )
+        
+        if is_rebalance_day:
+            # Get data up to current date (no lookahead)
+            historical_data = filtered_data[filtered_data['date'] <= current_date].copy()
+            
+            # Rank by entropy
+            ranked_data = rank_by_entropy(historical_data, current_date)
+            
+            if not ranked_data.empty:
+                # Select long/short symbols
+                selected = select_symbols_by_entropy(
+                    ranked_data,
+                    strategy=strategy,
+                    long_percentile=long_percentile,
+                    short_percentile=short_percentile,
+                    max_positions=max_positions
+                )
+                
+                long_symbols = selected['long']['symbol'].tolist() if not selected['long'].empty else []
+                short_symbols = selected['short']['symbol'].tolist() if not selected['short'].empty else []
+                
+                # Save entropy data for analysis
+                for _, row in selected['long'].iterrows():
+                    entropy_timeseries.append({
+                        'date': current_date,
+                        'symbol': row['symbol'],
+                        'signal': 'LONG',
+                        'entropy': row['entropy'],
+                        'entropy_rank': row['entropy_rank'],
+                        'entropy_percentile': row['entropy_percentile'],
+                        'returns_mean_30d': row.get('returns_mean_30d', np.nan),
+                        'returns_std_30d': row.get('returns_std_30d', np.nan),
+                    })
+                
+                for _, row in selected['short'].iterrows():
+                    entropy_timeseries.append({
+                        'date': current_date,
+                        'symbol': row['symbol'],
+                        'signal': 'SHORT',
+                        'entropy': row['entropy'],
+                        'entropy_rank': row['entropy_rank'],
+                        'entropy_percentile': row['entropy_percentile'],
+                        'returns_mean_30d': row.get('returns_mean_30d', np.nan),
+                        'returns_std_30d': row.get('returns_std_30d', np.nan),
+                    })
+                
+                # Calculate weights
+                new_weights = {}
+                
+                if weighting == 'risk_parity' and len(long_symbols + short_symbols) > 0:
+                    # Get volatilities for longs and shorts
+                    long_vols = {}
+                    short_vols = {}
+                    
+                    for symbol in long_symbols:
+                        vol = ranked_data[ranked_data['symbol'] == symbol]['volatility'].values
+                        if len(vol) > 0 and not np.isnan(vol[0]) and vol[0] > 0:
+                            long_vols[symbol] = vol[0]
+                    
+                    for symbol in short_symbols:
+                        vol = ranked_data[ranked_data['symbol'] == symbol]['volatility'].values
+                        if len(vol) > 0 and not np.isnan(vol[0]) and vol[0] > 0:
+                            short_vols[symbol] = vol[0]
+                    
+                    # Calculate risk parity weights
+                    long_weights = calculate_weights(long_vols) if long_vols else {}
+                    short_weights = calculate_weights(short_vols) if short_vols else {}
+                    
+                    # Apply allocation and leverage
+                    for symbol, weight in long_weights.items():
+                        new_weights[symbol] = weight * long_allocation * leverage
+                    
+                    for symbol, weight in short_weights.items():
+                        new_weights[symbol] = -weight * short_allocation * leverage
+                
+                elif weighting == 'equal_weight':
+                    # Equal weight
+                    if long_symbols:
+                        long_weight = (long_allocation * leverage) / len(long_symbols)
+                        for symbol in long_symbols:
+                            new_weights[symbol] = long_weight
+                    
+                    if short_symbols:
+                        short_weight = (short_allocation * leverage) / len(short_symbols)
+                        for symbol in short_symbols:
+                            new_weights[symbol] = -short_weight
+                
+                # Record trades
+                if new_weights != current_weights:
+                    all_symbols = set(new_weights.keys()) | set(current_weights.keys())
+                    for symbol in all_symbols:
+                        old_weight = current_weights.get(symbol, 0)
+                        new_weight = new_weights.get(symbol, 0)
+                        if abs(new_weight - old_weight) > 0.0001:
+                            # Get entropy for this symbol
+                            ent = ranked_data[ranked_data['symbol'] == symbol]['entropy'].values
+                            ent_val = ent[0] if len(ent) > 0 else np.nan
+                            
+                            trades_history.append({
+                                'date': current_date,
+                                'symbol': symbol,
+                                'signal': 'LONG' if new_weight > 0 else 'SHORT' if new_weight < 0 else 'CLOSE',
+                                'old_weight': old_weight,
+                                'new_weight': new_weight,
+                                'weight_change': new_weight - old_weight,
+                                'entropy': ent_val
+                            })
+                
+                current_weights = new_weights.copy()
+                last_rebalance_date = current_date
+        
+        # Calculate daily portfolio return
+        if date_idx > 0 and current_weights:
+            current_returns = filtered_data[filtered_data['date'] == current_date]
+            portfolio_return = calculate_portfolio_returns(current_weights, current_returns)
+            current_capital = current_capital * np.exp(portfolio_return)
+        
+        # Record portfolio value
+        long_exposure = sum(w for w in current_weights.values() if w > 0)
+        short_exposure = abs(sum(w for w in current_weights.values() if w < 0))
+        net_exposure = sum(current_weights.values())
+        
+        portfolio_values.append({
+            'date': current_date,
+            'portfolio_value': current_capital,
+            'num_long_positions': len([w for w in current_weights.values() if w > 0]),
+            'num_short_positions': len([w for w in current_weights.values() if w < 0]),
+            'long_exposure': long_exposure,
+            'short_exposure': short_exposure,
+            'net_exposure': net_exposure,
+            'gross_exposure': long_exposure + short_exposure
+        })
+        
+        # Progress update
+        if (date_idx + 1) % 50 == 0 or date_idx == len(daily_tracking_dates) - 1:
+            print(f"Progress: {date_idx+1}/{len(daily_tracking_dates)} days | "
+                  f"Date: {current_date.date()} | "
+                  f"Value: ${current_capital:,.2f} | "
+                  f"Long: {len([w for w in current_weights.values() if w > 0])} | "
+                  f"Short: {len([w for w in current_weights.values() if w < 0])}")
+    
+    # Convert to DataFrames
+    portfolio_df = pd.DataFrame(portfolio_values)
+    trades_df = pd.DataFrame(trades_history)
+    entropy_df = pd.DataFrame(entropy_timeseries)
+    
+    # Calculate performance metrics
+    metrics = calculate_performance_metrics(portfolio_df, initial_capital)
+    
+    return {
+        'portfolio_values': portfolio_df,
+        'trades': trades_df,
+        'entropy_timeseries': entropy_df,
+        'metrics': metrics,
+        'strategy_info': {
+            'strategy': strategy,
+            'entropy_window': entropy_window,
+            'entropy_bins': entropy_bins,
+            'long_percentile': long_percentile,
+            'short_percentile': short_percentile,
+            'weighting': weighting
+        }
+    }
+
+
+def calculate_performance_metrics(portfolio_df, initial_capital):
+    """Calculate performance metrics for the backtest."""
+    portfolio_df['daily_return'] = portfolio_df['portfolio_value'].pct_change()
+    portfolio_df['log_return'] = np.log(portfolio_df['portfolio_value'] / portfolio_df['portfolio_value'].shift(1))
+    
+    final_value = portfolio_df['portfolio_value'].iloc[-1]
+    total_return = (final_value - initial_capital) / initial_capital
+    
+    num_days = len(portfolio_df)
+    years = num_days / 365.25
+    annualized_return = (final_value / initial_capital) ** (1 / years) - 1 if years > 0 else 0
+    
+    daily_returns = portfolio_df['log_return'].dropna()
+    daily_vol = daily_returns.std()
+    annualized_vol = daily_vol * np.sqrt(365)
+    
+    sharpe_ratio = annualized_return / annualized_vol if annualized_vol > 0 else 0
+    
+    cumulative_returns = (1 + portfolio_df['daily_return'].fillna(0)).cumprod()
+    running_max = cumulative_returns.expanding().max()
+    drawdown = (cumulative_returns - running_max) / running_max
+    max_drawdown = drawdown.min()
+    
+    positive_days = (daily_returns > 0).sum()
+    win_rate = positive_days / len(daily_returns) if len(daily_returns) > 0 else 0
+    
+    metrics = {
+        'initial_capital': initial_capital,
+        'final_value': final_value,
+        'total_return': total_return,
+        'annualized_return': annualized_return,
+        'annualized_volatility': annualized_vol,
+        'sharpe_ratio': sharpe_ratio,
+        'max_drawdown': max_drawdown,
+        'win_rate': win_rate,
+        'num_days': num_days,
+        'avg_long_positions': portfolio_df['num_long_positions'].mean(),
+        'avg_short_positions': portfolio_df['num_short_positions'].mean(),
+        'avg_long_exposure': portfolio_df['long_exposure'].mean(),
+        'avg_short_exposure': portfolio_df['short_exposure'].mean(),
+        'avg_net_exposure': portfolio_df['net_exposure'].mean(),
+        'avg_gross_exposure': portfolio_df['gross_exposure'].mean()
+    }
+    
+    return metrics
+
+
+def print_results(results):
+    """Print backtest results."""
+    metrics = results['metrics']
+    strategy_info = results['strategy_info']
+    
+    print("\n" + "=" * 80)
+    print("ENTROPY FACTOR BACKTEST RESULTS")
+    print("=" * 80)
+    
+    print(f"\nStrategy Information:")
+    print(f"  Strategy: {strategy_info['strategy']}")
+    print(f"  Entropy window: {strategy_info['entropy_window']}d")
+    print(f"  Entropy bins: {strategy_info['entropy_bins']}")
+    print(f"  Long percentile: {strategy_info['long_percentile']}%")
+    print(f"  Short percentile: {strategy_info['short_percentile']}%")
+    print(f"  Weighting: {strategy_info['weighting']}")
+    
+    print(f"\nPortfolio Performance:")
+    print(f"  Initial Capital:        ${metrics['initial_capital']:>15,.2f}")
+    print(f"  Final Value:            ${metrics['final_value']:>15,.2f}")
+    print(f"  Total Return:           {metrics['total_return']:>15.2%}")
+    print(f"  Annualized Return:      {metrics['annualized_return']:>15.2%}")
+    
+    print(f"\nRisk Metrics:")
+    print(f"  Annualized Volatility:  {metrics['annualized_volatility']:>15.2%}")
+    print(f"  Sharpe Ratio:           {metrics['sharpe_ratio']:>15.2f}")
+    print(f"  Maximum Drawdown:       {metrics['max_drawdown']:>15.2%}")
+    
+    print(f"\nTrading Statistics:")
+    print(f"  Win Rate:               {metrics['win_rate']:>15.2%}")
+    print(f"  Trading Days:           {metrics['num_days']:>15,.0f}")
+    print(f"  Avg Long Positions:     {metrics['avg_long_positions']:>15.1f}")
+    print(f"  Avg Short Positions:    {metrics['avg_short_positions']:>15.1f}")
+    
+    print(f"\nExposure Statistics:")
+    print(f"  Avg Long Exposure:      {metrics['avg_long_exposure']:>15.2%}")
+    print(f"  Avg Short Exposure:     {metrics['avg_short_exposure']:>15.2%}")
+    print(f"  Avg Net Exposure:       {metrics['avg_net_exposure']:>15.2%}")
+    print(f"  Avg Gross Exposure:     {metrics['avg_gross_exposure']:>15.2%}")
+    
+    if not results['trades'].empty:
+        print(f"  Total Trades:           {len(results['trades']):>15,.0f}")
+    
+    print("\n" + "=" * 80)
+
+
+def save_results(results, output_prefix='backtests/results/entropy_factor'):
+    """Save backtest results to CSV files."""
+    portfolio_file = f"{output_prefix}_portfolio_values.csv"
+    results['portfolio_values'].to_csv(portfolio_file, index=False)
+    print(f"\nPortfolio values saved to: {portfolio_file}")
+    
+    if not results['trades'].empty:
+        trades_file = f"{output_prefix}_trades.csv"
+        results['trades'].to_csv(trades_file, index=False)
+        print(f"Trades history saved to: {trades_file}")
+    
+    if not results['entropy_timeseries'].empty:
+        entropy_file = f"{output_prefix}_entropy_timeseries.csv"
+        results['entropy_timeseries'].to_csv(entropy_file, index=False)
+        print(f"Entropy timeseries saved to: {entropy_file}")
+    
+    metrics_file = f"{output_prefix}_metrics.csv"
+    pd.DataFrame([results['metrics']]).to_csv(metrics_file, index=False)
+    print(f"Performance metrics saved to: {metrics_file}")
+    
+    strategy_file = f"{output_prefix}_strategy_info.csv"
+    pd.DataFrame([results['strategy_info']]).to_csv(strategy_file, index=False)
+    print(f"Strategy info saved to: {strategy_file}")
+
+
+def main():
+    """Main execution function."""
+    parser = argparse.ArgumentParser(
+        description='Backtest Entropy Factor Trading Strategy',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    parser.add_argument('--price-data', type=str,
+                       default='data/raw/combined_coinbase_coinmarketcap_daily.csv',
+                       help='Path to historical OHLCV price data CSV file')
+    parser.add_argument('--strategy', type=str, default='momentum',
+                       choices=['momentum', 'mean_reversion', 'long_only_predictable', 'long_only_random'],
+                       help='Strategy type')
+    parser.add_argument('--entropy-window', type=int, default=30,
+                       help='Window for entropy calculation in days')
+    parser.add_argument('--entropy-bins', type=int, default=10,
+                       help='Number of bins for entropy histogram')
+    parser.add_argument('--volatility-window', type=int, default=30,
+                       help='Window for volatility calculation in days')
+    parser.add_argument('--rebalance-days', type=int, default=7,
+                       help='Rebalance every N days')
+    parser.add_argument('--long-percentile', type=float, default=20,
+                       help='Percentile threshold for long positions')
+    parser.add_argument('--short-percentile', type=float, default=80,
+                       help='Percentile threshold for short positions')
+    parser.add_argument('--max-positions', type=int, default=10,
+                       help='Maximum positions per side')
+    parser.add_argument('--weighting', type=str, default='risk_parity',
+                       choices=['risk_parity', 'equal_weight'],
+                       help='Position weighting method')
+    parser.add_argument('--initial-capital', type=float, default=10000,
+                       help='Initial portfolio capital in USD')
+    parser.add_argument('--leverage', type=float, default=1.0,
+                       help='Leverage multiplier')
+    parser.add_argument('--long-allocation', type=float, default=0.5,
+                       help='Allocation to long side')
+    parser.add_argument('--short-allocation', type=float, default=0.5,
+                       help='Allocation to short side')
+    parser.add_argument('--min-volume', type=float, default=5_000_000,
+                       help='Minimum 30d avg daily volume filter')
+    parser.add_argument('--min-market-cap', type=float, default=50_000_000,
+                       help='Minimum market cap filter')
+    parser.add_argument('--start-date', type=str, default=None,
+                       help='Start date for backtest (YYYY-MM-DD)')
+    parser.add_argument('--end-date', type=str, default=None,
+                       help='End date for backtest (YYYY-MM-DD)')
+    parser.add_argument('--output-prefix', type=str,
+                       default='backtests/results/entropy_factor',
+                       help='Prefix for output CSV files')
+    
+    args = parser.parse_args()
+    
+    print("=" * 80)
+    print("ENTROPY FACTOR BACKTEST")
+    print("=" * 80)
+    
+    # Load data
+    print(f"\nLoading price data from {args.price_data}...")
+    price_data = load_data(args.price_data)
+    print(f"Loaded {len(price_data)} rows for {price_data['symbol'].nunique()} symbols")
+    print(f"Date range: {price_data['date'].min().date()} to {price_data['date'].max().date()}")
+    
+    # Run backtest
+    print("\nRunning backtest...")
+    results = backtest(
+        price_data=price_data,
+        strategy=args.strategy,
+        entropy_window=args.entropy_window,
+        entropy_bins=args.entropy_bins,
+        volatility_window=args.volatility_window,
+        rebalance_days=args.rebalance_days,
+        long_percentile=args.long_percentile,
+        short_percentile=args.short_percentile,
+        max_positions=args.max_positions,
+        weighting=args.weighting,
+        initial_capital=args.initial_capital,
+        leverage=args.leverage,
+        long_allocation=args.long_allocation,
+        short_allocation=args.short_allocation,
+        min_volume=args.min_volume,
+        min_market_cap=args.min_market_cap,
+        start_date=args.start_date,
+        end_date=args.end_date
+    )
+    
+    # Print results
+    print_results(results)
+    
+    # Save results
+    save_results(results, output_prefix=args.output_prefix)
+    
+    print("\n" + "=" * 80)
+    print("BACKTEST COMPLETE")
+    print("=" * 80)
+
+
+if __name__ == "__main__":
+    main()
