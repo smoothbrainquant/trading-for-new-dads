@@ -13,7 +13,7 @@ Supported signals (handlers implemented or stubbed):
 - beta: Betting Against Beta - Long low beta coins, short high beta coins (5d rebalance optimal)
 - kurtosis: Kurtosis factor - Long/short based on return distribution kurtosis (14d rebalance optimal)
 - volatility: Low volatility anomaly (long low vol, short high vol, 3d rebalance optimal)
-- adf: ADF factor (trend following vs mean reversion, 7d rebalance optimal) [COMMENTED OUT - not active]
+- adf: ADF factor (trend following vs mean reversion, 7d rebalance optimal)
 
 Weights can be provided via an external JSON config file so the backtesting suite
 can update them without code changes. Example config structure:
@@ -81,7 +81,7 @@ from execution.strategies import (
     strategy_trendline_breakout,
     strategy_kurtosis,
     strategy_volatility,
-    # strategy_adf,  # COMMENTED OUT: Not active yet (integrate but disable)
+    strategy_adf,
 )
 
 # Import shared strategy utilities for legacy path
@@ -118,7 +118,7 @@ STRATEGY_REGISTRY = {
     "trendline_breakout": strategy_trendline_breakout,
     "kurtosis": strategy_kurtosis,
     "volatility": strategy_volatility,
-    # "adf": strategy_adf,  # COMMENTED OUT: Not active yet (integrate but disable)
+    "adf": strategy_adf,
 }
 
 
@@ -284,29 +284,29 @@ def _build_strategy_params(
             "short_allocation": short_allocation,
         }
 
-    # elif strategy_name == "adf":  # COMMENTED OUT: Not active yet
-    #     adf_window = int(p.get("adf_window", 60)) if isinstance(p, dict) else 60
-    #     regression = p.get("regression", "ct") if isinstance(p, dict) else "ct"
-    #     volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
-    #     rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
-    #     long_percentile = int(p.get("long_percentile", 20)) if isinstance(p, dict) else 20
-    #     short_percentile = int(p.get("short_percentile", 80)) if isinstance(p, dict) else 80
-    #     strategy_type = p.get("strategy_type", "trend_following_premium") if isinstance(p, dict) else "trend_following_premium"
-    #     weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"
-    #     long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
-    #     short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
-    #     return (historical_data, list(historical_data.keys()), strategy_notional), {
-    #         "adf_window": adf_window,
-    #         "regression": regression,
-    #         "volatility_window": volatility_window,
-    #         "rebalance_days": rebalance_days,
-    #         "long_percentile": long_percentile,
-    #         "short_percentile": short_percentile,
-    #         "strategy_type": strategy_type,
-    #         "weighting_method": weighting_method,
-    #         "long_allocation": long_allocation,
-    #         "short_allocation": short_allocation,
-    #     }
+    elif strategy_name == "adf":
+        adf_window = int(p.get("adf_window", 60)) if isinstance(p, dict) else 60
+        regression = p.get("regression", "ct") if isinstance(p, dict) else "ct"
+        volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
+        rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
+        long_percentile = int(p.get("long_percentile", 20)) if isinstance(p, dict) else 20
+        short_percentile = int(p.get("short_percentile", 80)) if isinstance(p, dict) else 80
+        strategy_type = p.get("strategy_type", "trend_following_premium") if isinstance(p, dict) else "trend_following_premium"
+        weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"
+        long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            "adf_window": adf_window,
+            "regression": regression,
+            "volatility_window": volatility_window,
+            "rebalance_days": rebalance_days,
+            "long_percentile": long_percentile,
+            "short_percentile": short_percentile,
+            "strategy_type": strategy_type,
+            "weighting_method": weighting_method,
+            "long_allocation": long_allocation,
+            "short_allocation": short_allocation,
+        }
 
     else:
         # Default: just pass historical_data and notional
