@@ -86,7 +86,7 @@ def round_price_to_tick_size(exchange, symbol: str, price: float) -> float:
 
 
 def send_spread_offset_orders(
-    trades: Dict[str, float], spread_multiplier: float = 1.0, dry_run: bool = True
+    trades: Dict[str, float], spread_multiplier: float = 1.0, dry_run: bool = False
 ):
     """
     Send limit orders at a configurable offset from best bid/ask based on spread.
@@ -108,7 +108,7 @@ def send_spread_offset_orders(
                           - 1.0 = place order 1x spread away from best bid/ask
                           - 0.5 = place order 0.5x spread away
                           - 2.0 = place order 2x spread away
-        dry_run: If True, only prints orders without executing (default: True)
+        dry_run: If True, only prints orders without executing (default: False)
 
     Returns:
         list: List of order results (empty if dry_run=True)
@@ -261,7 +261,7 @@ def send_spread_offset_orders(
     if dry_run:
         print("\n" + "=" * 80)
         print("NOTE: Running in DRY RUN mode. No actual orders were placed.")
-        print("To execute live orders, run with --live flag")
+        print("To execute live orders, run without --dry-run flag")
         print("=" * 80)
     else:
         print(f"\nOrders executed: {len(orders)}")
@@ -310,11 +310,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Dry run: Buy $100 BTC at bid - 1x spread, sell $50 ETH at ask + 1x spread
+  # Live: Buy $100 BTC at bid - 1x spread, sell $50 ETH at ask + 1x spread
   python3 send_spread_offset_orders.py --trades "BTC/USDC:USDC:100" "ETH/USDC:USDC:-50"
   
   # Live: Buy $200 SOL at bid - 0.5x spread (closer to best bid)
-  python3 send_spread_offset_orders.py --trades "SOL/USDC:USDC:200" --spread-multiplier 0.5 --live
+  python3 send_spread_offset_orders.py --trades "SOL/USDC:USDC:200" --spread-multiplier 0.5
   
   # Multiple trades with 2x spread offset (farther from best prices)
   python3 send_spread_offset_orders.py --trades \\
@@ -324,8 +324,8 @@ Examples:
     "ARB/USDC:USDC:-25" \\
     --spread-multiplier 2.0
   
-  # Conservative orders very close to best prices (0.25x spread)
-  python3 send_spread_offset_orders.py --trades "BTC/USDC:USDC:1000" --spread-multiplier 0.25 --live
+  # Dry run mode (test without executing)
+  python3 send_spread_offset_orders.py --trades "BTC/USDC:USDC:1000" --spread-multiplier 0.25 --dry-run
 
 Order Placement Logic:
   - Buy orders (positive amount): bid - (spread ? spread_multiplier)
@@ -364,7 +364,7 @@ Environment Variables Required (for live trading):
         "1.0 = 1x spread away, 0.5 = 0.5x spread away, etc.",
     )
     parser.add_argument(
-        "--live", action="store_true", help="Execute live orders (default is dry-run mode)"
+        "--dry-run", action="store_true", help="Dry run mode - show orders without executing (default is live trading)"
     )
     parser.add_argument("--verbose", "-v", action="store_true", help="Show verbose output")
 
@@ -384,7 +384,7 @@ Environment Variables Required (for live trading):
         exit(1)
 
     # Check for API credentials if live mode
-    if not args.live:
+    if args.dry_run:
         dry_run = True
     else:
         api_key = os.getenv("HL_API")
@@ -395,7 +395,7 @@ Environment Variables Required (for live trading):
             print("\nPlease set the following environment variables:")
             print("  export HL_API='your_api_key'")
             print("  export HL_SECRET='your_secret_key'")
-            print("\nOr run in dry-run mode (without --live flag)")
+            print("\nOr run in dry-run mode (with --dry-run flag)")
             exit(1)
 
         dry_run = False
