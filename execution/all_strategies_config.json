@@ -9,7 +9,7 @@
     "kurtosis": 0.111989459815547,
     "breakout": 0.0,
     "days_from_high": 0.0,
-    "_adf_commented_out": 0.0
+    "adf": 0.0
   },
   "_weights_updated": {
     "_comment": "Weights updated based on Sharpe ratios: Size=0.39, Carry=0.76, Mean Reversion=3.14, Beta=0.68, Volatility=1.41, TLBO=0.36, Kurtosis=0.85",
@@ -94,8 +94,8 @@
       "strategy_type": "momentum",
       "_comment": "Optimal params from backtest (2022-2025): rebalance_days=14 (bi-weekly), window=30d, Total Return: +181%, Sharpe: 0.81. Momentum strategy: long high kurtosis (volatile), short low kurtosis (stable)."
     },
-    "_adf_commented_out": {
-      "_status": "COMMENTED OUT - Not active yet",
+    "adf": {
+      "_status": "ACTIVE - Available for use (set weight > 0 to enable)",
       "adf_window": 60,
       "regression": "ct",
       "volatility_window": 30,
@@ -106,7 +106,7 @@
       "weighting_method": "risk_parity",
       "long_allocation": 0.5,
       "short_allocation": 0.5,
-      "_comment": "Optimal params from backtest (2021-2025): Total Return: +126.29%, Sharpe: 0.49, Max DD: -50.60%. Risk parity weighting beat equal weight. Trend Following Premium: long trending coins (high ADF), short stationary coins (low ADF). To activate: uncomment in main.py and strategies/__init__.py, set weight > 0.",
+      "_comment": "Optimal params from backtest (2021-2025): Total Return: +126.29%, Sharpe: 0.49, Max DD: -50.60%. Risk parity weighting beat equal weight. Trend Following Premium: long trending coins (high ADF), short stationary coins (low ADF). Currently active with weight=0. Set weight > 0 to enable in portfolio.",
       "_backtest_results": {
         "trend_following_risk_parity": {
           "return": "126.29%",
