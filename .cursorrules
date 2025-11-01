@@ -12,6 +12,17 @@
 - When generating backtest, make sure to use next-day returns (`.shift(-1)`) to avoid lookahead bias
 - Signals generated on day T should be executed using returns from day T+1
 
+# API Usage Rules
+
+## CCXT/Hyperliquid API Rate Limits
+- **NEVER** run scripts that hit the ccxt/Hyperliquid API (e.g., `ccxt_get_positions.py`, `ccxt_get_balance.py`, `ccxt_make_order.py`) for random testing or verification purposes
+- Only execute API calls when:
+  - Explicitly requested by the user (e.g., "check my positions", "get my balance")
+  - Part of the actual script the user requested to run (e.g., running `main.py` which legitimately needs position data)
+- Do NOT call these scripts to "verify" code changes or "test" implementations
+- Hyperliquid has strict rate limits: 1200 requests/minute, 20 requests/second
+- Unnecessary API calls can cause rate limiting issues and interfere with live trading operations
+
 # Documentation Organization
 
 ## Documentation Structure
