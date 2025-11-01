@@ -107,7 +107,10 @@ def prepare_factor_data(
     elif factor_type == 'beta':
         from backtests.scripts.backtest_beta_factor import calculate_rolling_beta
         window = factor_params.get('beta_window', 90)
-        btc_data = price_data[price_data['symbol'] == 'BTC'].copy()
+        # Try both 'BTC' and 'BTC/USD' as symbols
+        btc_data = price_data[price_data['symbol'].isin(['BTC', 'BTC/USD'])][['date', 'close']].copy()
+        if btc_data.empty:
+            raise ValueError("BTC data not found in dataset. Beta calculation requires BTC or BTC/USD.")
         return calculate_rolling_beta(price_data, btc_data, window=window)
     
     elif factor_type == 'carry':
