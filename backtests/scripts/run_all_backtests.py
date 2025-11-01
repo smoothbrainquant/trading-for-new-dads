@@ -36,6 +36,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "backtest
 # NOTE: Backtest functions are imported conditionally in main() to avoid
 # loading heavy dependencies (scipy, statsmodels) unless needed
 
+# Import vectorized backtest engine
+from backtest_vectorized import backtest_factor_vectorized
+
 
 def calculate_comprehensive_metrics(portfolio_df, initial_capital, benchmark_returns=None):
     """
@@ -371,23 +374,30 @@ def run_mean_reversion_backtest(price_data, **kwargs):
 
 
 def run_size_factor_backtest(price_data, marketcap_data, **kwargs):
-    """Run size factor backtest."""
+    """Run size factor backtest (VECTORIZED)."""
     print("\n" + "=" * 80)
-    print("Running Size Factor Backtest")
+    print("Running Size Factor Backtest (VECTORIZED)")
     print("=" * 80)
 
     try:
-        # Import backtest function
-        from backtests.scripts.backtest_size_factor import backtest as backtest_size
-        
         if marketcap_data is None or len(marketcap_data) == 0:
             print("No market cap data available")
             return None
 
-        results = backtest_size(
+        # Ensure marketcap data has the right format
+        mcap_df = marketcap_data.copy()
+        # Normalize column names if needed
+        if 'Market Cap' in mcap_df.columns and 'market_cap' not in mcap_df.columns:
+            mcap_df['market_cap'] = mcap_df['Market Cap']
+        if 'Symbol' in mcap_df.columns and 'symbol' not in mcap_df.columns:
+            mcap_df['symbol'] = mcap_df['Symbol']
+
+        # Use vectorized backtest engine
+        results = backtest_factor_vectorized(
             price_data=price_data,
-            marketcap_data=marketcap_data,
+            factor_type='size',
             strategy=kwargs.get("strategy", "long_small_short_large"),
+            marketcap_data=mcap_df,
             num_buckets=kwargs.get("num_buckets", 5),
             volatility_window=kwargs.get("volatility_window", 30),
             rebalance_days=kwargs.get("rebalance_days", 7),
@@ -395,8 +405,10 @@ def run_size_factor_backtest(price_data, marketcap_data, **kwargs):
             leverage=kwargs.get("leverage", 1.0),
             long_allocation=kwargs.get("long_allocation", 0.5),
             short_allocation=kwargs.get("short_allocation", 0.5),
+            weighting_method='equal_weight',
             start_date=kwargs.get("start_date"),
             end_date=kwargs.get("end_date"),
+            marketcap_column='market_cap',
         )
 
         # Calculate comprehensive metrics
@@ -412,7 +424,7 @@ def run_size_factor_backtest(price_data, marketcap_data, **kwargs):
 
         return {
             "strategy": "Size Factor",
-            "description": f"Strategy: {kwargs.get('strategy', 'long_small_short_large')}",
+            "description": f"Strategy: {kwargs.get('strategy', 'long_small_short_large')} (VECTORIZED)",
             "metrics": metrics,
             "results": results,
             "daily_returns": daily_returns,
@@ -426,22 +438,28 @@ def run_size_factor_backtest(price_data, marketcap_data, **kwargs):
 
 
 def run_carry_factor_backtest(price_data, funding_data, **kwargs):
-    """Run carry factor backtest."""
+    """Run carry factor backtest (VECTORIZED)."""
     print("\n" + "=" * 80)
-    print("Running Carry Factor Backtest")
+    print("Running Carry Factor Backtest (VECTORIZED)")
     print("=" * 80)
 
     try:
-        # Import backtest function
-        from backtests.scripts.backtest_carry_factor import backtest as backtest_carry
-
         if funding_data is None or len(funding_data) == 0:
             print("No funding rates data available")
             return None
 
-        results = backtest_carry(
+        # Ensure funding data has the right format
+        funding_df = funding_data.copy()
+        # Rename coin_symbol to symbol for consistency
+        if 'coin_symbol' in funding_df.columns and 'symbol' not in funding_df.columns:
+            funding_df['symbol'] = funding_df['coin_symbol']
+
+        # Use vectorized backtest engine
+        results = backtest_factor_vectorized(
             price_data=price_data,
-            funding_data=funding_data,
+            factor_type='carry',
+            strategy='carry',  # Carry doesn't have strategy variations like volatility
+            funding_data=funding_df,
             top_n=kwargs.get("top_n", 10),
             bottom_n=kwargs.get("bottom_n", 10),
             volatility_window=kwargs.get("volatility_window", 30),
@@ -450,8 +468,10 @@ def run_carry_factor_backtest(price_data, funding_data, **kwargs):
             leverage=kwargs.get("leverage", 1.0),
             long_allocation=kwargs.get("long_allocation", 0.5),
             short_allocation=kwargs.get("short_allocation", 0.5),
+            weighting_method='equal_weight',
             start_date=kwargs.get("start_date"),
             end_date=kwargs.get("end_date"),
+            funding_column='funding_rate_pct',
         )
 
         # Calculate comprehensive metrics
@@ -467,7 +487,7 @@ def run_carry_factor_backtest(price_data, funding_data, **kwargs):
 
         return {
             "strategy": "Carry Factor",
-            "description": f"Top {kwargs.get('top_n', 10)} short, Bottom {kwargs.get('bottom_n', 10)} long",
+            "description": f"Top {kwargs.get('top_n', 10)} short, Bottom {kwargs.get('bottom_n', 10)} long (VECTORIZED)",
             "metrics": metrics,
             "results": results,
             "daily_returns": daily_returns,
@@ -572,28 +592,28 @@ def run_days_from_high_backtest(price_data, **kwargs):
 
 
 def run_volatility_factor_backtest(price_data, **kwargs):
-    """Run volatility factor backtest."""
+    """Run volatility factor backtest (VECTORIZED)."""
     print("\n" + "=" * 80)
-    print("Running Volatility Factor Backtest")
+    print("Running Volatility Factor Backtest (VECTORIZED)")
     print("=" * 80)
 
     try:
-        # Import backtest function
-        from backtests.scripts.backtest_volatility_factor import backtest as backtest_volatility
-
-        results = backtest_volatility(
+        # Use vectorized backtest engine
+        results = backtest_factor_vectorized(
             price_data=price_data,
+            factor_type='volatility',
             strategy=kwargs.get("strategy", "long_low_short_high"),
             num_quintiles=kwargs.get("num_quintiles", 5),
-            volatility_window=kwargs.get("volatility_window", 30),
+            window=kwargs.get("volatility_window", 30),
             rebalance_days=kwargs.get("rebalance_days", 7),
             initial_capital=kwargs.get("initial_capital", 10000),
             leverage=kwargs.get("leverage", 1.0),
             long_allocation=kwargs.get("long_allocation", 0.5),
             short_allocation=kwargs.get("short_allocation", 0.5),
-            weighting_method=kwargs.get("weighting_method", "equal"),
+            weighting_method=kwargs.get("weighting_method", "equal_weight"),
             start_date=kwargs.get("start_date"),
             end_date=kwargs.get("end_date"),
+            vol_column='volatility_30d',
         )
 
         # Calculate comprehensive metrics
@@ -609,7 +629,7 @@ def run_volatility_factor_backtest(price_data, **kwargs):
 
         return {
             "strategy": "Volatility Factor",
-            "description": f"Strategy: {kwargs.get('strategy', 'long_low_short_high')}",
+            "description": f"Strategy: {kwargs.get('strategy', 'long_low_short_high')} (VECTORIZED)",
             "metrics": metrics,
             "results": results,
             "daily_returns": daily_returns,
@@ -623,17 +643,16 @@ def run_volatility_factor_backtest(price_data, **kwargs):
 
 
 def run_kurtosis_factor_backtest(price_data, **kwargs):
-    """Run kurtosis factor backtest."""
+    """Run kurtosis factor backtest (VECTORIZED)."""
     print("\n" + "=" * 80)
-    print("Running Kurtosis Factor Backtest")
+    print("Running Kurtosis Factor Backtest (VECTORIZED)")
     print("=" * 80)
 
     try:
-        # Import backtest function (requires scipy)
-        from backtests.scripts.backtest_kurtosis_factor import backtest as backtest_kurtosis
-
-        results = backtest_kurtosis(
+        # Use vectorized backtest engine
+        results = backtest_factor_vectorized(
             price_data=price_data,
+            factor_type='kurtosis',
             strategy=kwargs.get("strategy", "momentum"),
             kurtosis_window=kwargs.get("kurtosis_window", 30),
             volatility_window=kwargs.get("volatility_window", 30),
@@ -642,11 +661,12 @@ def run_kurtosis_factor_backtest(price_data, **kwargs):
             leverage=kwargs.get("leverage", 1.0),
             long_allocation=kwargs.get("long_allocation", 0.5),
             short_allocation=kwargs.get("short_allocation", 0.5),
-            weighting=kwargs.get("weighting", "risk_parity"),
+            weighting_method=kwargs.get("weighting", "risk_parity"),
             long_percentile=kwargs.get("long_percentile", 20),
             short_percentile=kwargs.get("short_percentile", 80),
             start_date=kwargs.get("start_date"),
             end_date=kwargs.get("end_date"),
+            kurtosis_column='kurtosis_30d',
         )
 
         # Calculate comprehensive metrics
@@ -662,7 +682,7 @@ def run_kurtosis_factor_backtest(price_data, **kwargs):
 
         return {
             "strategy": "Kurtosis Factor",
-            "description": f"Strategy: {kwargs.get('strategy', 'momentum')}, Rebal: {kwargs.get('rebalance_days', 14)}d",
+            "description": f"Strategy: {kwargs.get('strategy', 'momentum')}, Rebal: {kwargs.get('rebalance_days', 14)}d (VECTORIZED)",
             "metrics": metrics,
             "results": results,
             "daily_returns": daily_returns,
@@ -676,17 +696,16 @@ def run_kurtosis_factor_backtest(price_data, **kwargs):
 
 
 def run_beta_factor_backtest(price_data, **kwargs):
-    """Run beta factor backtest."""
+    """Run beta factor backtest (VECTORIZED)."""
     print("\n" + "=" * 80)
-    print("Running Beta Factor Backtest")
+    print("Running Beta Factor Backtest (VECTORIZED)")
     print("=" * 80)
 
     try:
-        # Import backtest function
-        from backtests.scripts.backtest_beta_factor import run_backtest as backtest_beta
-
-        results = backtest_beta(
-            data=price_data,
+        # Use vectorized backtest engine
+        results = backtest_factor_vectorized(
+            price_data=price_data,
+            factor_type='beta',
             strategy=kwargs.get("strategy", "betting_against_beta"),
             beta_window=kwargs.get("beta_window", 90),
             volatility_window=kwargs.get("volatility_window", 30),
@@ -699,8 +718,6 @@ def run_beta_factor_backtest(price_data, **kwargs):
             leverage=kwargs.get("leverage", 1.0),
             long_allocation=kwargs.get("long_allocation", 0.5),
             short_allocation=kwargs.get("short_allocation", 0.5),
-            min_volume=kwargs.get("min_volume", 5000000),
-            min_market_cap=kwargs.get("min_market_cap", 50000000),
             start_date=kwargs.get("start_date"),
             end_date=kwargs.get("end_date"),
         )
@@ -718,7 +735,7 @@ def run_beta_factor_backtest(price_data, **kwargs):
 
         return {
             "strategy": "Beta Factor (BAB)",
-            "description": f"Strategy: BAB, Weighting: {kwargs.get('weighting_method', 'risk_parity')}, Rebal: {kwargs.get('rebalance_days', 1)}d",
+            "description": f"Strategy: BAB, Weighting: {kwargs.get('weighting_method', 'risk_parity')}, Rebal: {kwargs.get('rebalance_days', 1)}d (VECTORIZED)",
             "metrics": metrics,
             "results": results,
             "daily_returns": daily_returns,
