@@ -13,6 +13,20 @@ performance metrics including:
 
 The results are compiled into a summary table for easy comparison.
 
+BACKTEST SELECTION:
+By default, ALL backtests run. You can control which backtests to run using --run-* flags:
+- No flags: Run all backtests
+- --run-beta: Run ONLY beta backtest
+- --run-beta --run-carry: Run ONLY beta and carry backtests
+- --run-beta False: Run all EXCEPT beta backtest
+- --run-beta False --run-carry False: Run all EXCEPT beta and carry backtests
+
+Examples:
+  python3 run_all_backtests.py                          # Run all backtests
+  python3 run_all_backtests.py --run-beta               # Run only beta
+  python3 run_all_backtests.py --run-beta --run-carry  # Run only beta and carry
+  python3 run_all_backtests.py --run-beta False        # Run all except beta
+
 PERFORMANCE OPTIMIZATIONS:
 - Data is loaded once upfront and shared across all backtests (eliminates repetitive I/O)
 - Backtest functions are imported conditionally (avoids loading heavy dependencies)
@@ -1109,28 +1123,52 @@ def main():
         help="Output file for summary table",
     )
     parser.add_argument(
-        "--run-breakout", action="store_true", default=True, help="Run breakout signal backtest"
+        "--run-breakout",
+        nargs='?',
+        const=True,
+        default=None,
+        type=lambda x: x.lower() in ['true', '1', 'yes'],
+        help="Run breakout signal backtest (no value=run only this, True=include, False=exclude)"
     )
     parser.add_argument(
         "--run-mean-reversion",
-        action="store_true",
-        default=True,
-        help="Run mean reversion backtest",
+        nargs='?',
+        const=True,
+        default=None,
+        type=lambda x: x.lower() in ['true', '1', 'yes'],
+        help="Run mean reversion backtest (no value=run only this, True=include, False=exclude)",
     )
     parser.add_argument(
-        "--run-size", action="store_true", default=True, help="Run size factor backtest"
+        "--run-size",
+        nargs='?',
+        const=True,
+        default=None,
+        type=lambda x: x.lower() in ['true', '1', 'yes'],
+        help="Run size factor backtest (no value=run only this, True=include, False=exclude)"
     )
     parser.add_argument(
-        "--run-carry", action="store_true", default=True, help="Run carry factor backtest"
+        "--run-carry",
+        nargs='?',
+        const=True,
+        default=None,
+        type=lambda x: x.lower() in ['true', '1', 'yes'],
+        help="Run carry factor backtest (no value=run only this, True=include, False=exclude)"
     )
     parser.add_argument(
         "--run-days-from-high",
-        action="store_true",
-        default=True,
-        help="Run days from high backtest",
+        nargs='?',
+        const=True,
+        default=None,
+        type=lambda x: x.lower() in ['true', '1', 'yes'],
+        help="Run days from high backtest (no value=run only this, True=include, False=exclude)",
     )
     parser.add_argument(
-        "--run-oi-divergence", action="store_true", default=True, help="Run OI divergence backtest"
+        "--run-oi-divergence",
+        nargs='?',
+        const=True,
+        default=None,
+        type=lambda x: x.lower() in ['true', '1', 'yes'],
+        help="Run OI divergence backtest (no value=run only this, True=include, False=exclude)"
     )
     parser.add_argument(
         "--oi-mode",
@@ -1140,7 +1178,12 @@ def main():
         help="OI divergence mode: divergence (contrarian) or trend (momentum)",
     )
     parser.add_argument(
-        "--run-volatility", action="store_true", default=True, help="Run volatility factor backtest"
+        "--run-volatility",
+        nargs='?',
+        const=True,
+        default=None,
+        type=lambda x: x.lower() in ['true', '1', 'yes'],
+        help="Run volatility factor backtest (no value=run only this, True=include, False=exclude)"
     )
     parser.add_argument(
         "--volatility-strategy",
@@ -1150,7 +1193,12 @@ def main():
         help="Volatility factor strategy type",
     )
     parser.add_argument(
-        "--run-kurtosis", action="store_true", default=True, help="Run kurtosis factor backtest"
+        "--run-kurtosis",
+        nargs='?',
+        const=True,
+        default=None,
+        type=lambda x: x.lower() in ['true', '1', 'yes'],
+        help="Run kurtosis factor backtest (no value=run only this, True=include, False=exclude)"
     )
     parser.add_argument(
         "--kurtosis-strategy",
@@ -1166,7 +1214,12 @@ def main():
         help="Kurtosis rebalance frequency in days",
     )
     parser.add_argument(
-        "--run-beta", action="store_true", default=True, help="Run beta factor backtest"
+        "--run-beta",
+        nargs='?',
+        const=True,
+        default=None,
+        type=lambda x: x.lower() in ['true', '1', 'yes'],
+        help="Run beta factor backtest (no value=run only this, True=include, False=exclude)"
     )
     parser.add_argument(
         "--beta-strategy",
@@ -1209,6 +1262,51 @@ def main():
 
     args = parser.parse_args()
 
+    # Determine which backtests to run based on flags
+    run_flags = {
+        'breakout': args.run_breakout,
+        'mean_reversion': args.run_mean_reversion,
+        'size': args.run_size,
+        'carry': args.run_carry,
+        'days_from_high': args.run_days_from_high,
+        'oi_divergence': args.run_oi_divergence,
+        'volatility': args.run_volatility,
+        'kurtosis': args.run_kurtosis,
+        'beta': args.run_beta,
+    }
+
+    # Check if any flag was explicitly set to True or False
+    any_explicitly_true = any(v is True for v in run_flags.values())
+    any_explicitly_false = any(v is False for v in run_flags.values())
+
+    if not any_explicitly_true and not any_explicitly_false:
+        # No flags specified -> run all backtests
+        for key in run_flags:
+            run_flags[key] = True
+    elif any_explicitly_true:
+        # At least one flag is True -> run only those set to True
+        for key in run_flags:
+            if run_flags[key] is None:
+                run_flags[key] = False
+            # Keep True/False as is
+    elif any_explicitly_false:
+        # Some flags are False but none are True -> run all except False ones
+        for key in run_flags:
+            if run_flags[key] is None:
+                run_flags[key] = True
+            # Keep False as is
+
+    # Update args with processed flags
+    args.run_breakout = run_flags['breakout']
+    args.run_mean_reversion = run_flags['mean_reversion']
+    args.run_size = run_flags['size']
+    args.run_carry = run_flags['carry']
+    args.run_days_from_high = run_flags['days_from_high']
+    args.run_oi_divergence = run_flags['oi_divergence']
+    args.run_volatility = run_flags['volatility']
+    args.run_kurtosis = run_flags['kurtosis']
+    args.run_beta = run_flags['beta']
+
     print("=" * 120)
     print("RUNNING ALL BACKTESTS")
     print("=" * 120)
@@ -1222,6 +1320,10 @@ def main():
     print(f"  End date: {args.end_date or 'Last available'}")
     print(f"  Output file: {args.output_file}")
     print(f"  OI mode: {args.oi_mode}")
+    
+    # Display which backtests will run
+    enabled_backtests = [name.replace('_', ' ').title() for name, enabled in run_flags.items() if enabled]
+    print(f"\nBacktests to run: {', '.join(enabled_backtests)}")
     print("=" * 120)
 
     # Load all data once (eliminates repetitive I/O)
