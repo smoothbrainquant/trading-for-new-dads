@@ -275,7 +275,7 @@ def tick_orders(dry_run: bool = True, verbose: bool = False):
         if dry_run:
             print("\n" + "=" * 80)
             print("⚠ NOTE: Running in DRY RUN mode. No actual changes were made.")
-            print("To execute live modifications, run with --live flag")
+            print("To execute live modifications, run without --dry-run flag")
             print("=" * 80)
 
         return {
@@ -302,14 +302,14 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Dry run: Show what changes would be made (default)
+  # Live: Actually modify the orders (default)
   python3 tick.py
   
-  # Live: Actually modify the orders
-  python3 tick.py --live
+  # Dry run: Show what changes would be made
+  python3 tick.py --dry-run
   
   # Live with verbose output
-  python3 tick.py --live --verbose
+  python3 tick.py --verbose
 
 How it works:
   - Fetches all open orders from Hyperliquid
@@ -323,14 +323,14 @@ Environment Variables Required:
   HL_SECRET: Your Hyperliquid secret key
 
 Safety:
-  - Default mode is DRY RUN (no actual changes)
-  - Use --live flag to execute real order modifications
+  - Default mode is LIVE TRADING (executes real orders)
+  - Use --dry-run flag to simulate without executing
   - Orders within 0.01% of target price are skipped
         """,
     )
 
     parser.add_argument(
-        "--live", action="store_true", help="Execute live order modifications (default is dry-run)"
+        "--dry-run", action="store_true", help="Simulate changes without executing (default is live)"
     )
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Show verbose output with detailed information"
@@ -339,7 +339,7 @@ Safety:
     args = parser.parse_args()
 
     # Determine mode
-    dry_run = not args.live
+    dry_run = args.dry_run
 
     # Check for API credentials
     if not dry_run:
@@ -351,7 +351,7 @@ Safety:
             print("\nPlease set the following environment variables:")
             print("  export HL_API='your_api_key'")
             print("  export HL_SECRET='your_secret_key'")
-            print("\nOr run in dry-run mode (without --live flag)")
+            print("\nOr run in dry-run mode (with --dry-run flag)")
             exit(1)
 
     try:
