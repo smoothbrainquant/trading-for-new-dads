@@ -3,6 +3,13 @@ Automated Trading Strategy Execution
 
 This script now supports blending multiple signals with configurable weights.
 
+Execution Modes:
+- Default (--limits): Aggressive limit order execution with tick-based strategy
+- Market (--market): Simple market orders for immediate execution
+- Patient (--patient): Spread offset orders with intelligent splitting
+  * Splits each order: 1/2 at 1x spread, 1/2 at 2x spread
+  * Orders <$20 sent entirely at 1x spread (avoids <$10 notional limit)
+
 Supported signals (handlers implemented or stubbed):
 - days_from_high: Long-only instruments near 200d highs (inverse-vol weighted)
 - breakout: Long/short based on 50d breakout with 70d exits (inverse-vol weighted)
@@ -68,6 +75,7 @@ from data.scripts.fetch_coinmarketcap_data import (
     map_symbols_to_trading_pairs,
 )
 from aggressive_order_execution import aggressive_execute_orders
+from send_spread_offset_orders import send_spread_offset_orders
 
 # Import strategies from dedicated package
 from execution.strategies import (
@@ -839,7 +847,7 @@ def get_base_symbol(symbol):
 # Note: Strategy functions are now imported from execution.strategies package
 
 
-def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive=True):
+def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive=True, patient=False):
     """
     Send orders to adjust positions based on calculated trade amounts.
 
@@ -851,6 +859,9 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive
         dry_run (bool): If True, only prints orders without executing (default: True)
         aggressive (bool): If True, uses limit order execution with tick-based strategy (default: True)
                           If False, uses simple market orders
+        patient (bool): If True, uses spread offset orders with intelligent splitting (default: False)
+                       Splits orders: 1/2 at 1x spread, 1/2 at 2x spread
+                       For orders <$20, sends all at 1x spread to avoid sub-$10 notional
 
     Returns:
         list: List of order results (empty if dry_run=True) or dict for aggressive execution
@@ -861,6 +872,70 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive
         print("\nNo trades to execute.")
         return []
 
+    # Patient mode: Split orders intelligently with spread offsets
+    if patient:
+        print("\nUsing PATIENT MODE (spread offset with intelligent splitting)...")
+        print("Strategy: Split each order 1/2 at 1x spread, 1/2 at 2x spread")
+        print("          Orders <$20 sent entirely at 1x spread (avoid <$10 notional limit)")
+        print("=" * 80)
+        
+        # Split trades into two groups based on size
+        trades_1x = {}  # All of small orders, half of large orders
+        trades_2x = {}  # Half of large orders only
+        
+        NOTIONAL_THRESHOLD = 20.0  # If order is <$20, don't split
+        NOTIONAL_MIN = 10.0  # Minimum notional per order
+        
+        for symbol, amount in trades.items():
+            abs_amount = abs(amount)
+            
+            if abs_amount < NOTIONAL_THRESHOLD:
+                # Small order: send all at 1x spread
+                trades_1x[symbol] = amount
+                print(f"\n{symbol}: ${abs_amount:.2f} (SMALL ORDER)")
+                print(f"  ? Sending all at 1x spread (avoid splitting below ${NOTIONAL_MIN} limit)")
+            else:
+                # Large order: split 50/50 between 1x and 2x spread
+                side_multiplier = 1 if amount > 0 else -1
+                half_amount = (abs_amount / 2.0) * side_multiplier
+                
+                trades_1x[symbol] = half_amount
+                trades_2x[symbol] = half_amount
+                
+                print(f"\n{symbol}: ${abs_amount:.2f} (LARGE ORDER)")
+                print(f"  ? Splitting: ${abs(half_amount):.2f} at 1x spread, ${abs(half_amount):.2f} at 2x spread")
+        
+        print("\n" + "=" * 80)
+        print("EXECUTION PLAN")
+        print("=" * 80)
+        print(f"Orders at 1x spread: {len(trades_1x)} (total: ${sum(abs(v) for v in trades_1x.values()):,.2f})")
+        print(f"Orders at 2x spread: {len(trades_2x)} (total: ${sum(abs(v) for v in trades_2x.values()):,.2f})")
+        print("=" * 80)
+        
+        all_orders = []
+        
+        # Send 1x spread orders
+        if trades_1x:
+            print("\n[STEP 1/2] Placing orders at 1x spread offset...")
+            orders_1x = send_spread_offset_orders(
+                trades=trades_1x,
+                spread_multiplier=1.0,
+                dry_run=dry_run
+            )
+            all_orders.extend(orders_1x)
+        
+        # Send 2x spread orders
+        if trades_2x:
+            print("\n[STEP 2/2] Placing orders at 2x spread offset...")
+            orders_2x = send_spread_offset_orders(
+                trades=trades_2x,
+                spread_multiplier=2.0,
+                dry_run=dry_run
+            )
+            all_orders.extend(orders_2x)
+        
+        return all_orders
+    
     # Use limit order execution if enabled (default)
     if aggressive:
         print("\nUsing LIMIT ORDER EXECUTION strategy (tick-based)...")
@@ -953,6 +1028,13 @@ def main():
         help="Use limit order execution strategy (tick-based: continuously move limit orders to best bid/ask) - THIS IS THE DEFAULT",
     )
     parser.add_argument(
+        "--patient",
+        action="store_true",
+        default=False,
+        help="Patient mode: Split each order 1/2 at 1x spread, 1/2 at 2x spread. "
+        "Orders <$20 sent entirely at 1x spread to avoid <$10 notional limit.",
+    )
+    parser.add_argument(
         "--signals",
         type=str,
         default=None,
@@ -1029,7 +1111,8 @@ def main():
     print(f"  Days since high (Strategy 1 default): {args.days_since_high}")
     print(f"  Rebalance threshold: {args.threshold*100:.1f}%")
     print(f"  Leverage: {args.leverage}x")
-    print(f"  Order type: {'Market' if args.market else 'Limit (tick-based)'}")
+    order_type = 'Patient (spread offset)' if args.patient else ('Market' if args.market else 'Limit (tick-based)')
+    print(f"  Order type: {order_type}")
     print(f"  Dry run: {args.dry_run}")
     if blend_weights:
         print("\nSelected signals and weights:")
@@ -1510,10 +1593,16 @@ def main():
             side = "BUY" if amount > 0 else "SELL"
             print(f"  {symbol}: {side} ${abs(amount):,.2f}")
 
-        # Execute orders (use limit orders by default, market orders only if --market specified)
-        send_orders_if_difference_exceeds_threshold(
-            trades, dry_run=args.dry_run, aggressive=not args.market
-        )
+        # Execute orders based on selected mode
+        # Priority: patient > market > aggressive (default)
+        if args.patient:
+            send_orders_if_difference_exceeds_threshold(
+                trades, dry_run=args.dry_run, aggressive=False, patient=True
+            )
+        else:
+            send_orders_if_difference_exceeds_threshold(
+                trades, dry_run=args.dry_run, aggressive=not args.market
+            )
 
         if args.dry_run:
             print("\n" + "=" * 80)
