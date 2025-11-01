@@ -453,7 +453,7 @@ def run_carry_factor_backtest(price_data, funding_data, **kwargs):
         # Use coin_symbol as the symbol column for consistency with price data
         if 'coin_symbol' in funding_df.columns:
             funding_df['symbol'] = funding_df['coin_symbol']
-        elif 'symbol' in funding_df.columns and '/' in str(funding_df['symbol'].iloc[0]):
+        elif 'symbol' in funding_df.columns and len(funding_df) > 0 and '/' in str(funding_df['symbol'].iloc[0]):
             # Extract base symbol if needed
             funding_df['symbol'] = funding_df['symbol'].apply(lambda x: x.split('/')[0] if '/' in str(x) else x)
 

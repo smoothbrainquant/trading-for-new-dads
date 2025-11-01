@@ -60,7 +60,7 @@ def prepare_price_data(
     # Extract base symbol if symbol is in format "BTC/USD"
     if 'base' in df.columns:
         df['symbol'] = df['base']
-    elif df['symbol'].iloc[0] and '/' in str(df['symbol'].iloc[0]):
+    elif len(df) > 0 and '/' in str(df['symbol'].iloc[0]):
         df['symbol'] = df['symbol'].apply(lambda x: x.split('/')[0] if '/' in str(x) else x)
     
     df = df.sort_values(['symbol', 'date']).reset_index(drop=True)
@@ -118,12 +118,32 @@ def prepare_factor_data(
         return calculate_rolling_beta(price_data, btc_data, window=window)
     
     elif factor_type == 'carry':
-        # Funding rates data should be passed directly
-        return factor_params.get('funding_data')
+        # Funding rates data should be merged with price data to ensure alignment
+        funding_data = factor_params.get('funding_data')
+        if funding_data is None:
+            return None
+        # Merge with price data to ensure we only trade symbols with price data
+        # Keep only dates and symbols that exist in price_data
+        merged = price_data.merge(
+            funding_data,
+            on=['date', 'symbol'],
+            how='inner'
+        )
+        return merged
     
     elif factor_type == 'size':
-        # Market cap data should be passed directly
-        return factor_params.get('marketcap_data')
+        # Market cap data should be merged with price data to ensure alignment
+        marketcap_data = factor_params.get('marketcap_data')
+        if marketcap_data is None:
+            return None
+        # Merge with price data to ensure we only trade symbols with price data
+        # Keep only dates and symbols that exist in price_data
+        merged = price_data.merge(
+            marketcap_data,
+            on=['date', 'symbol'],
+            how='inner'
+        )
+        return merged
     
     elif factor_type == 'kurtosis':
         # Calculate kurtosis
@@ -294,7 +314,7 @@ def forward_fill_weights(
     
     # Forward fill weights by symbol
     weights_daily = weights_daily.sort_values(['symbol', 'date'])
-    weights_daily['weight'] = weights_daily.groupby('symbol')['weight'].fillna(method='ffill')
+    weights_daily['weight'] = weights_daily.groupby('symbol')['weight'].ffill()
     
     # Drop rows with no weight (before first signal)
     weights_daily = weights_daily.dropna(subset=['weight'])
@@ -354,6 +374,10 @@ def backtest_factor_vectorized(
     # Step 2: Calculate factor data for ALL dates (vectorized)
     print(f"Step 2: Calculating {factor_type} factor for ALL dates...")
     factor_df = prepare_factor_data(price_df, factor_type, **factor_params)
+    
+    if factor_df is None or len(factor_df) == 0:
+        raise ValueError(f"No factor data available for {factor_type} factor")
+    
     print(f"  ? Calculated factor for {len(factor_df)} rows")
     
     # Step 3: Generate signals for ALL dates (vectorized)
