@@ -1,0 +1,5 @@
+Segment,Hurst_Type,Market_Direction,Observations,Avg_Hurst,5d_Mean_Return_pct,Annualized_Return_pct,Sharpe_Ratio,Win_Rate_pct,Ranking
+Low HE / Up,Mean-Reverting,UP,9185,0.632,0.61,35.6,0.32,45.5,2
+Low HE / Down,Mean-Reverting,DOWN,10346,0.632,-0.07,-3.3,-0.04,46.7,4
+High HE / Up,Trending,UP,9623,0.708,0.41,23.0,0.23,47.2,3
+High HE / Down,Trending,DOWN,9908,0.707,1.39,100.6,0.81,51.5,1
