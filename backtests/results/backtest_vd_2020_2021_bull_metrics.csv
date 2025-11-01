@@ -1,0 +1,2 @@
+initial_capital,final_value,total_return,annualized_return,annualized_volatility,sharpe_ratio,sortino_ratio,max_drawdown,calmar_ratio,win_rate,total_days,num_rebalances,avg_long_positions,avg_short_positions,avg_divergence_long,avg_divergence_short
+10000,14576.450090926488,0.4576450090926488,0.21677696283801495,0.6244064653068493,0.34717283513630054,0.4831445448381353,-0.6258914596386808,0.3463491305076403,0.49142857142857144,701,101,1.5135520684736092,1.5135520684736092,-0.4111376596924732,0.5241513542073158
