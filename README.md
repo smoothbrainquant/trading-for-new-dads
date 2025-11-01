@@ -63,11 +63,15 @@ Backtesting infrastructure and historical test results.
 ### ⚡ `execution/`
 Live trading execution scripts.
 
-- `aggressive_order_execution.py` - Aggressive order execution strategy
+- `send_spread_offset_orders.py` - **NEW** Place limit orders at configurable offset from bid/ask based on spread
+- `send_limit_orders.py` - Place limit orders at best bid/ask
+- `aggressive_order_execution.py` - Aggressive order execution with price ladder strategy
 - `ccxt_make_order.py` - Place orders via CCXT
 - `check_positions.py` - Monitor current positions
 - `ccxt_get_positions.py` - Fetch current positions
 - `ccxt_get_balance.py` - Check account balance
+- `get_bid_ask.py` - Fetch current bid/ask prices
+- `modify_order.py` - Modify existing orders
 
 ### 📚 `docs/`
 Documentation and strategy descriptions.

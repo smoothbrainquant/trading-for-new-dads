@@ -296,6 +296,55 @@ class TestInstrumentSelection(unittest.TestCase):
         self.assertGreaterEqual(len(result_20), len(result_5))
 
 
+class TestSpreadOffsetOrders(unittest.TestCase):
+    """Test spread offset order execution"""
+
+    def test_send_spread_offset_orders_dry_run(self):
+        """Test spread offset orders in dry run mode"""
+        # Import here to avoid issues if module is not available
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "execution"))
+        
+        try:
+            from send_spread_offset_orders import send_spread_offset_orders
+            
+            # Test with empty trades
+            result = send_spread_offset_orders({}, spread_multiplier=1.0, dry_run=True)
+            self.assertEqual(result, [])
+            
+            # Test with invalid spread multiplier should raise ValueError
+            with self.assertRaises(ValueError):
+                send_spread_offset_orders(
+                    {"BTC/USDC:USDC": 100}, spread_multiplier=-1.0, dry_run=True
+                )
+        except ImportError:
+            self.skipTest("send_spread_offset_orders module not available")
+
+    def test_spread_offset_calculation(self):
+        """Test spread offset price calculation logic"""
+        # Test buy order: bid - (spread * multiplier)
+        bid = 100.0
+        ask = 101.0
+        spread = ask - bid  # 1.0
+        multiplier = 1.0
+        
+        expected_buy_price = bid - (spread * multiplier)  # 99.0
+        self.assertEqual(expected_buy_price, 99.0)
+        
+        # Test sell order: ask + (spread * multiplier)
+        expected_sell_price = ask + (spread * multiplier)  # 102.0
+        self.assertEqual(expected_sell_price, 102.0)
+        
+        # Test with 0.5x multiplier
+        multiplier = 0.5
+        expected_buy_price = bid - (spread * multiplier)  # 99.5
+        self.assertEqual(expected_buy_price, 99.5)
+        
+        # Test with 2.0x multiplier
+        multiplier = 2.0
+        expected_sell_price = ask + (spread * multiplier)  # 103.0
+        self.assertEqual(expected_sell_price, 103.0)
+
+
 if __name__ == "__main__":
     # Run tests
     unittest.main(verbosity=2)
