@@ -209,15 +209,22 @@ def load_all_data(args):
     if os.path.exists(args.marketcap_file):
         print(f"Loading market cap data from {args.marketcap_file}...")
         df = pd.read_csv(args.marketcap_file)
-        if "date" in df.columns:
+        # Handle snapshot_date column (stored as integer YYYYMMDD)
+        if "snapshot_date" in df.columns:
+            df["date"] = pd.to_datetime(df["snapshot_date"], format='%Y%m%d')
+            df = df.drop(columns=["snapshot_date"])
+        elif "date" in df.columns:
             df["date"] = pd.to_datetime(df["date"])
-        # Normalize column names
+        # Normalize column names - handle both formats
+        rename_dict = {}
         if "Market Cap" in df.columns:
-            df = df.rename(columns={"Market Cap": "market_cap", "Symbol": "symbol"})
-        if "symbol" not in df.columns and "Symbol" in df.columns:
-            df = df.rename(columns={"Symbol": "symbol"})
+            rename_dict["Market Cap"] = "market_cap"
+        if "Symbol" in df.columns:
+            rename_dict["Symbol"] = "symbol"
+        if rename_dict:
+            df = df.rename(columns=rename_dict)
         data["marketcap_data"] = df
-        print(f"  ? Loaded {len(df)} rows")
+        print(f"  ? Loaded {len(df)} rows, {len(df['date'].unique())} unique dates, {df['symbol'].nunique()} symbols")
     else:
         print(f"  ? Market cap file not found: {args.marketcap_file}")
         data["marketcap_data"] = None

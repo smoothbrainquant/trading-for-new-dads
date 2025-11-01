@@ -136,13 +136,29 @@ def prepare_factor_data(
         marketcap_data = factor_params.get('marketcap_data')
         if marketcap_data is None:
             return None
-        # Merge with price data to ensure we only trade symbols with price data
-        # Keep only dates and symbols that exist in price_data
-        merged = price_data.merge(
-            marketcap_data,
+        # Drop market_cap from price_data if it exists to avoid column name conflicts
+        price_df_clean = price_data.copy()
+        if 'market_cap' in price_df_clean.columns:
+            price_df_clean = price_df_clean.drop(columns=['market_cap'])
+        
+        # Forward-fill market cap data to make it available for all dates
+        # Get all unique dates from price data and all symbols from market cap data
+        mcap_subset = marketcap_data[['date', 'symbol', 'market_cap']].copy()
+        
+        # Merge with left join to keep all price data rows
+        merged = price_df_clean.merge(
+            mcap_subset,
             on=['date', 'symbol'],
-            how='inner'
+            how='left'
         )
+        
+        # Forward-fill market cap within each symbol
+        merged = merged.sort_values(['symbol', 'date'])
+        merged['market_cap'] = merged.groupby('symbol')['market_cap'].ffill()
+        
+        # Drop rows with no market cap data (before first snapshot)
+        merged = merged.dropna(subset=['market_cap'])
+        
         return merged
     
     elif factor_type == 'kurtosis':
