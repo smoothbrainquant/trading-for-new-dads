@@ -8,7 +8,7 @@ from .beta import strategy_beta
 from .trendline_breakout import strategy_trendline_breakout
 from .kurtosis import strategy_kurtosis
 from .volatility import strategy_volatility
-# from .adf import strategy_adf  # COMMENTED OUT: Not active yet (integrate but disable)
+from .adf import strategy_adf
 
 __all__ = [
     "strategy_days_from_high",
@@ -21,5 +21,5 @@ __all__ = [
     "strategy_trendline_breakout",
     "strategy_kurtosis",
     "strategy_volatility",
-    # "strategy_adf",  # COMMENTED OUT: Not active yet
+    "strategy_adf",
 ]
