@@ -1,0 +1,2 @@
+initial_capital,final_value,total_return,annualized_return,annualized_volatility,sharpe_ratio,max_drawdown,win_rate,total_trades,avg_positions,num_days
+10000,8843.176017726706,-0.1156823982273294,-0.8940908406412551,0.8065302018161475,-1.108564612494285,-0.24599363892652792,0.3684210526315789,20,2.95,20
