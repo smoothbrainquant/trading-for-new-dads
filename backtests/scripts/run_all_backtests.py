@@ -823,6 +823,7 @@ def run_beta_factor_backtest(price_data, **kwargs):
         return None
 
 
+<<<<<<< HEAD
 def run_leverage_inverted_backtest(leverage_data, price_data, **kwargs):
     """
     Run inverted leverage factor backtest.
@@ -876,6 +877,169 @@ def run_leverage_inverted_backtest(leverage_data, price_data, **kwargs):
         }
     except Exception as e:
         print(f"Error in Inverted Leverage backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+def run_dilution_factor_backtest(price_data, **kwargs):
+    """Run dilution factor backtest - Long low dilution, Short high dilution."""
+    print("\n" + "=" * 80)
+    print("Running Dilution Factor Backtest (Weekly Rebalancing)")
+    print("=" * 80)
+    
+    try:
+        # Import dilution-specific functions
+        from backtests.scripts.optimize_rebalance_frequency import (
+            calculate_rolling_dilution_signal,
+            construct_risk_parity_portfolio,
+            calculate_volatility,
+        )
+        
+        # Prepare price data with returns if not already present
+        price_df = price_data.copy()
+        if 'return' not in price_df.columns:
+            print("Calculating returns for price data...")
+            price_df = price_df.sort_values(['symbol', 'date']).reset_index(drop=True)
+            price_df['return'] = price_df.groupby('symbol')['close'].pct_change()
+        
+        # Also ensure we have 'base' column (base symbol without pair)
+        if 'base' not in price_df.columns:
+            if 'symbol' in price_df.columns:
+                price_df['base'] = price_df['symbol'].apply(lambda x: x.split('/')[0] if '/' in str(x) else x)
+        
+        # Load historical dilution data
+        hist_file = '/workspace/crypto_dilution_historical_2021_2025.csv'
+        if not os.path.exists(hist_file):
+            print(f"Dilution data not found: {hist_file}")
+            return None
+        
+        hist_df = pd.read_csv(hist_file)
+        hist_df['date'] = pd.to_datetime(hist_df['date'])
+        
+        print(f"Loaded historical dilution data: {len(hist_df)} records")
+        
+        # Calculate rolling dilution signals
+        signals_df = calculate_rolling_dilution_signal(hist_df, lookback_months=12)
+        
+        # Backtest parameters
+        rebalance_days = kwargs.get("rebalance_days", 7)  # Weekly
+        top_n = kwargs.get("top_n", 10)
+        transaction_cost = kwargs.get("transaction_cost", 0.001)
+        
+        # Create rebalance dates
+        start_date = pd.to_datetime(kwargs.get("start_date", price_data['date'].min()))
+        end_date = pd.to_datetime(kwargs.get("end_date", price_data['date'].max()))
+        
+        rebalance_dates = []
+        current_date = start_date
+        while current_date <= end_date:
+            nearest_signal = signals_df[signals_df['date'] >= current_date]['date'].min()
+            if pd.notna(nearest_signal):
+                rebalance_dates.append(nearest_signal)
+            current_date += pd.Timedelta(days=rebalance_days)
+        
+        rebalance_dates = sorted(list(set(rebalance_dates)))
+        
+        # Run backtest
+        portfolio_history = []
+        current_portfolio = {}
+        portfolio_value = kwargs.get("initial_capital", 10000)
+        
+        for i, rebal_date in enumerate(rebalance_dates):
+            date_signals = signals_df[signals_df['date'] == rebal_date].copy()
+            new_portfolio = construct_risk_parity_portfolio(
+                date_signals, price_df, rebal_date, top_n=top_n
+            )
+            
+            if len(new_portfolio) == 0:
+                continue
+            
+            # Calculate turnover and apply transaction costs
+            turnover = 0.0
+            all_symbols = set(list(current_portfolio.keys()) + list(new_portfolio.keys()))
+            for symbol in all_symbols:
+                old_weight = current_portfolio.get(symbol, {}).get('weight', 0)
+                new_weight = new_portfolio.get(symbol, {}).get('weight', 0)
+                turnover += abs(new_weight - old_weight)
+            
+            transaction_cost_impact = turnover * transaction_cost
+            portfolio_value *= (1 - transaction_cost_impact)
+            
+            # Calculate returns until next rebalance
+            if i < len(rebalance_dates) - 1:
+                next_rebal = rebalance_dates[i + 1]
+            else:
+                next_rebal = price_df['date'].max()
+            
+            holding_period = price_df[
+                (price_df['date'] > rebal_date) &
+                (price_df['date'] <= next_rebal)
+            ].copy()
+            
+            for date in sorted(holding_period['date'].unique()):
+                daily_returns = holding_period[holding_period['date'] == date]
+                portfolio_return = 0.0
+                valid_positions = 0
+                
+                # Calculate daily return for each position
+                for symbol, position in new_portfolio.items():
+                    # Match by base symbol (extract from full symbol like BTC/USDC:USDC)
+                    base_symbol = symbol
+                    symbol_data = daily_returns[daily_returns['base'] == base_symbol]
+                    
+                    if len(symbol_data) == 0:
+                        continue
+                    
+                    # Calculate return
+                    if 'return' in symbol_data.columns:
+                        symbol_return = symbol_data['return'].values[0]
+                    elif 'close' in symbol_data.columns:
+                        # Calculate return from close prices if needed
+                        continue
+                    else:
+                        continue
+                    
+                    if not np.isnan(symbol_return):
+                        portfolio_return += position['weight'] * symbol_return
+                        valid_positions += 1
+                
+                if valid_positions > 0:
+                    portfolio_value *= (1 + portfolio_return)
+                    portfolio_history.append({
+                        'date': date,
+                        'portfolio_value': portfolio_value,
+                        'return': portfolio_return
+                    })
+            
+            current_portfolio = new_portfolio
+        
+        if len(portfolio_history) == 0:
+            print("No portfolio history generated")
+            return None
+        
+        portfolio_df = pd.DataFrame(portfolio_history)
+        
+        # Calculate metrics
+        metrics = calculate_comprehensive_metrics(
+            portfolio_df, kwargs.get("initial_capital", 10000)
+        )
+        
+        # Extract daily returns
+        portfolio_df["daily_return"] = portfolio_df["return"]
+        daily_returns = portfolio_df[["date", "daily_return"]].copy()
+        daily_returns.columns = ["date", "Dilution Factor"]
+        
+        return {
+            "strategy": "Dilution Factor",
+            "description": f"Long low dilution, Short high dilution, {rebalance_days}d rebal",
+            "metrics": metrics,
+            "results": {"portfolio_values": portfolio_df},
+            "daily_returns": daily_returns,
+        }
+        
+    except Exception as e:
+        print(f"Error in Dilution Factor backtest: {e}")
         import traceback
         traceback.print_exc()
         return None
@@ -1634,6 +1798,20 @@ def main():
         help="Inverted leverage rebalance frequency (optimal: 7 days, Sharpe: 1.19)"
     )
     parser.add_argument(
+        "--run-dilution",
+        nargs='?',
+        const=True,
+        default=None,
+        type=lambda x: x.lower() in ['true', '1', 'yes'],
+        help="Run dilution factor backtest (no value=run only this, True=include, False=exclude)"
+    )
+    parser.add_argument(
+        "--dilution-rebalance-days",
+        type=int,
+        default=7,
+        help="Dilution factor rebalance frequency in days (default: 7, optimal per backtest)"
+    )
+    parser.add_argument(
         "--run-regime-switching",
         nargs='?',
         const=True,
@@ -1664,6 +1842,7 @@ def main():
         'beta': args.run_beta,
         'adf': args.run_adf,
         'leverage_inverted': args.run_leverage_inverted,
+        'dilution': args.run_dilution,
         'regime_switching': args.run_regime_switching,
     }
 
@@ -1706,6 +1885,7 @@ def main():
     args.run_beta = run_flags['beta']
     args.run_adf = run_flags['adf']
     args.run_leverage_inverted = run_flags['leverage_inverted']
+    args.run_dilution = run_flags['dilution']
     args.run_regime_switching = run_flags['regime_switching']
 
     print("=" * 120)
@@ -1925,6 +2105,21 @@ def main():
                 all_results.append(result)
         else:
             print("? Skipping Inverted Leverage backtest: leverage or price data not available")
+
+    # 11. Dilution Factor (Long low dilution, Short high dilution)
+    if args.run_dilution:
+        if loaded_data["price_data"] is not None:
+            result = run_dilution_factor_backtest(
+                loaded_data["price_data"],
+                rebalance_days=args.dilution_rebalance_days,  # Default: 7 days (weekly)
+                top_n=10,
+                transaction_cost=0.001,  # 0.1% transaction cost
+                **common_params,
+            )
+            if result:
+                all_results.append(result)
+        else:
+            print("? Skipping Dilution Factor backtest: price data not available")
 
     # 12. Regime-Switching (Direction-Aware)
     if args.run_regime_switching:
