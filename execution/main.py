@@ -6,9 +6,11 @@ This script now supports blending multiple signals with configurable weights.
 Execution Modes:
 - Default (--limits): Aggressive limit order execution with tick-based strategy
 - Market (--market): Simple market orders for immediate execution
-- Patient (--patient): Spread offset orders with intelligent splitting
-  * Splits each order: 1/2 at 1x spread, 1/2 at 2x spread
-  * Orders <$20 sent entirely at 1x spread (avoids <$10 notional limit)
+- Patient (--patient [SPREAD]): Spread offset orders with intelligent splitting
+  * Default (--patient or --patient 1.0): Splits 1/2 at 1x spread, 1/2 at 2x spread
+  * Example (--patient 2.0): Splits 1/2 at 2x spread, 1/2 at 4x spread
+  * Second distance is automatically 2? the first distance
+  * Orders <$20 sent entirely at closer spread (avoids <$10 notional limit)
 
 Supported signals (handlers implemented or stubbed):
 - days_from_high: Long-only instruments near 200d highs (inverse-vol weighted)
@@ -847,7 +849,7 @@ def get_base_symbol(symbol):
 # Note: Strategy functions are now imported from execution.strategies package
 
 
-def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive=True, patient=False):
+def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive=True, patient=None):
     """
     Send orders to adjust positions based on calculated trade amounts.
 
@@ -859,9 +861,10 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive
         dry_run (bool): If True, only prints orders without executing (default: True)
         aggressive (bool): If True, uses limit order execution with tick-based strategy (default: True)
                           If False, uses simple market orders
-        patient (bool): If True, uses spread offset orders with intelligent splitting (default: False)
-                       Splits orders: 1/2 at 1x spread, 1/2 at 2x spread
-                       For orders <$20, sends all at 1x spread to avoid sub-$10 notional
+        patient (float or None): If set, uses spread offset orders with intelligent splitting.
+                                Value determines closer spread multiplier (e.g., 1.0 = 1x spread).
+                                Second distance is automatically 2x the closer spread.
+                                For orders <$20, sends all at closer spread to avoid sub-$10 notional
 
     Returns:
         list: List of order results (empty if dry_run=True) or dict for aggressive execution
@@ -873,15 +876,19 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive
         return []
 
     # Patient mode: Split orders intelligently with spread offsets
-    if patient:
+    if patient is not None:
+        # Calculate spread distances: closer = patient, farther = 2 * patient
+        spread_close = patient
+        spread_far = 2.0 * patient
+        
         print("\nUsing PATIENT MODE (spread offset with intelligent splitting)...")
-        print("Strategy: Split each order 1/2 at 1x spread, 1/2 at 2x spread")
-        print("          Orders <$20 sent entirely at 1x spread (avoid <$10 notional limit)")
+        print(f"Strategy: Split each order 1/2 at {spread_close:.1f}x spread, 1/2 at {spread_far:.1f}x spread")
+        print(f"          Orders <$20 sent entirely at {spread_close:.1f}x spread (avoid <$10 notional limit)")
         print("=" * 80)
         
         # Split trades into two groups based on size
-        trades_1x = {}  # All of small orders, half of large orders
-        trades_2x = {}  # Half of large orders only
+        trades_close = {}  # All of small orders, half of large orders
+        trades_far = {}  # Half of large orders only
         
         NOTIONAL_THRESHOLD = 20.0  # If order is <$20, don't split
         NOTIONAL_MIN = 10.0  # Minimum notional per order
@@ -890,49 +897,49 @@ def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive
             abs_amount = abs(amount)
             
             if abs_amount < NOTIONAL_THRESHOLD:
-                # Small order: send all at 1x spread
-                trades_1x[symbol] = amount
+                # Small order: send all at closer spread
+                trades_close[symbol] = amount
                 print(f"\n{symbol}: ${abs_amount:.2f} (SMALL ORDER)")
-                print(f"  ? Sending all at 1x spread (avoid splitting below ${NOTIONAL_MIN} limit)")
+                print(f"  ? Sending all at {spread_close:.1f}x spread (avoid splitting below ${NOTIONAL_MIN} limit)")
             else:
-                # Large order: split 50/50 between 1x and 2x spread
+                # Large order: split 50/50 between close and far spread
                 side_multiplier = 1 if amount > 0 else -1
                 half_amount = (abs_amount / 2.0) * side_multiplier
                 
-                trades_1x[symbol] = half_amount
-                trades_2x[symbol] = half_amount
+                trades_close[symbol] = half_amount
+                trades_far[symbol] = half_amount
                 
                 print(f"\n{symbol}: ${abs_amount:.2f} (LARGE ORDER)")
-                print(f"  ? Splitting: ${abs(half_amount):.2f} at 1x spread, ${abs(half_amount):.2f} at 2x spread")
+                print(f"  ? Splitting: ${abs(half_amount):.2f} at {spread_close:.1f}x spread, ${abs(half_amount):.2f} at {spread_far:.1f}x spread")
         
         print("\n" + "=" * 80)
         print("EXECUTION PLAN")
         print("=" * 80)
-        print(f"Orders at 1x spread: {len(trades_1x)} (total: ${sum(abs(v) for v in trades_1x.values()):,.2f})")
-        print(f"Orders at 2x spread: {len(trades_2x)} (total: ${sum(abs(v) for v in trades_2x.values()):,.2f})")
+        print(f"Orders at {spread_close:.1f}x spread: {len(trades_close)} (total: ${sum(abs(v) for v in trades_close.values()):,.2f})")
+        print(f"Orders at {spread_far:.1f}x spread: {len(trades_far)} (total: ${sum(abs(v) for v in trades_far.values()):,.2f})")
         print("=" * 80)
         
         all_orders = []
         
-        # Send 1x spread orders
-        if trades_1x:
-            print("\n[STEP 1/2] Placing orders at 1x spread offset...")
-            orders_1x = send_spread_offset_orders(
-                trades=trades_1x,
-                spread_multiplier=1.0,
+        # Send closer spread orders
+        if trades_close:
+            print(f"\n[STEP 1/2] Placing orders at {spread_close:.1f}x spread offset...")
+            orders_close = send_spread_offset_orders(
+                trades=trades_close,
+                spread_multiplier=spread_close,
                 dry_run=dry_run
             )
-            all_orders.extend(orders_1x)
+            all_orders.extend(orders_close)
         
-        # Send 2x spread orders
-        if trades_2x:
-            print("\n[STEP 2/2] Placing orders at 2x spread offset...")
-            orders_2x = send_spread_offset_orders(
-                trades=trades_2x,
-                spread_multiplier=2.0,
+        # Send farther spread orders
+        if trades_far:
+            print(f"\n[STEP 2/2] Placing orders at {spread_far:.1f}x spread offset...")
+            orders_far = send_spread_offset_orders(
+                trades=trades_far,
+                spread_multiplier=spread_far,
                 dry_run=dry_run
             )
-            all_orders.extend(orders_2x)
+            all_orders.extend(orders_far)
         
         return all_orders
     
@@ -1029,10 +1036,15 @@ def main():
     )
     parser.add_argument(
         "--patient",
-        action="store_true",
-        default=False,
-        help="Patient mode: Split each order 1/2 at 1x spread, 1/2 at 2x spread. "
-        "Orders <$20 sent entirely at 1x spread to avoid <$10 notional limit.",
+        type=float,
+        nargs="?",
+        const=1.0,
+        default=None,
+        metavar="SPREAD",
+        help="Patient mode: Split each order 1/2 at SPREAD?spread, 1/2 at (2?SPREAD)?spread. "
+        "Default: --patient or --patient 1.0 uses 1x and 2x spread. "
+        "Example: --patient 2.0 uses 2x and 4x spread. "
+        "Orders <$20 sent entirely at closer spread to avoid <$10 notional limit.",
     )
     parser.add_argument(
         "--signals",
@@ -1111,7 +1123,10 @@ def main():
     print(f"  Days since high (Strategy 1 default): {args.days_since_high}")
     print(f"  Rebalance threshold: {args.threshold*100:.1f}%")
     print(f"  Leverage: {args.leverage}x")
-    order_type = 'Patient (spread offset)' if args.patient else ('Market' if args.market else 'Limit (tick-based)')
+    if args.patient is not None:
+        order_type = f'Patient (spread offset: {args.patient:.1f}x, {args.patient*2:.1f}x)'
+    else:
+        order_type = 'Market' if args.market else 'Limit (tick-based)'
     print(f"  Order type: {order_type}")
     print(f"  Dry run: {args.dry_run}")
     if blend_weights:
@@ -1595,9 +1610,9 @@ def main():
 
         # Execute orders based on selected mode
         # Priority: patient > market > aggressive (default)
-        if args.patient:
+        if args.patient is not None:
             send_orders_if_difference_exceeds_threshold(
-                trades, dry_run=args.dry_run, aggressive=False, patient=True
+                trades, dry_run=args.dry_run, aggressive=False, patient=args.patient
             )
         else:
             send_orders_if_difference_exceeds_threshold(
