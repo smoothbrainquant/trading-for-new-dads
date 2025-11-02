@@ -697,30 +697,36 @@ def run_kurtosis_factor_backtest(price_data, **kwargs):
     
     VECTORIZED: Uses backtest_factor_vectorized for 30-50x faster execution.
     
-    REGIME-FILTERED (Bear Markets Only):
-    - Strategy: mean_reversion (long low kurtosis, short high kurtosis)
-    - Regime Filter: bear_only (only trades when 50MA < 200MA on BTC)
+    REGIME-FILTERED (BEAR MARKETS ONLY):
+    - Only trades when BTC is in bear regime (50MA < 200MA)
+    - In bear markets: LONG low kurtosis coins (stable), SHORT high kurtosis coins (unstable)
+    - No positions during bull markets (cash/flat)
     - This matches live trading configuration in execution/strategies/kurtosis.py
     
-    Expected Performance (Bear Markets):
+    Rationale:
+    - Low kurtosis = stable return distribution = safer in bear markets
+    - High kurtosis = fat tails/extreme moves = riskier in bear markets
+    
+    Expected Performance (Bear Markets Only):
     - Annualized Return: +28% to +50%
     - Sharpe Ratio: 1.5 to 1.8
     - Max Drawdown: -15% to -25%
     """
     print("\n" + "=" * 80)
-    print("Running Kurtosis Factor Backtest (VECTORIZED - REGIME-FILTERED)")
+    print("Running Kurtosis Factor Backtest (VECTORIZED - BEAR MARKETS ONLY)")
     print("=" * 80)
 
     try:
         # Strategy and regime filter settings (matching live trading)
-        strategy = kwargs.get("strategy", "mean_reversion")  # Changed from "momentum"
-        regime_filter = kwargs.get("regime_filter", "bear_only")  # NEW
-        reference_symbol = kwargs.get("reference_symbol", "BTC")  # NEW
+        strategy = kwargs.get("strategy", "mean_reversion")  # mean_reversion = long LOW kurtosis, short HIGH kurtosis
+        regime_filter = kwargs.get("regime_filter", "bear_only")  # Only trade in bear markets
+        reference_symbol = kwargs.get("reference_symbol", "BTC")  # Use BTC 50MA/200MA for regime detection
         
-        print(f"\n? Strategy: {strategy}")
-        print(f"? Regime Filter: {regime_filter}")
-        print(f"? Reference Symbol: {reference_symbol}")
-        print("? NOTE: This matches live trading configuration")
+        print(f"\n? Trading Regime: BEAR MARKETS ONLY (BTC 50MA < 200MA)")
+        print(f"? Position Direction: LONG low kurtosis (stable), SHORT high kurtosis (unstable)")
+        print(f"? Reference Asset: {reference_symbol}")
+        print(f"? Rebalance Frequency: {kwargs.get('rebalance_days', 14)} days")
+        print("? NOTE: This matches live trading configuration in execution/strategies/kurtosis.py")
         
         # Use vectorized backtest engine
         results = backtest_factor_vectorized(
@@ -757,7 +763,7 @@ def run_kurtosis_factor_backtest(price_data, **kwargs):
 
         return {
             "strategy": "Kurtosis Factor",
-            "description": f"Strategy: {strategy}, Regime: {regime_filter}, Rebal: {kwargs.get('rebalance_days', 14)}d (VECTORIZED+REGIME-FILTERED)",
+            "description": f"BEAR ONLY: Long low kurtosis, Short high kurtosis, {kwargs.get('rebalance_days', 14)}d rebal (REGIME-FILTERED)",
             "metrics": metrics,
             "results": results,
             "daily_returns": daily_returns,
@@ -1721,15 +1727,15 @@ def main():
     parser.add_argument(
         "--kurtosis-strategy",
         type=str,
-        default="momentum",
+        default="mean_reversion",
         choices=["mean_reversion", "momentum"],
-        help="Kurtosis factor strategy type",
+        help="Kurtosis factor strategy type (IGNORED: hardcoded to mean_reversion for bear-only regime)",
     )
     parser.add_argument(
         "--kurtosis-rebalance-days",
         type=int,
         default=14,
-        help="Kurtosis rebalance frequency in days (optimal: 14 days for momentum strategy, Sharpe: 0.81)",
+        help="Kurtosis rebalance frequency in days (optimal: 14 days for mean_reversion in bear markets)",
     )
     parser.add_argument(
         "--run-beta",
@@ -2029,19 +2035,19 @@ def main():
         else:
             print("? Skipping Volatility Factor backtest: price data not available")
 
-    # 8. Kurtosis Factor (VECTORIZED + REGIME-FILTERED)
+    # 8. Kurtosis Factor (BEAR MARKETS ONLY: Long low kurtosis, Short high kurtosis)
     if args.run_kurtosis:
         if loaded_data["price_data"] is not None:
             result = run_kurtosis_factor_backtest(
                 loaded_data["price_data"],
-                strategy="mean_reversion",  # CHANGED: Force mean_reversion to match live trading
+                strategy="mean_reversion",  # mean_reversion = long LOW kurtosis (stable), short HIGH kurtosis (unstable)
                 kurtosis_window=30,
-                rebalance_days=14,  # CHANGED: Optimal for mean_reversion in bear markets
+                rebalance_days=14,  # Optimal for mean_reversion strategy in bear regimes
                 weighting="risk_parity",
-                long_percentile=20,
-                short_percentile=80,
-                regime_filter="bear_only",  # NEW: Only trade in bear markets
-                reference_symbol="BTC",  # NEW: Use BTC for regime detection
+                long_percentile=20,  # Top 20% = lowest kurtosis (most stable)
+                short_percentile=80,  # Top 80% = highest kurtosis (most unstable)
+                regime_filter="bear_only",  # CRITICAL: Only trade when BTC 50MA < 200MA (bear market)
+                reference_symbol="BTC",  # Use BTC for regime detection
                 **common_params,
             )
             if result:
