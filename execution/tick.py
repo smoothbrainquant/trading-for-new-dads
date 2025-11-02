@@ -4,12 +4,16 @@ Tick.py - Move all open orders to best bid/ask prices
 This script fetches all open orders and adjusts their prices to best bid/ask:
 - Buy orders -> moved to best bid
 - Sell orders -> moved to best ask
+
+Modes:
+- 'best': Move all orders to best bid/ask (default)
+- 'leapfrog': For pairs of orders, move furthest order halfway between closer order and best bid/ask
 """
 
 import ccxt
 import os
 import argparse
-from typing import Dict, List
+from typing import Dict, List, Tuple, Optional
 
 
 def get_exchange():
@@ -88,16 +92,21 @@ def fetch_bid_ask_prices(exchange, symbols: List[str]) -> Dict[str, Dict[str, fl
     return bid_ask_dict
 
 
-def move_order_to_best_price(
-    exchange, order: dict, bid_ask_dict: Dict[str, Dict[str, float]], dry_run: bool = True
+def move_order_to_target_price(
+    exchange, 
+    order: dict, 
+    target_price: float,
+    price_type: str,
+    dry_run: bool = True
 ) -> dict:
     """
-    Move a single order to best bid/ask price.
+    Move a single order to a specific target price.
 
     Args:
         exchange: CCXT exchange instance
         order: Order dictionary
-        bid_ask_dict: Dictionary of bid/ask prices by symbol
+        target_price: The target price to move the order to
+        price_type: Description of the price (e.g., "BID", "ASK", "MIDPOINT")
         dry_run: If True, only simulate the change
 
     Returns:
@@ -109,28 +118,11 @@ def move_order_to_best_price(
     current_price = order.get("price")
     amount = order.get("amount")
 
-    # Check if we have bid/ask data
-    if symbol not in bid_ask_dict:
-        return {"status": "skip", "message": "No bid/ask data available"}
-
-    bid = bid_ask_dict[symbol]["bid"]
-    ask = bid_ask_dict[symbol]["ask"]
-
-    # Determine target price based on order side
-    if side == "buy":
-        target_price = bid
-        price_type = "BID"
-    elif side == "sell":
-        target_price = ask
-        price_type = "ASK"
-    else:
-        return {"status": "skip", "message": f"Unknown side: {side}"}
-
     # Check if price change is needed (0.01% tolerance)
     if current_price and target_price:
         price_diff_pct = abs((current_price - target_price) / target_price * 100)
         if price_diff_pct < 0.01:
-            return {"status": "skip", "message": f"Already at {price_type} (within 0.01%)"}
+            return {"status": "skip", "message": f"Already at target (within 0.01%)"}
 
     # Calculate price change
     price_change = target_price - current_price if current_price else 0
@@ -171,19 +163,148 @@ def move_order_to_best_price(
         return {"status": "error", "message": f"Error: {str(e)}"}
 
 
-def tick_orders(dry_run: bool = True, verbose: bool = False):
+def move_order_to_best_price(
+    exchange, order: dict, bid_ask_dict: Dict[str, Dict[str, float]], dry_run: bool = True
+) -> dict:
+    """
+    Move a single order to best bid/ask price.
+
+    Args:
+        exchange: CCXT exchange instance
+        order: Order dictionary
+        bid_ask_dict: Dictionary of bid/ask prices by symbol
+        dry_run: If True, only simulate the change
+
+    Returns:
+        dict: Result with 'status', 'message', and optionally 'modified_order'
+    """
+    order_id = order.get("id")
+    symbol = order.get("symbol")
+    side = order.get("side", "").lower()
+    current_price = order.get("price")
+    amount = order.get("amount")
+
+    # Check if we have bid/ask data
+    if symbol not in bid_ask_dict:
+        return {"status": "skip", "message": "No bid/ask data available"}
+
+    bid = bid_ask_dict[symbol]["bid"]
+    ask = bid_ask_dict[symbol]["ask"]
+
+    # Determine target price based on order side
+    if side == "buy":
+        target_price = bid
+        price_type = "BID"
+    elif side == "sell":
+        target_price = ask
+        price_type = "ASK"
+    else:
+        return {"status": "skip", "message": f"Unknown side: {side}"}
+
+    # Use the generic move function
+    return move_order_to_target_price(exchange, order, target_price, price_type, dry_run)
+
+
+def process_leapfrog_mode(
+    orders: List[dict],
+    bid_ask_dict: Dict[str, Dict[str, float]]
+) -> Dict[str, List[Tuple[dict, Optional[float], str]]]:
+    """
+    Group orders and calculate target prices for leapfrog mode.
+    
+    For each symbol-side pair with 2 orders:
+    - Move furthest order 1/2 way between closer order and best bid/ask
+    - If closer order is at best bid/ask, move furthest 1/2 way between itself and best bid/ask
+    
+    Args:
+        orders: List of order dictionaries
+        bid_ask_dict: Dictionary of bid/ask prices by symbol
+        
+    Returns:
+        dict: Mapping of order_id to (order, target_price, description)
+    """
+    from collections import defaultdict
+    
+    # Group orders by (symbol, side)
+    grouped = defaultdict(list)
+    for order in orders:
+        symbol = order.get("symbol")
+        side = order.get("side", "").lower()
+        if symbol and side:
+            grouped[(symbol, side)].append(order)
+    
+    # Calculate targets for each group
+    order_targets = {}
+    
+    for (symbol, side), group_orders in grouped.items():
+        if len(group_orders) != 2:
+            # Not exactly 2 orders, skip leapfrog mode for this group
+            for order in group_orders:
+                order_targets[order.get("id")] = (order, None, "Not 2 orders in group")
+            continue
+            
+        if symbol not in bid_ask_dict:
+            for order in group_orders:
+                order_targets[order.get("id")] = (order, None, "No bid/ask data")
+            continue
+        
+        # Get best bid/ask
+        best_price = bid_ask_dict[symbol]["bid"] if side == "buy" else bid_ask_dict[symbol]["ask"]
+        price_type = "BID" if side == "buy" else "ASK"
+        
+        # Sort orders by distance from best price
+        # For buy orders, closer = higher price (closer to bid)
+        # For sell orders, closer = lower price (closer to ask)
+        if side == "buy":
+            sorted_orders = sorted(group_orders, key=lambda o: o.get("price", 0), reverse=True)
+        else:  # sell
+            sorted_orders = sorted(group_orders, key=lambda o: o.get("price", float('inf')))
+        
+        closer_order = sorted_orders[0]
+        furthest_order = sorted_orders[1]
+        
+        closer_price = closer_order.get("price")
+        furthest_price = furthest_order.get("price")
+        
+        # Check if closer order is already at best bid/ask (within 0.01% tolerance)
+        closer_at_best = False
+        if closer_price and best_price:
+            price_diff_pct = abs((closer_price - best_price) / best_price * 100)
+            if price_diff_pct < 0.01:
+                closer_at_best = True
+        
+        # Calculate target for furthest order
+        if closer_at_best:
+            # Move furthest order 1/2 way between itself and best bid/ask
+            target_price = (furthest_price + best_price) / 2
+            description = f"MIDPOINT (between self @ ${furthest_price:,.8f} and {price_type} @ ${best_price:,.8f})"
+        else:
+            # Move furthest order 1/2 way between closer order and best bid/ask
+            target_price = (closer_price + best_price) / 2
+            description = f"MIDPOINT (between closer @ ${closer_price:,.8f} and {price_type} @ ${best_price:,.8f})"
+        
+        # Set targets
+        order_targets[closer_order.get("id")] = (closer_order, None, "Closer order - no change")
+        order_targets[furthest_order.get("id")] = (furthest_order, target_price, description)
+    
+    return order_targets
+
+
+def tick_orders(dry_run: bool = True, verbose: bool = False, mode: str = "best"):
     """
     Main function to tick all open orders to best bid/ask prices.
 
     Args:
         dry_run: If True, only simulate changes without executing
         verbose: If True, show detailed information
+        mode: 'best' (move to best bid/ask) or 'leapfrog' (adjust based on order proximity)
 
     Returns:
         dict: Summary of the operation
     """
+    mode_display = "LEAPFROG MODE" if mode == "leapfrog" else "BEST BID/ASK MODE"
     print("=" * 80)
-    print("TICK ORDERS TO BEST BID/ASK")
+    print(f"TICK ORDERS - {mode_display}")
     print("=" * 80)
     print(f"Mode: {'DRY RUN' if dry_run else 'LIVE TRADING'}")
     print("=" * 80)
@@ -218,7 +339,7 @@ def tick_orders(dry_run: bool = True, verbose: bool = False):
             print("\n✗ Error: Could not fetch any bid/ask prices")
             return {"success": False, "error": "No bid/ask data available"}
 
-        # Step 3: Move orders to best bid/ask
+        # Step 3: Move orders based on mode
         print("\n[3/3] Processing orders...")
         print("-" * 80)
 
@@ -226,42 +347,98 @@ def tick_orders(dry_run: bool = True, verbose: bool = False):
         skipped_count = 0
         error_count = 0
 
-        for i, order in enumerate(orders, 1):
-            order_id = order.get("id")
-            symbol = order.get("symbol")
-            side = order.get("side", "").lower()
-            current_price = order.get("price")
-            amount = order.get("amount")
+        if mode == "leapfrog":
+            # Leapfrog mode: calculate targets for order pairs
+            order_targets = process_leapfrog_mode(orders, bid_ask_dict)
+            
+            for i, order in enumerate(orders, 1):
+                order_id = order.get("id")
+                symbol = order.get("symbol")
+                side = order.get("side", "").lower()
+                current_price = order.get("price")
+                amount = order.get("amount")
 
-            print(f"\n[{i}/{len(orders)}] {symbol} (ID: {order_id})")
-            print(f"  Side:          {side.upper()}")
-            print(
-                f"  Current Price: ${current_price:,.8f}"
-                if current_price
-                else "  Current Price: N/A"
-            )
-            print(f"  Amount:        {amount:.6f}" if amount else "  Amount: N/A")
+                print(f"\n[{i}/{len(orders)}] {symbol} (ID: {order_id})")
+                print(f"  Side:          {side.upper()}")
+                print(
+                    f"  Current Price: ${current_price:,.8f}"
+                    if current_price
+                    else "  Current Price: N/A"
+                )
+                print(f"  Amount:        {amount:.6f}" if amount else "  Amount: N/A")
 
-            # Move order
-            result = move_order_to_best_price(exchange, order, bid_ask_dict, dry_run)
+                # Get target from leapfrog calculation
+                if order_id in order_targets:
+                    _, target_price, description = order_targets[order_id]
+                    
+                    if target_price is None:
+                        print(f"  Result:        → SKIP - {description}")
+                        skipped_count += 1
+                    else:
+                        # Move order to calculated target
+                        result = move_order_to_target_price(
+                            exchange, order, target_price, description, dry_run
+                        )
+                        
+                        if result["status"] == "success":
+                            print(f"  Result:        ✓ {result['message']}")
+                            modified_count += 1
+                            if verbose and "modified_order" in result:
+                                print(f"  New Order ID:  {result['modified_order'].get('id', 'N/A')}")
 
-            if result["status"] == "success":
-                print(f"  Result:        ✓ {result['message']}")
-                modified_count += 1
-                if verbose and "modified_order" in result:
-                    print(f"  New Order ID:  {result['modified_order'].get('id', 'N/A')}")
+                        elif result["status"] == "dry_run":
+                            print(f"  Result:        [DRY RUN] {result['message']}")
+                            modified_count += 1
 
-            elif result["status"] == "dry_run":
-                print(f"  Result:        [DRY RUN] {result['message']}")
-                modified_count += 1
+                        elif result["status"] == "skip":
+                            print(f"  Result:        → SKIP - {result['message']}")
+                            skipped_count += 1
 
-            elif result["status"] == "skip":
-                print(f"  Result:        → SKIP - {result['message']}")
-                skipped_count += 1
+                        elif result["status"] == "error":
+                            print(f"  Result:        ✗ {result['message']}")
+                            error_count += 1
+                else:
+                    print(f"  Result:        → SKIP - Order not in targets")
+                    skipped_count += 1
+        
+        else:  # mode == "best"
+            # Best bid/ask mode: move all orders to best prices
+            for i, order in enumerate(orders, 1):
+                order_id = order.get("id")
+                symbol = order.get("symbol")
+                side = order.get("side", "").lower()
+                current_price = order.get("price")
+                amount = order.get("amount")
 
-            elif result["status"] == "error":
-                print(f"  Result:        ✗ {result['message']}")
-                error_count += 1
+                print(f"\n[{i}/{len(orders)}] {symbol} (ID: {order_id})")
+                print(f"  Side:          {side.upper()}")
+                print(
+                    f"  Current Price: ${current_price:,.8f}"
+                    if current_price
+                    else "  Current Price: N/A"
+                )
+                print(f"  Amount:        {amount:.6f}" if amount else "  Amount: N/A")
+
+                # Move order
+                result = move_order_to_best_price(exchange, order, bid_ask_dict, dry_run)
+
+                if result["status"] == "success":
+                    print(f"  Result:        ✓ {result['message']}")
+                    modified_count += 1
+                    if verbose and "modified_order" in result:
+                        print(f"  New Order ID:  {result['modified_order'].get('id', 'N/A')}")
+
+                elif result["status"] == "dry_run":
+                    print(f"  Result:        [DRY RUN] {result['message']}")
+                    modified_count += 1
+
+                elif result["status"] == "skip":
+                    print(f"  Result:        → SKIP - {result['message']}")
+                    skipped_count += 1
+
+                elif result["status"] == "error":
+                    print(f"  Result:        ✗ {result['message']}")
+                    error_count += 1
 
         # Summary
         print("\n" + "=" * 80)
@@ -302,7 +479,7 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Live: Actually modify the orders (default)
+  # Live: Actually modify the orders (default, best mode)
   python3 tick.py
   
   # Dry run: Show what changes would be made
@@ -310,13 +487,30 @@ Examples:
   
   # Live with verbose output
   python3 tick.py --verbose
+  
+  # Leapfrog mode: Adjust order pairs based on proximity
+  python3 tick.py --mode leapfrog
+  
+  # Leapfrog mode dry run
+  python3 tick.py --mode leapfrog --dry-run
 
 How it works:
-  - Fetches all open orders from Hyperliquid
-  - Gets current best bid/ask prices for each symbol
-  - Moves BUY orders to best BID price
-  - Moves SELL orders to best ASK price
-  - Skips orders already at the target price
+  
+  Best Mode (--mode best, default):
+    - Fetches all open orders from Hyperliquid
+    - Gets current best bid/ask prices for each symbol
+    - Moves BUY orders to best BID price
+    - Moves SELL orders to best ASK price
+    - Skips orders already at the target price
+  
+  Leapfrog Mode (--mode leapfrog):
+    - Groups orders by symbol and side (buy/sell)
+    - For groups with exactly 2 orders:
+      * Identifies closer and furthest orders from best bid/ask
+      * Moves furthest order 1/2 way between closer order and best bid/ask
+      * If closer order is at best bid/ask: moves furthest 1/2 way between itself and best bid/ask
+      * Keeps closer order unchanged (preserves queue position)
+    - Groups without exactly 2 orders are skipped
   
 Environment Variables Required:
   HL_API: Your Hyperliquid API key (wallet address)
@@ -334,6 +528,12 @@ Safety:
     )
     parser.add_argument(
         "--verbose", "-v", action="store_true", help="Show verbose output with detailed information"
+    )
+    parser.add_argument(
+        "--mode",
+        choices=["best", "leapfrog"],
+        default="best",
+        help="Order adjustment mode: 'best' (move to best bid/ask) or 'leapfrog' (adjust based on order proximity)"
     )
 
     args = parser.parse_args()
@@ -356,7 +556,7 @@ Safety:
 
     try:
         # Execute tick operation
-        result = tick_orders(dry_run=dry_run, verbose=args.verbose)
+        result = tick_orders(dry_run=dry_run, verbose=args.verbose, mode=args.mode)
 
         if not result.get("success"):
             print(f"\n✗ Operation failed: {result.get('error', 'Unknown error')}")
