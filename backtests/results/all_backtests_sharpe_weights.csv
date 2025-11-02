@@ -1,2 +1,2 @@
 Strategy,Description,Sharpe Ratio,Weight,Weight_Pct
-Mean Reversion,Best category: down_move_low_volume,1.0517243979857094,1.0,100.0
+Mean Reversion,Best category: down_move_low_volume (Risk Parity),0.6337753138074895,1.0,100.0
