@@ -808,7 +808,7 @@ def run_beta_factor_backtest(price_data, **kwargs):
         return None
 
 
-def run_adf_factor_backtest(data_file, **kwargs):
+def run_adf_factor_backtest(price_data, **kwargs):
     """Run ADF factor backtest (PARTIALLY VECTORIZED)."""
     print("\n" + "=" * 80)
     print(f"Running ADF Factor Backtest - {kwargs.get('strategy', 'mean_reversion_premium')}")
@@ -816,16 +816,17 @@ def run_adf_factor_backtest(data_file, **kwargs):
     print("=" * 80)
 
     try:
-        # Load data
-        from backtests.scripts.backtest_adf_factor import load_data, calculate_rolling_adf
-        
-        price_data = load_data(data_file)
+        # Import ADF calculation function
+        from backtests.scripts.backtest_adf_factor import calculate_rolling_adf
         
         # Step 1: Calculate ADF (this part requires iteration - cannot be vectorized)
+        # Use the same price_data that will be used for backtesting to ensure symbol alignment
         print("\nStep 1: Calculating ADF statistics (iterative - required for statsmodels)...")
         adf_window = kwargs.get("adf_window", 60)
         regression = kwargs.get("regression", "ct")
         
+        # Calculate ADF on full historical data (before date filtering)
+        # ADF needs historical window for calculation
         adf_data = calculate_rolling_adf(
             price_data,
             window=adf_window,
@@ -855,6 +856,11 @@ def run_adf_factor_backtest(data_file, **kwargs):
             start_date=kwargs.get("start_date"),
             end_date=kwargs.get("end_date"),
         )
+        
+        # Check if backtest succeeded
+        if results is None:
+            print("??  ADF backtest returned no results (likely date filtering issue)")
+            return None
 
         # Calculate comprehensive metrics
         metrics = calculate_comprehensive_metrics(
@@ -1795,21 +1801,24 @@ def main():
 
     # 10. ADF Factor (Trend Following)
     if args.run_adf:
-        result = run_adf_factor_backtest(
-            args.data_file,
-            strategy=args.adf_strategy,
-            adf_window=args.adf_window,
-            regression="ct",
-            rebalance_days=7,
-            weighting_method="risk_parity",
-            long_percentile=20,
-            short_percentile=80,
-            min_volume=5_000_000,
-            min_market_cap=50_000_000,
-            **common_params,
-        )
-        if result:
-            all_results.append(result)
+        if loaded_data["price_data"] is not None:
+            result = run_adf_factor_backtest(
+                loaded_data["price_data"],
+                strategy=args.adf_strategy,
+                adf_window=args.adf_window,
+                regression="ct",
+                rebalance_days=7,
+                weighting_method="risk_parity",
+                long_percentile=20,
+                short_percentile=80,
+                min_volume=5_000_000,
+                min_market_cap=50_000_000,
+                **common_params,
+            )
+            if result:
+                all_results.append(result)
+        else:
+            print("? Skipping ADF backtest: price data not available")
 
     # 11. Regime-Switching (Direction-Aware)
     if args.run_regime_switching:

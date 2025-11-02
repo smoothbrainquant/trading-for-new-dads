@@ -1,34 +1,52 @@
 {
   "strategy_weights": {
-    "size": 0.3600,
-    "breakout": 0.2577,
-    "beta": 0.2372,
+    "size": 0.2499,
+    "breakout": 0.1651,
+    "beta": 0.1797,
     "mean_reversion": 0.0500,
     "carry": 0.0000,
-    "volatility": 0.0398,
+    "volatility": 0.0625,
     "kurtosis": 0.0500,
-    "days_from_high": 0.0052,
-    "adf": 0.0,
+    "days_from_high": 0.0000,
+    "adf": 0.2428,
     "trendline_breakout": 0.0
   },
   "_weights_note": {
-    "_comment": "Updated 2025-11-02: MVO optimization with 5% caps on negative/regime-dependent strategies. Final optimal allocation achieves Sharpe ratio of 1.284 (significant improvement from 0.891).",
+    "_comment": "Updated 2025-11-02: MVO optimization with ADF included. 5% caps applied to negative/regime-dependent strategies. Final optimal allocation achieves Sharpe ratio of 1.424 (major improvement from 1.284 without ADF).",
     "_optimization_method": "Constrained Mean-Variance Optimization (MVO)",
-    "_portfolio_sharpe": 1.284,
-    "_expected_return": "16.30%",
-    "_expected_volatility": "12.70%",
-    "_expected_max_drawdown": "-30.72%",
-    "_reason": "MVO analysis (2023-2025 data) identifies Size, Breakout, and Beta as core holdings. Negative Sharpe strategies capped at 5%: Mean Reversion (-0.032), Carry (0%, worst performer at -0.813), Days from High (0.52%). Kurtosis capped at 5% despite positive Sharpe (0.675) due to regime-dependence (bear-only filter). Volatility included at 3.98% for diversification.",
+    "_portfolio_sharpe": 1.424,
+    "_expected_return": "14.78%",
+    "_expected_volatility": "10.38%",
+    "_expected_max_drawdown": "-29.77%",
+    "_reason": "MVO analysis (2023-2025 data) identifies Size and ADF as co-equal core holdings (24.99% and 24.28%). ADF Factor (Sharpe 0.458) provides excellent diversification with low correlation to other strategies. Beta (17.97%) and Breakout (16.51%) round out top-4 holdings. Kurtosis capped at 5% despite positive Sharpe (0.675) due to regime-dependence (bear-only filter). Mean Reversion capped at 5% (negative Sharpe -0.032). Days from High and Carry excluded (negative Sharpe).",
     "_capped_strategies": {
       "kurtosis": "5% (regime-dependent: bear_only filter)",
       "mean_reversion": "5% (negative Sharpe: -0.032)",
-      "days_from_high": "0.52% (negative Sharpe: -0.241)",
+      "days_from_high": "0% (negative Sharpe: -0.241)",
       "carry": "0% (worst performer: Sharpe -0.813)"
     }
   },
   "_weights_updated_history": {
-    "_2025_11_02_MVO_V2": {
-      "_comment": "MVO optimization with 5% caps on negative/regime-dependent strategies. Backtest period: 2023-2025.",
+    "_2025_11_02_MVO_V3_WITH_ADF": {
+      "_comment": "CURRENT - MVO optimization with ADF included. 5% caps on negative/regime-dependent strategies. Backtest period: 2023-2025.",
+      "_date": "2025-11-02",
+      "_active_strategies": "Size (24.99%, Sharpe 0.70), ADF (24.28%, Sharpe 0.46), Beta (17.97%, Sharpe 0.56), Breakout (16.51%, Sharpe 0.46), Volatility (6.25%, Sharpe 0.32), Kurtosis (5.00%, Sharpe 0.68, CAPPED), Mean Reversion (5.00%, Sharpe -0.03, CAPPED)",
+      "_excluded_strategies": "Days from High (0%, Sharpe -0.24), Carry (0%, Sharpe -0.81), Trendline Breakout (not analyzed)",
+      "_optimization_constraint": "Negative Sharpe strategies capped at 5%, regime-dependent strategies (Kurtosis) capped at 5%",
+      "_portfolio_metrics": {
+        "sharpe": 1.424,
+        "return": "14.78%",
+        "volatility": "10.38%",
+        "max_drawdown": "-29.77%"
+      },
+      "_correlation_analysis": {
+        "adf_diversification": "Low correlation with Size (0.007), Beta (-0.049), and Volatility (-0.135) - excellent diversifier",
+        "adf_allocation": "Second largest holding at 24.28%, co-equal with Size. Provides trend-following premium exposure.",
+        "kurtosis_note": "Positive Sharpe but regime-dependent (bear_only), capped at 5% for risk management"
+      }
+    },
+    "_2025_11_02_MVO_V2_NO_ADF": {
+      "_comment": "OLD - MVO optimization with 5% caps on negative/regime-dependent strategies. Backtest period: 2023-2025. ADF had backtest error.",
       "_date": "2025-11-02",
       "_active_strategies": "Size (36.00%, Sharpe 0.70), Breakout (25.77%, Sharpe 0.46), Beta (23.72%, Sharpe 0.56), Kurtosis (5.00%, Sharpe 0.68, CAPPED), Mean Reversion (5.00%, Sharpe -0.03, CAPPED), Volatility (3.98%, Sharpe 0.32), Days from High (0.52%, Sharpe -0.24, CAPPED)",
       "_excluded_strategies": "Carry (0%, Sharpe -0.81, worst performer), ADF (backtest error), Trendline Breakout (not analyzed)",
