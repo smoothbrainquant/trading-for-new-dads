@@ -9,7 +9,9 @@
     "kurtosis": 0.0500,
     "days_from_high": 0.0000,
     "adf": 0.2428,
-    "trendline_breakout": 0.0
+    "trendline_breakout": 0.0,
+    "leverage_inverted": 0.0,
+    "dilution": 0.0
   },
   "_weights_note": {
     "_comment": "Updated 2025-11-02: MVO optimization with ADF included. 5% caps applied to negative/regime-dependent strategies. Final optimal allocation achieves Sharpe ratio of 1.424 (major improvement from 1.284 without ADF).",
@@ -203,6 +205,23 @@
           "_note": "DO NOT USE - failed badly"
         }
       }
+    },
+    "leverage_inverted": {
+      "_status": "TESTING - Set weight > 0 to enable (capped at 5%)",
+      "rebalance_days": 7,
+      "top_n": 10,
+      "bottom_n": 10,
+      "_comment": "TESTING STRATEGY - Short high-leverage coins, long low-leverage coins. Strategy caps applied at 5% in main.py for safety during testing phase."
+    },
+    "dilution": {
+      "_status": "TESTING - Set weight > 0 to enable (capped at 5%)",
+      "rebalance_days": 7,
+      "lookback_months": 12,
+      "top_n": 10,
+      "volatility_window": 90,
+      "long_allocation": 0.5,
+      "short_allocation": 0.5,
+      "_comment": "TESTING STRATEGY - Long low dilution coins, short high dilution coins. Token supply inflation factor. Strategy caps applied at 5% in main.py for safety during testing phase."
     }
   }
 }
