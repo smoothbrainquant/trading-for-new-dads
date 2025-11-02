@@ -92,6 +92,7 @@ from execution.strategies import (
     strategy_kurtosis,
     strategy_volatility,
     strategy_adf,
+    strategy_leverage_inverted,  # testing
     strategy_regime_switching,
 )
 
@@ -130,6 +131,7 @@ STRATEGY_REGISTRY = {
     "kurtosis": strategy_kurtosis,
     "volatility": strategy_volatility,
     "adf": strategy_adf,
+    "leverage_inverted": strategy_leverage_inverted,  # testing
     "regime_switching": strategy_regime_switching,
 }
 
@@ -322,6 +324,16 @@ def _build_strategy_params(
             "weighting_method": weighting_method,
             "long_allocation": long_allocation,
             "short_allocation": short_allocation,
+        }
+
+    elif strategy_name == "leverage_inverted":  # testing
+        rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
+        top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
+        bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            "rebalance_days": rebalance_days,
+            "top_n": top_n,
+            "bottom_n": bottom_n,
         }
 
     elif strategy_name == "regime_switching":
@@ -855,8 +867,10 @@ def load_signal_config(config_path):
             
             # Apply strategy caps (safety measure)
             # Cap Mean Reversion at 5% due to extreme volatility (76.9%) and regime dependence
+            # Cap Leverage Inverted at 5% (testing)
             strategy_caps = {
                 "mean_reversion": 0.05,
+                "leverage_inverted": 0.05,  # testing
             }
             
             capped_strategies = []

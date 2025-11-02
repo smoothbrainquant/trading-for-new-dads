@@ -283,6 +283,21 @@ def load_all_data(args):
     else:
         data["oi_data"] = None
     
+    # Load leverage data (for inverted leverage strategy)
+    if hasattr(args, 'run_leverage_inverted') and args.run_leverage_inverted:
+        leverage_file = "signals/historical_leverage_weekly_20251102_170645.csv"
+        if os.path.exists(leverage_file):
+            print(f"Loading leverage data from {leverage_file}...")
+            df = pd.read_csv(leverage_file)
+            df["date"] = pd.to_datetime(df["date"])
+            data["leverage_data"] = df
+            print(f"  ? Loaded {len(df)} rows, {df['coin_symbol'].nunique()} coins")
+        else:
+            print(f"  ? Leverage data file not found: {leverage_file}")
+            data["leverage_data"] = None
+    else:
+        data["leverage_data"] = None
+    
     print("=" * 80)
     print("DATA LOADING COMPLETE\n")
     
@@ -804,6 +819,64 @@ def run_beta_factor_backtest(price_data, **kwargs):
         print(f"Error in Beta Factor backtest: {e}")
         import traceback
 
+        traceback.print_exc()
+        return None
+
+
+def run_leverage_inverted_backtest(leverage_data, price_data, **kwargs):
+    """
+    Run inverted leverage factor backtest.
+    
+    Strategy: LONG low leverage coins (fundamentals), SHORT high leverage coins (speculation)
+    Performance: Sharpe 1.19, 53.91% total return, -12.10% max drawdown (7-day rebalance)
+    """
+    print("\n" + "=" * 80)
+    print("Running Inverted Leverage Factor Backtest")
+    print("(LONG low OI/MCap, SHORT high OI/MCap - Risk Parity)")
+    print("=" * 80)
+    
+    try:
+        if leverage_data is None or len(leverage_data) == 0:
+            print("No leverage data available")
+            return None
+        
+        from backtests.scripts.backtest_leverage_inverted import backtest_inverted_leverage
+        
+        results = backtest_inverted_leverage(
+            leverage_df=leverage_data,
+            price_df=price_data,
+            rebalance_days=kwargs.get("rebalance_days", 7),  # Optimal: 7 days
+            ranking_metric="oi_to_mcap_ratio",  # Best metric
+            top_n=kwargs.get("top_n", 10),
+            bottom_n=kwargs.get("bottom_n", 10),
+            use_risk_parity=True,
+            transaction_cost=kwargs.get("transaction_cost", 0.001),
+            start_date=kwargs.get("start_date"),
+            end_date=kwargs.get("end_date"),
+            initial_capital=kwargs.get("initial_capital", 10000)
+        )
+        
+        # Calculate comprehensive metrics
+        metrics = calculate_comprehensive_metrics(
+            results["portfolio_values"], kwargs.get("initial_capital", 10000)
+        )
+        
+        # Extract daily returns
+        portfolio_df = results["portfolio_values"].copy()
+        portfolio_df["daily_return"] = portfolio_df["portfolio_value"].pct_change()
+        daily_returns = portfolio_df[["date", "daily_return"]].copy()
+        daily_returns.columns = ["date", "Leverage Inverted"]
+        
+        return {
+            "strategy": "Leverage Inverted",
+            "description": f"LONG low leverage, SHORT high leverage, Risk Parity, {kwargs.get('rebalance_days', 7)}d rebal",
+            "metrics": metrics,
+            "results": results,
+            "daily_returns": daily_returns,
+        }
+    except Exception as e:
+        print(f"Error in Inverted Leverage backtest: {e}")
+        import traceback
         traceback.print_exc()
         return None
 
@@ -1547,6 +1620,20 @@ def main():
     )
     parser.add_argument("--adf-window", type=int, default=60, help="ADF calculation window in days")
     parser.add_argument(
+        "--run-leverage-inverted",
+        nargs='?',
+        const=True,
+        default=None,
+        type=lambda x: x.lower() in ['true', '1', 'yes'],
+        help="Run inverted leverage factor backtest (LONG low leverage, SHORT high leverage)"
+    )
+    parser.add_argument(
+        "--leverage-rebalance-days",
+        type=int,
+        default=7,
+        help="Inverted leverage rebalance frequency (optimal: 7 days, Sharpe: 1.19)"
+    )
+    parser.add_argument(
         "--run-regime-switching",
         nargs='?',
         const=True,
@@ -1576,6 +1663,7 @@ def main():
         'kurtosis': args.run_kurtosis,
         'beta': args.run_beta,
         'adf': args.run_adf,
+        'leverage_inverted': args.run_leverage_inverted,
         'regime_switching': args.run_regime_switching,
     }
 
@@ -1617,6 +1705,7 @@ def main():
     args.run_kurtosis = run_flags['kurtosis']
     args.run_beta = run_flags['beta']
     args.run_adf = run_flags['adf']
+    args.run_leverage_inverted = run_flags['leverage_inverted']
     args.run_regime_switching = run_flags['regime_switching']
 
     print("=" * 120)
@@ -1819,8 +1908,25 @@ def main():
                 all_results.append(result)
         else:
             print("? Skipping ADF backtest: price data not available")
+    
+    # 11. Inverted Leverage Factor (LONG low leverage, SHORT high leverage)
+    if args.run_leverage_inverted:
+        if loaded_data["leverage_data"] is not None and loaded_data["price_data"] is not None:
+            result = run_leverage_inverted_backtest(
+                loaded_data["leverage_data"],
+                loaded_data["price_data"],
+                rebalance_days=args.leverage_rebalance_days,
+                top_n=10,
+                bottom_n=10,
+                transaction_cost=0.001,
+                **common_params,
+            )
+            if result:
+                all_results.append(result)
+        else:
+            print("? Skipping Inverted Leverage backtest: leverage or price data not available")
 
-    # 11. Regime-Switching (Direction-Aware)
+    # 12. Regime-Switching (Direction-Aware)
     if args.run_regime_switching:
         result = run_regime_switching_backtest(
             args.data_file,
