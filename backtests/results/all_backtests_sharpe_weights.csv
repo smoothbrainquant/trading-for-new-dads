@@ -1,3 +1,2 @@
 Strategy,Description,Sharpe Ratio,Weight,Weight_Pct
-Carry Factor,"Top 10 short, Bottom 10 long (VECTORIZED)",-1.5089314113275683,0.5,50.0
-Kurtosis Factor,"Strategy: momentum, Rebal: 14d (VECTORIZED)",-0.5202404293923201,0.5,50.0
+Carry Factor,"Top 10 short, Bottom 10 long (VECTORIZED)",-0.8126296330824707,1.0,100.0
