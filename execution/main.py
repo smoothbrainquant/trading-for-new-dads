@@ -12,18 +12,19 @@ Execution Modes:
   * Second distance is automatically 2? the first distance
   * Orders <$20 sent entirely at closer spread (avoids <$10 notional limit)
 
-Supported signals (handlers implemented or stubbed):
-- days_from_high: Long-only instruments near 200d highs (inverse-vol weighted)
+Supported strategies:
+- size: Size factor - Long small cap, short large cap (10d rebalance optimal)
+- adf: ADF factor with regime-aware allocation (7d rebalance optimal)
+- beta: Betting Against Beta - Long low beta, short high beta (5d rebalance optimal)
 - breakout: Long/short based on 50d breakout with 70d exits (inverse-vol weighted)
-- carry: Long negative-funding symbols, short positive-funding symbols (basic)
-- mean_reversion: Long-only extreme dips with high volume (2d lookback, optimal per backtest)
-- size: Placeholder (prints notice if selected but not implemented)
-- trendline_breakout: Momentum continuation based on trendline analysis (daily rebalance, 5d holding)
-- beta: Betting Against Beta - Long low beta coins, short high beta coins (5d rebalance optimal)
-- kurtosis: Kurtosis factor - Long/short based on return distribution kurtosis (14d rebalance optimal)
-- volatility: Low volatility anomaly (long low vol, short high vol, 3d rebalance optimal)
-- adf: ADF factor with regime-aware allocation (dynamically adjusts long/short based on BTC regimes)
-- dilution: Token dilution factor - Long low dilution, short high dilution (7d rebalance optimal)  # testing
+- volatility: Low volatility anomaly - Long low vol, short high vol (3d rebalance optimal)
+- kurtosis: Kurtosis factor - Long/short based on return distribution (14d rebalance, BEAR ONLY)
+- mean_reversion: Long-only extreme dips with high volume (2d lookback optimal, capped at 5%)
+- days_from_high: Long-only instruments near 200d highs (inverse-vol weighted)
+- carry: Long negative-funding, short positive-funding (7d rebalance)
+- trendline_breakout: Momentum continuation based on trendline analysis (daily rebalance)
+- leverage_inverted: Long low-leverage, short high-leverage (testing, capped at 5%)
+- dilution: Token dilution factor - Long low dilution, short high dilution (testing, capped at 5%)
 
 Weights can be provided via an external JSON config file so the backtesting suite
 can update them without code changes. Example config structure:
@@ -46,8 +47,8 @@ can update them without code changes. Example config structure:
 }
 
 By default, the script uses weights from all_strategies_config.json. You can override
-this by providing a custom --signal-config path, or pass --signals to use equal weights
-across listed signals, or pass --signal-config="" to use the legacy 50/50 blend.
+this by providing a custom --signal-config path, or use --signals strategy1,strategy2
+to specify strategies with equal weights (e.g., --signals size,breakout,beta).
 """
 
 import argparse
@@ -97,14 +98,6 @@ from execution.strategies import (
     strategy_dilution,  # testing
 )
 
-# Import shared strategy utilities for legacy path
-from execution.strategies.utils import (
-    calculate_days_from_200d_high,
-    calculate_rolling_30d_volatility,
-    calc_weights,
-    calculate_breakout_signals_from_data,
-)
-
 # Import cache management
 try:
     from data.scripts.coinalyze_cache import CoinalyzeCache
@@ -114,7 +107,6 @@ except ImportError:
 # Import reporting module
 from execution.reporting import (
     export_portfolio_weights_multisignal,
-    export_portfolio_weights_legacy,
     generate_trade_allocation_breakdown,
 )
 
@@ -562,37 +554,6 @@ def get_200d_daily_data(symbols):
     return {}
 
 
-def calculate_days_from_200d_high(data):
-    """Deprecated shim; use execution.strategies.utils.calculate_days_from_200d_high instead."""
-    from execution.strategies.utils import calculate_days_from_200d_high as _impl
-
-    return _impl(data)
-
-
-def calculate_200d_ma(data):
-    """Placeholder for 200d MA calculation (unused)."""
-    pass
-
-
-def select_instruments_by_days_from_high(data_source, threshold):
-    """Deprecated; selection is handled within strategies modules."""
-    from execution.strategies.utils import select_instruments_by_days_from_high as _impl
-
-    return _impl(data_source, threshold)
-
-
-def calculate_rolling_30d_volatility(data, selected_symbols):
-    """Deprecated shim; use execution.strategies.utils.calculate_rolling_30d_volatility instead."""
-    from execution.strategies.utils import calculate_rolling_30d_volatility as _impl
-
-    return _impl(data, selected_symbols)
-
-
-def calc_weights(volatilities):
-    """Deprecated shim; use execution.strategies.utils.calc_weights instead."""
-    from execution.strategies.utils import calc_weights as _impl
-
-    return _impl(volatilities)
 
 
 def get_current_positions():
@@ -839,11 +800,6 @@ def calculate_trade_amounts(target_positions, current_positions, notional_value,
     return trades
 
 
-def calculate_breakout_signals_from_data(data):
-    """Deprecated shim; use execution.strategies.utils.calculate_breakout_signals_from_data instead."""
-    from execution.strategies.utils import calculate_breakout_signals_from_data as _impl
-
-    return _impl(data)
 
 
 def _normalize_weights(weights_dict):
@@ -905,14 +861,6 @@ def load_signal_config(config_path):
         return None
 
 
-def get_base_symbol(symbol):
-    """Deprecated shim; use execution.strategies.utils.get_base_symbol instead."""
-    from execution.strategies.utils import get_base_symbol as _impl
-
-    return _impl(symbol)
-
-
-# Note: Strategy functions are now imported from execution.strategies package
 
 
 def send_orders_if_difference_exceeds_threshold(trades, dry_run=True, aggressive=True, patient=None):
@@ -1142,7 +1090,7 @@ def main():
         blend_weights = (
             _normalize_weights({s: 1.0 for s in selected_signals}) if selected_signals else None
         )
-        title = "MULTI-SIGNAL BLEND (CLI)" if blend_weights else "COMBINED 50/50 (legacy)"
+        title = "MULTI-SIGNAL BLEND (CLI)" if blend_weights else "ERROR: No strategies configured"
 
     print("=" * 80)
     print(f"AUTOMATED TRADING STRATEGY EXECUTION - {title}")
@@ -1333,6 +1281,8 @@ def main():
 
         # Check which strategies returned no positions and rebalance
         # Fixed weight strategies that should maintain their allocation
+        # All other strategies are "flexible" and can receive reallocated capital
+        # This includes regime-filtered strategies like kurtosis that may return no positions
         FIXED_WEIGHT_STRATEGIES = {"breakout", "days_from_high"}
 
         active_strategies = {
@@ -1351,7 +1301,12 @@ def main():
             print("CAPITAL REALLOCATION: Some strategies returned no positions")
             print("=" * 80)
             for name, orig_weight in inactive_strategies.items():
-                print(f"  ? {name}: No positions found (original weight: {orig_weight*100:.2f}%)")
+                # Special messaging for regime-filtered strategies
+                if name == "kurtosis":
+                    print(f"  ? {name}: Regime filter blocked activation (original weight: {orig_weight*100:.2f}%)")
+                    print(f"     Strategy only activates in BEAR markets - capital will be reallocated")
+                else:
+                    print(f"  ? {name}: No positions found (original weight: {orig_weight*100:.2f}%)")
 
             if active_strategies:
                 # Separate fixed and flexible strategies
@@ -1377,6 +1332,15 @@ def main():
                 print(f"\n  Fixed allocations (maintaining original weights):")
                 for name, weight in fixed_active.items():
                     print(f"    {name}: {weight*100:.2f}% (fixed)")
+
+                # Show which strategies' capital is being redistributed
+                if inactive_flexible:
+                    print(f"\n  Capital being redistributed from inactive flexible strategies:")
+                    for name, weight in inactive_flexible.items():
+                        if name == "kurtosis":
+                            print(f"    {name}: {weight*100:.2f}% (regime-filtered, not active in current regime)")
+                        else:
+                            print(f"    {name}: {weight*100:.2f}%")
 
                 if flexible_active and capital_to_redistribute > 0:
                     # Renormalize only flexible strategies with the additional capital
@@ -1546,81 +1510,18 @@ def main():
         )
 
     else:
-        # Legacy 50/50 pipeline (days_from_high + breakout)
-        print("\nUsing legacy 50/50 blend: days_from_high + breakout")
-        initial_contributions_original = {}  # Initialize for legacy path
-
-        # Days from high path
-        days_from_high = calculate_days_from_200d_high(historical_data)
-        selected_symbols_20d = [
-            symbol for symbol, days in days_from_high.items() if days <= args.days_since_high
-        ]
-        volatilities_20d = (
-            calculate_rolling_30d_volatility(historical_data, selected_symbols_20d)
-            if selected_symbols_20d
-            else {}
-        )
-        weights_20d = calc_weights(volatilities_20d) if volatilities_20d else {}
-
-        # Breakout path
-        breakout_signals = calculate_breakout_signals_from_data(historical_data)
-        longs_breakout = [
-            symbol for symbol, direction in breakout_signals.items() if direction == 1
-        ]
-        shorts_breakout = [
-            symbol for symbol, direction in breakout_signals.items() if direction == -1
-        ]
-        vol_long = (
-            calculate_rolling_30d_volatility(historical_data, longs_breakout)
-            if longs_breakout
-            else {}
-        )
-        vol_short = (
-            calculate_rolling_30d_volatility(historical_data, shorts_breakout)
-            if shorts_breakout
-            else {}
-        )
-        w_long = calc_weights(vol_long) if vol_long else {}
-        w_short = calc_weights(vol_short) if vol_short else {}
-
-        # Combine as before
-        strat1_notional = notional_value * 0.5
-        strat2_notional = notional_value * 0.5
-
-        # Per-signal contributions
-        signal_names = ["days_from_high", "breakout"]
-        contrib_days = {sym: w * strat1_notional for sym, w in (weights_20d or {}).items()}
-        contrib_breakout: dict[str, float] = {}
-        for sym, w in (w_long or {}).items():
-            contrib_breakout[sym] = contrib_breakout.get(sym, 0.0) + w * strat2_notional
-        for sym, w in (w_short or {}).items():
-            contrib_breakout[sym] = contrib_breakout.get(sym, 0.0) - w * strat2_notional
-        per_signal_contribs["days_from_high"] = contrib_days
-        per_signal_contribs["breakout"] = contrib_breakout
-        initial_contributions_original["days_from_high"] = dict(contrib_days)
-        initial_contributions_original["breakout"] = dict(contrib_breakout)
-
-        # Combined target positions
-        for sym, amt in contrib_days.items():
-            target_positions[sym] += amt
-        for sym, amt in contrib_breakout.items():
-            target_positions[sym] += amt
-
-        if target_positions:
-            print("\nCombined Target Positions (legacy 50/50):")
-            print("=" * 80)
-            for symbol, target in sorted(target_positions.items()):
-                side = "LONG" if target > 0 else ("SHORT" if target < 0 else "FLAT")
-                print(f"  {symbol}: {side} ${abs(target):,.2f}")
-
-        # Export portfolio weights to file for legacy mode
-        export_portfolio_weights_legacy(
-            target_positions=target_positions,
-            per_signal_contribs=per_signal_contribs,
-            signal_names=signal_names,
-            notional_value=notional_value,
-            workspace_root=WORKSPACE_ROOT,
-        )
+        # No strategies configured - error
+        print("\n" + "=" * 80)
+        print("? ERROR: No strategies configured")
+        print("=" * 80)
+        print("\nYou must either:")
+        print("  1. Use the default config: all_strategies_config.json (default)")
+        print("  2. Provide a custom config: --signal-config path/to/config.json")
+        print("  3. Use CLI mode: --signals strategy1,strategy2,strategy3")
+        print("\nExample:")
+        print("  python main.py --signals size,breakout,beta")
+        print("=" * 80)
+        return
 
     # Step 5: Get current positions
     print("\n[5/7] Getting current positions...")
