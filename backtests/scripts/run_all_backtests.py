@@ -243,14 +243,18 @@ def load_all_data(args):
         print(f"  ? Funding rates file not found: {args.funding_rates_file}")
         data["funding_data"] = None
     
-    # Load OI data (if needed)
-    if hasattr(args, 'oi_data_file') and os.path.exists(args.oi_data_file):
-        print(f"Loading OI data from {args.oi_data_file}...")
-        df = pd.read_csv(args.oi_data_file)
-        if "date" in df.columns:
-            df["date"] = pd.to_datetime(df["date"])
-        data["oi_data"] = df
-        print(f"  ? Loaded {len(df)} rows")
+    # Load OI data (only if OI divergence backtest is requested)
+    if hasattr(args, 'run_oi_divergence') and args.run_oi_divergence:
+        if hasattr(args, 'oi_data_file') and os.path.exists(args.oi_data_file):
+            print(f"Loading OI data from {args.oi_data_file}...")
+            df = pd.read_csv(args.oi_data_file)
+            if "date" in df.columns:
+                df["date"] = pd.to_datetime(df["date"])
+            data["oi_data"] = df
+            print(f"  ? Loaded {len(df)} rows")
+        else:
+            print(f"  ? OI data file not found: {args.oi_data_file}")
+            data["oi_data"] = None
     else:
         data["oi_data"] = None
     
@@ -1099,8 +1103,8 @@ def main():
     parser.add_argument(
         "--marketcap-file",
         type=str,
-        default="data/raw/coinmarketcap_historical_all_snapshots.csv",
-        help="Path to market cap data CSV file",
+        default="data/raw/coinmarketcap_monthly_all_snapshots.csv",
+        help="Path to market cap data CSV file (monthly snapshots)",
     )
     parser.add_argument(
         "--funding-rates-file",
@@ -1293,9 +1297,11 @@ def main():
     any_explicitly_false = any(v is False for v in run_flags.values())
 
     if not any_explicitly_true and not any_explicitly_false:
-        # No flags specified -> run all backtests
+        # No flags specified -> run all backtests (except OI divergence which is disabled)
         for key in run_flags:
             run_flags[key] = True
+        # OI divergence is commented out in code, so don't run by default
+        run_flags['oi_divergence'] = False
     elif any_explicitly_true:
         # At least one flag is True -> run only those set to True
         for key in run_flags:
@@ -1306,7 +1312,11 @@ def main():
         # Some flags are False but none are True -> run all except False ones
         for key in run_flags:
             if run_flags[key] is None:
-                run_flags[key] = True
+                # OI divergence is commented out, so don't enable unless explicitly requested
+                if key == 'oi_divergence':
+                    run_flags[key] = False
+                else:
+                    run_flags[key] = True
             # Keep False as is
 
     # Update args with processed flags
