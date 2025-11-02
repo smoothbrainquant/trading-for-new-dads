@@ -214,6 +214,44 @@ BTC/USDC:USDC:
 1. `/workspace/tests/test_execution.py` - Added test cases
 2. `/workspace/README.md` - Updated execution section
 
+## Patient Mode Integration (main.py)
+
+**NEW**: The spread offset execution has been integrated into `main.py` as a new "patient mode" execution strategy.
+
+### Usage
+```bash
+# Use patient mode with main.py
+python3 main.py --patient --dry-run
+
+# Live trading with patient mode
+python3 main.py --patient
+```
+
+### Patient Mode Behavior
+When `--patient` flag is specified:
+- **Large orders (?$20)**: Split 50/50
+  - 1/2 at 1x spread offset (moderate passive)
+  - 1/2 at 2x spread offset (very passive)
+- **Small orders (<$20)**: No splitting
+  - All at 1x spread offset
+  - Prevents orders below $10 notional limit
+
+### Example
+```
+Order: BTC/USDC:USDC $100 BUY
+? Splits: $50 at 1x spread, $50 at 2x spread
+
+Order: SOL/USDC:USDC $15 BUY
+? No split: $15 at 1x spread (avoid <$10 limit)
+```
+
+### Execution Modes Comparison
+| Mode | Flag | Strategy | Use Case |
+|------|------|----------|----------|
+| Default | `--limits` | Tick-based aggressive fills | Standard execution |
+| Market | `--market` | Immediate market orders | Fast fills, any price |
+| **Patient** | `--patient` | Spread offset with splitting | Better pricing, passive fills |
+
 ## Conclusion
 
 Successfully implemented a flexible and robust execution method that:
@@ -224,5 +262,6 @@ Successfully implemented a flexible and robust execution method that:
 - ? Provides clear, user-friendly interface
 - ? Handles errors gracefully
 - ? Works in both dry-run and live modes
+- ? **NEW**: Integrated into main.py as patient mode with intelligent order splitting
 
-The implementation is production-ready and can be used immediately for placing passive limit orders with better pricing than immediate execution methods.
+The implementation is production-ready and can be used immediately for placing passive limit orders with better pricing than immediate execution methods. The new patient mode in `main.py` provides an automated way to use this execution strategy with smart order splitting based on order size.
