@@ -727,7 +727,7 @@ def run_kurtosis_factor_backtest(price_data, **kwargs):
 
     try:
         # Strategy and regime filter settings (matching live trading)
-        strategy = kwargs.get("strategy", "mean_reversion")  # mean_reversion = long LOW kurtosis, short HIGH kurtosis
+        strategy = kwargs.get("strategy", "long_low_short_high")  # Long low kurtosis (stable), Short high kurtosis (unstable)
         regime_filter = kwargs.get("regime_filter", "bear_only")  # Only trade in bear markets
         reference_symbol = kwargs.get("reference_symbol", "BTC")  # Use BTC 50MA/200MA for regime detection
         
@@ -1736,15 +1736,15 @@ def main():
     parser.add_argument(
         "--kurtosis-strategy",
         type=str,
-        default="mean_reversion",
-        choices=["mean_reversion", "momentum"],
-        help="Kurtosis factor strategy type (IGNORED: hardcoded to mean_reversion for bear-only regime)",
+        default="long_low_short_high",
+        choices=["long_low_short_high", "long_high_short_low"],
+        help="Kurtosis factor strategy type: long_low_short_high (stable), long_high_short_low (volatile)",
     )
     parser.add_argument(
         "--kurtosis-rebalance-days",
         type=int,
         default=14,
-        help="Kurtosis rebalance frequency in days (optimal: 14 days for mean_reversion in bear markets)",
+        help="Kurtosis rebalance frequency in days (optimal: 14 days for long_low_short_high in bear markets)",
     )
     parser.add_argument(
         "--run-beta",
@@ -2046,9 +2046,9 @@ def main():
         if loaded_data["price_data"] is not None:
             result = run_kurtosis_factor_backtest(
                 loaded_data["price_data"],
-                strategy="mean_reversion",  # mean_reversion = long LOW kurtosis (stable), short HIGH kurtosis (unstable)
+                strategy=args.kurtosis_strategy,  # Default: long_low_short_high (long low kurtosis, short high kurtosis)
                 kurtosis_window=30,
-                rebalance_days=14,  # Optimal for mean_reversion strategy in bear regimes
+                rebalance_days=args.kurtosis_rebalance_days,
                 weighting="risk_parity",
                 long_percentile=20,  # Top 20% = lowest kurtosis (most stable)
                 short_percentile=80,  # Top 80% = highest kurtosis (most unstable)

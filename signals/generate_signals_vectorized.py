@@ -470,7 +470,7 @@ def generate_skew_signals_vectorized(
 
 def generate_kurtosis_signals_vectorized(
     kurtosis_df: pd.DataFrame,
-    strategy: Literal['mean_reversion', 'momentum'] = 'momentum',
+    strategy: Literal['long_low_short_high', 'long_high_short_low'] = 'long_low_short_high',
     num_quintiles: int = 5,
     long_percentile: float = 20,
     short_percentile: float = 80,
@@ -484,6 +484,8 @@ def generate_kurtosis_signals_vectorized(
     Args:
         kurtosis_df: DataFrame with date, symbol, kurtosis
         strategy: Strategy type
+            - 'long_low_short_high': Long low kurtosis (stable), Short high kurtosis (volatile)
+            - 'long_high_short_low': Long high kurtosis (volatile), Short low kurtosis (stable)
         num_quintiles: Number of quintiles
         long_percentile: Percentile threshold for longs
         short_percentile: Percentile threshold for shorts
@@ -501,19 +503,16 @@ def generate_kurtosis_signals_vectorized(
     # Generate signals (vectorized)
     df['signal'] = 0
     
-    if strategy == 'momentum':
-        # CRITICAL: Fixed swap bug - momentum should long LOW kurtosis
-        # Original implementation had this correct, vectorized version had it backwards
-        # Long low kurtosis (stable, consistent returns - momentum persists)
+    if strategy == 'long_low_short_high':
+        # Long low kurtosis (stable, consistent returns)
         df.loc[df['percentile'] <= long_percentile, 'signal'] = 1
         # Short high kurtosis (volatile, fat tails - unstable)
         df.loc[df['percentile'] >= short_percentile, 'signal'] = -1
     
-    elif strategy == 'mean_reversion':
-        # CRITICAL: Fixed swap bug - mean reversion should long HIGH kurtosis
-        # Long high kurtosis (volatile coins - expecting reversion to mean)
+    elif strategy == 'long_high_short_low':
+        # Long high kurtosis (volatile coins)
         df.loc[df['percentile'] >= short_percentile, 'signal'] = 1
-        # Short low kurtosis (stable coins - expecting continuation)
+        # Short low kurtosis (stable coins)
         df.loc[df['percentile'] <= long_percentile, 'signal'] = -1
     
     # Apply regime filter if specified
