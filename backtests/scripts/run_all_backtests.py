@@ -979,37 +979,46 @@ def run_regime_switching_backtest(data_file, **kwargs):
         combined['regime'] = combined['regime'].fillna('Unknown')
         
         # Apply regime-switching allocation
+        # Note: The allocation represents which STRATEGY to use and at what long/short split
+        # NOT a mix of both strategies
         allocation_rules = {
             'blended': {
-                'Strong Up': (0.2, 0.8, 'TF'),
-                'Moderate Up': (0.2, 0.8, 'MR'),
-                'Down': (0.8, 0.2, 'TF'),
-                'Strong Down': (0.2, 0.8, 'MR'),
-                'Unknown': (0.5, 0.5, 'Balanced'),
+                'Strong Up': (0.2, 0.8, 'trend_following'),      # 20% long, 80% short using TF
+                'Moderate Up': (0.2, 0.8, 'mean_reversion'),     # 20% long, 80% short using MR
+                'Down': (0.8, 0.2, 'trend_following'),           # 80% long, 20% short using TF
+                'Strong Down': (0.2, 0.8, 'mean_reversion'),     # 20% long, 80% short using MR
+                'Unknown': (0.5, 0.5, 'balanced'),
             },
             'optimal': {
-                'Strong Up': (0.0, 1.0, 'TF'),
-                'Moderate Up': (0.0, 1.0, 'MR'),
-                'Down': (1.0, 0.0, 'TF'),
-                'Strong Down': (0.0, 1.0, 'MR'),
-                'Unknown': (0.5, 0.5, 'Balanced'),
+                'Strong Up': (0.0, 1.0, 'trend_following'),      # Pure short using TF
+                'Moderate Up': (0.0, 1.0, 'mean_reversion'),     # Pure short using MR
+                'Down': (1.0, 0.0, 'trend_following'),           # Pure long using TF
+                'Strong Down': (0.0, 1.0, 'mean_reversion'),     # Pure short using MR
+                'Unknown': (0.5, 0.5, 'balanced'),
             },
             'moderate': {
-                'Strong Up': (0.3, 0.7, 'TF'),
-                'Moderate Up': (0.3, 0.7, 'MR'),
-                'Down': (0.7, 0.3, 'TF'),
-                'Strong Down': (0.3, 0.7, 'MR'),
-                'Unknown': (0.5, 0.5, 'Balanced'),
+                'Strong Up': (0.3, 0.7, 'trend_following'),      # 30% long, 70% short using TF
+                'Moderate Up': (0.3, 0.7, 'mean_reversion'),     # 30% long, 70% short using MR
+                'Down': (0.7, 0.3, 'trend_following'),           # 70% long, 30% short using TF
+                'Strong Down': (0.3, 0.7, 'mean_reversion'),     # 30% long, 70% short using MR
+                'Unknown': (0.5, 0.5, 'balanced'),
             },
         }
         
         rules = allocation_rules[mode]
         
         def get_regime_return(row):
-            long_alloc, short_alloc, _ = rules.get(row['regime'], (0.5, 0.5, 'Balanced'))
-            # Assuming long_alloc goes to TF, short_alloc to MR for long positions
-            # and opposite for shorts
-            return long_alloc * row['tf_return'] + short_alloc * row['mr_return']
+            long_alloc, short_alloc, active_strategy = rules.get(row['regime'], (0.5, 0.5, 'balanced'))
+            
+            # Use the return from the active strategy for this regime
+            # The TF and MR strategies already have 50/50 long/short allocations
+            # We need to reweight them based on the regime-specific allocations
+            if active_strategy == 'trend_following':
+                return row['tf_return']
+            elif active_strategy == 'mean_reversion':
+                return row['mr_return']
+            else:  # balanced
+                return 0.5 * row['tf_return'] + 0.5 * row['mr_return']
         
         combined['regime_return'] = combined.apply(get_regime_return, axis=1)
         
