@@ -16,7 +16,7 @@ from datetime import datetime
 
 def calculate_breakout_signals(data_source):
     """
-    Calculate breakout signals for each symbol in the dataset.
+    Calculate breakout signals for each symbol in the dataset (VECTORIZED).
 
     This function identifies trend-following signals based on price breakouts:
     - Entry signals use 50-day highs/lows
@@ -53,80 +53,81 @@ def calculate_breakout_signals(data_source):
     # Sort by symbol and date to ensure proper ordering
     df = df.sort_values(["symbol", "date"]).reset_index(drop=True)
 
-    # Group by symbol and calculate for each
-    results = []
+    # Calculate rolling highs and lows for all symbols at once (vectorized)
+    df["rolling_50d_high"] = df.groupby("symbol")["high"].transform(
+        lambda x: x.rolling(window=50, min_periods=1).max()
+    )
+    df["rolling_50d_low"] = df.groupby("symbol")["low"].transform(
+        lambda x: x.rolling(window=50, min_periods=1).min()
+    )
+    df["rolling_70d_high"] = df.groupby("symbol")["high"].transform(
+        lambda x: x.rolling(window=70, min_periods=1).max()
+    )
+    df["rolling_70d_low"] = df.groupby("symbol")["low"].transform(
+        lambda x: x.rolling(window=70, min_periods=1).min()
+    )
 
+    # Get previous day's rolling values for crossover detection
+    df["prev_high_50d"] = df.groupby("symbol")["rolling_50d_high"].shift(1)
+    df["prev_low_50d"] = df.groupby("symbol")["rolling_50d_low"].shift(1)
+    df["prev_high_70d"] = df.groupby("symbol")["rolling_70d_high"].shift(1)
+    df["prev_low_70d"] = df.groupby("symbol")["rolling_70d_low"].shift(1)
+
+    # Detect breakout events (vectorized)
+    df["breakout_above_50d"] = df["close"] > df["prev_high_50d"]
+    df["breakout_below_50d"] = df["close"] < df["prev_low_50d"]
+    df["breakout_below_70d"] = df["close"] < df["prev_low_70d"]
+    df["breakout_above_70d"] = df["close"] > df["prev_high_70d"]
+
+    # Initialize signal and position columns
+    df["signal"] = "NEUTRAL"
+    df["position"] = "FLAT"
+
+    # Process each symbol separately for position state tracking
+    # (State tracking requires some sequential logic, but we minimize operations)
+    result_groups = []
+    
     for symbol, group in df.groupby("symbol"):
-        # Calculate rolling highs and lows
-        group["rolling_50d_high"] = group["high"].rolling(window=50, min_periods=1).max()
-        group["rolling_50d_low"] = group["low"].rolling(window=50, min_periods=1).min()
-        group["rolling_70d_high"] = group["high"].rolling(window=70, min_periods=1).max()
-        group["rolling_70d_low"] = group["low"].rolling(window=70, min_periods=1).min()
-
-        # Initialize signal column
-        group["signal"] = "NEUTRAL"
-        group["position"] = "FLAT"  # Track current position state
-
-        # Calculate signals based on close price breakouts
-        current_position = "FLAT"
-
+        group = group.copy()
+        position_state = "FLAT"
+        signals = []
+        positions = []
+        
         for idx in range(len(group)):
-            close = group.iloc[idx]["close"]
-            high_50d = group.iloc[idx]["rolling_50d_high"]
-            low_50d = group.iloc[idx]["rolling_50d_low"]
-            high_70d = group.iloc[idx]["rolling_70d_high"]
-            low_70d = group.iloc[idx]["rolling_70d_low"]
-
-            # Store previous close for comparison
-            if idx > 0:
-                prev_close = group.iloc[idx - 1]["close"]
-                prev_high_50d = group.iloc[idx - 1]["rolling_50d_high"]
-                prev_low_50d = group.iloc[idx - 1]["rolling_50d_low"]
-                prev_high_70d = group.iloc[idx - 1]["rolling_70d_high"]
-                prev_low_70d = group.iloc[idx - 1]["rolling_70d_low"]
-            else:
-                prev_close = close
-                prev_high_50d = high_50d
-                prev_low_50d = low_50d
-                prev_high_70d = high_70d
-                prev_low_70d = low_70d
-
-            # Entry and exit logic based on current position
-            if current_position == "FLAT":
-                # Check for LONG entry: close crosses above 50d high
-                if close > prev_high_50d:
-                    group.iloc[idx, group.columns.get_loc("signal")] = "LONG"
-                    current_position = "LONG"
-                # Check for SHORT entry: close crosses below 50d low
-                elif close < prev_low_50d:
-                    group.iloc[idx, group.columns.get_loc("signal")] = "SHORT"
-                    current_position = "SHORT"
+            row = group.iloc[idx]
+            
+            if position_state == "FLAT":
+                if row["breakout_above_50d"]:
+                    signals.append("LONG")
+                    position_state = "LONG"
+                elif row["breakout_below_50d"]:
+                    signals.append("SHORT")
+                    position_state = "SHORT"
                 else:
-                    group.iloc[idx, group.columns.get_loc("signal")] = "NEUTRAL"
-
-            elif current_position == "LONG":
-                # Check for LONG exit: close crosses below 70d low
-                if close < prev_low_70d:
-                    group.iloc[idx, group.columns.get_loc("signal")] = "EXIT_LONG"
-                    current_position = "FLAT"
+                    signals.append("NEUTRAL")
+                    
+            elif position_state == "LONG":
+                if row["breakout_below_70d"]:
+                    signals.append("EXIT_LONG")
+                    position_state = "FLAT"
                 else:
-                    group.iloc[idx, group.columns.get_loc("signal")] = "HOLD_LONG"
-
-            elif current_position == "SHORT":
-                # Check for SHORT exit: close crosses above 70d high
-                if close > prev_high_70d:
-                    group.iloc[idx, group.columns.get_loc("signal")] = "EXIT_SHORT"
-                    current_position = "FLAT"
+                    signals.append("HOLD_LONG")
+                    
+            elif position_state == "SHORT":
+                if row["breakout_above_70d"]:
+                    signals.append("EXIT_SHORT")
+                    position_state = "FLAT"
                 else:
-                    group.iloc[idx, group.columns.get_loc("signal")] = "HOLD_SHORT"
-
-            # Store current position state
-            group.iloc[idx, group.columns.get_loc("position")] = current_position
-
-        results.append(group)
-
+                    signals.append("HOLD_SHORT")
+            
+            positions.append(position_state)
+        
+        group["signal"] = signals
+        group["position"] = positions
+        result_groups.append(group)
+    
     # Combine all symbols
-    result_df = pd.concat(results, ignore_index=True)
+    result_df = pd.concat(result_groups, ignore_index=True)
 
     # Select relevant columns
     output_df = result_df[
