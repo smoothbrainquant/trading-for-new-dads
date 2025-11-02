@@ -419,7 +419,7 @@ def run_size_factor_backtest(price_data, marketcap_data, **kwargs):
 
         return {
             "strategy": "Size Factor",
-            "description": f"Strategy: {kwargs.get('strategy', 'long_small_short_large')} (VECTORIZED)",
+            "description": f"Strategy: {kwargs.get('strategy', 'long_large_short_small')} (VECTORIZED)",
             "metrics": metrics,
             "results": results,
             "daily_returns": daily_returns,
@@ -1403,7 +1403,7 @@ def main():
             result = run_size_factor_backtest(
                 loaded_data["price_data"],
                 loaded_data["marketcap_data"],
-                strategy="long_small_short_large",
+                strategy="long_large_short_small",  # Fixed: Large caps outperform in crypto (opposite of equities)
                 num_buckets=5,
                 rebalance_days=10,  # Optimal: 10 days (Sharpe: 0.39)
                 **common_params,
@@ -1479,7 +1479,7 @@ def main():
         if loaded_data["price_data"] is not None:
             result = run_kurtosis_factor_backtest(
                 loaded_data["price_data"],
-                strategy=args.kurtosis_strategy,
+                strategy=args.kurtosis_strategy,  # Note: Strategy names now match original implementation
                 kurtosis_window=30,
                 rebalance_days=args.kurtosis_rebalance_days,  # Default: 14 days (optimal for momentum, Sharpe: 0.81)
                 weighting="risk_parity",

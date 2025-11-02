@@ -412,16 +412,16 @@ def generate_kurtosis_signals_vectorized(
     # Generate signals (vectorized)
     df['signal'] = 0
     
-    if strategy == 'momentum':
-        # Long low kurtosis (stable, trending)
+    if strategy == 'mean_reversion':
+        # Long low kurtosis (stable, mean-reverting)
         df.loc[df['percentile'] <= long_percentile, 'signal'] = 1
         # Short high kurtosis (fat tails, unstable)
         df.loc[df['percentile'] >= short_percentile, 'signal'] = -1
     
-    elif strategy == 'mean_reversion':
-        # Long high kurtosis
+    elif strategy == 'momentum':
+        # Long high kurtosis (volatile, momentum)
         df.loc[df['percentile'] >= short_percentile, 'signal'] = 1
-        # Short low kurtosis
+        # Short low kurtosis (stable)
         df.loc[df['percentile'] <= long_percentile, 'signal'] = -1
     
     return df[['date', 'symbol', kurtosis_column, 'percentile', 'quintile', 'signal']]
