@@ -105,8 +105,10 @@
       "weighting_method": "risk_parity",
       "long_allocation": 0.5,
       "short_allocation": 0.5,
-      "strategy_type": "momentum",
-      "_comment": "Optimal params from backtest (2022-2025): rebalance_days=14 (bi-weekly), window=30d, Total Return: +181%, Sharpe: 0.81. Momentum strategy: long high kurtosis (volatile), short low kurtosis (stable)."
+      "strategy_type": "mean_reversion",
+      "regime_filter": "bear_only",
+      "reference_symbol": "BTC/USD",
+      "_comment": "REGIME-FILTERED STRATEGY - Only activates in BEAR MARKETS. Mean reversion: long low kurtosis (stable), short high kurtosis (volatile). Performance by regime: Bear/Low-Vol: +28% to +50% annualized (Sharpe 1.79), Bull markets: -25% to -90% annualized (TOXIC). Regime filter prevents activation in bull markets based on 50MA < 200MA on BTC. See docs/KURTOSIS_REGIME_ANALYSIS.md for full analysis."
     },
     "adf": {
       "_status": "ACTIVE - Available for use (set weight > 0 to enable)",

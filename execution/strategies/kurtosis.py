@@ -1,5 +1,5 @@
 """
-Kurtosis Factor Strategy Implementation
+Kurtosis Factor Strategy Implementation with Regime Filter
 
 Implements a kurtosis factor strategy for crypto:
 - Calculates rolling kurtosis of daily returns for all cryptocurrencies
@@ -9,16 +9,33 @@ Implements a kurtosis factor strategy for crypto:
   * Momentum: Long high kurtosis (volatile), Short low kurtosis (stable)
 - Uses equal-weight or risk parity weighting
 - Rebalances periodically
+- **REGIME FILTER**: Can be configured to only activate in specific market regimes
 
 Kurtosis hypothesis: Kurtosis measures tail-fatness of return distributions.
 High kurtosis = fat tails, prone to extreme moves
 Low kurtosis = thin tails, more stable returns
+
+**IMPORTANT**: Mean Reversion mode excels in BEAR MARKETS only:
+- Bear/Low-Vol: +28% to +50% annualized (Sharpe 1.79)
+- Bull markets: -25% to -90% annualized (Sharpe -2.01 to -1.22)
+- Regime filter is STRONGLY RECOMMENDED for mean reversion mode
 """
 
 import pandas as pd
 import numpy as np
 from scipy import stats
 from datetime import datetime, timedelta
+
+# Import regime detection
+try:
+    from execution.strategies.regime_filter import detect_market_regime, should_activate_strategy
+except ImportError:
+    # Fallback if module not found
+    def detect_market_regime(historical_data, reference_symbol="BTC/USD"):
+        return {"regime": "bear", "confidence": "low", "days_in_regime": 0, "error": "regime_filter module not found"}
+    
+    def should_activate_strategy(regime_info, strategy_type="bear_only"):
+        return True, "Regime filter not available - defaulting to active"
 
 
 def strategy_kurtosis(
@@ -30,14 +47,16 @@ def strategy_kurtosis(
     rebalance_days=14,
     long_percentile=20,
     short_percentile=80,
-    strategy_type="momentum",
+    strategy_type="mean_reversion",  # Changed default to mean_reversion
     weighting_method="risk_parity",
     long_allocation=0.5,
     short_allocation=0.5,
     max_positions=10,
+    regime_filter="bear_only",  # NEW: regime filter (bear_only, bull_only, always)
+    reference_symbol="BTC/USD",  # NEW: symbol for regime detection
 ):
     """
-    Kurtosis factor strategy.
+    Kurtosis factor strategy with regime-based activation.
     
     Args:
         historical_data (dict): Dictionary mapping symbols to DataFrames with OHLCV data
@@ -48,19 +67,28 @@ def strategy_kurtosis(
         rebalance_days (int): Rebalancing frequency in days (default: 14, optimal per backtest)
         long_percentile (int): Percentile threshold for long positions (default: 20)
         short_percentile (int): Percentile threshold for short positions (default: 80)
-        strategy_type (str): Strategy type ('mean_reversion' or 'momentum', default: 'momentum')
+        strategy_type (str): Strategy type:
+            - 'mean_reversion': Long low kurtosis, Short high kurtosis (BEAR MARKET ONLY)
+            - 'momentum': Long high kurtosis, Short low kurtosis
         weighting_method (str): Weighting method ('equal_weight' or 'risk_parity')
         long_allocation (float): Allocation to long side (default: 0.5)
         short_allocation (float): Allocation to short side (default: 0.5)
         max_positions (int): Maximum positions per side (default: 10)
+        regime_filter (str): Regime activation filter:
+            - 'bear_only': Only activate in bear markets (RECOMMENDED for mean_reversion)
+            - 'bull_only': Only activate in bull markets
+            - 'always': Always active (no filter)
+        reference_symbol (str): Symbol for regime detection (default: "BTC/USD")
     
     Returns:
         dict: Dictionary mapping symbols to notional positions (positive = long, negative = short)
+              Returns empty dict {} if regime filter prevents activation
     """
     print("\n" + "-" * 80)
-    print("KURTOSIS FACTOR STRATEGY")
+    print("KURTOSIS FACTOR STRATEGY WITH REGIME FILTER")
     print("-" * 80)
     print(f"  Strategy type: {strategy_type}")
+    print(f"  Regime filter: {regime_filter}")
     print(f"  Kurtosis window: {kurtosis_window} days")
     print(f"  Volatility window: {volatility_window} days")
     print(f"  Rebalance frequency: {rebalance_days} days")
@@ -70,6 +98,45 @@ def strategy_kurtosis(
     print(f"  Long allocation: {long_allocation*100:.1f}%")
     print(f"  Short allocation: {short_allocation*100:.1f}%")
     print(f"  Max positions per side: {max_positions}")
+    
+    # Warning for risky configurations
+    if strategy_type == "mean_reversion" and regime_filter == "always":
+        print("\n  ⚠️  WARNING: Mean reversion mode without regime filter!")
+        print("  ⚠️  This strategy loses -25% to -90% annualized in bull markets!")
+        print("  ⚠️  Strongly recommend setting regime_filter='bear_only'")
+    
+    try:
+        # Step 0: Check market regime
+        regime_info = detect_market_regime(historical_data, reference_symbol=reference_symbol)
+        should_activate, reason = should_activate_strategy(regime_info, strategy_type=regime_filter)
+        
+        if not should_activate:
+            print("\n" + "=" * 80)
+            print("🛑 STRATEGY INACTIVE - REGIME FILTER")
+            print("=" * 80)
+            print(f"  Reason: {reason}")
+            print(f"  Current regime: {regime_info.get('regime', 'unknown').upper()}")
+            print(f"  Filter setting: {regime_filter}")
+            print("\n  No positions will be generated.")
+            print("  Strategy will remain flat (all capital in cash/stables).")
+            print("=" * 80)
+            return {}
+        
+        print("\n" + "=" * 80)
+        print("✅ STRATEGY ACTIVE - REGIME FILTER PASSED")
+        print("=" * 80)
+        print(f"  {reason}")
+        print(f"  Current regime: {regime_info.get('regime', 'unknown').upper()}")
+        print(f"  Proceeding with position generation...")
+        print("=" * 80)
+        
+    except Exception as e:
+        print(f"\n  ⚠️  Warning: Regime detection failed ({e})")
+        if regime_filter != "always":
+            print(f"  Defaulting to INACTIVE (safe mode when regime detection fails)")
+            return {}
+        else:
+            print(f"  Filter set to 'always' - proceeding despite error")
     
     try:
         # Step 1: Calculate kurtosis for all symbols
