@@ -1251,7 +1251,12 @@ def main():
         "--beta-rebalance-days", type=int, default=5, help="Beta rebalance frequency in days (optimal: 5 days, Sharpe: 0.68)"
     )
     parser.add_argument(
-        "--run-adf", action="store_true", default=True, help="Run ADF factor backtest"
+        "--run-adf",
+        nargs='?',
+        const=True,
+        default=None,
+        type=lambda x: x.lower() in ['true', '1', 'yes'],
+        help="Run ADF factor backtest (no value=run only this, True=include, False=exclude)"
     )
     parser.add_argument(
         "--adf-strategy",
@@ -1280,6 +1285,7 @@ def main():
         'volatility': args.run_volatility,
         'kurtosis': args.run_kurtosis,
         'beta': args.run_beta,
+        'adf': args.run_adf,
     }
 
     # Check if any flag was explicitly set to True or False
@@ -1313,6 +1319,7 @@ def main():
     args.run_volatility = run_flags['volatility']
     args.run_kurtosis = run_flags['kurtosis']
     args.run_beta = run_flags['beta']
+    args.run_adf = run_flags['adf']
 
     print("=" * 120)
     print("RUNNING ALL BACKTESTS")
