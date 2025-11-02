@@ -260,11 +260,13 @@ def _build_strategy_params(
         rebalance_days = int(p.get("rebalance_days", 14)) if isinstance(p, dict) else 14
         long_percentile = int(p.get("long_percentile", 20)) if isinstance(p, dict) else 20
         short_percentile = int(p.get("short_percentile", 80)) if isinstance(p, dict) else 80
-        strategy_type = p.get("strategy_type", "momentum") if isinstance(p, dict) else "momentum"
+        strategy_type = p.get("strategy_type", "mean_reversion") if isinstance(p, dict) else "mean_reversion"
         weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"
         long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
         short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
         max_positions = int(p.get("max_positions", 10)) if isinstance(p, dict) else 10
+        regime_filter = p.get("regime_filter", "bear_only") if isinstance(p, dict) else "bear_only"
+        reference_symbol = p.get("reference_symbol", "BTC/USD") if isinstance(p, dict) else "BTC/USD"
         return (historical_data, list(historical_data.keys()), strategy_notional), {
             "kurtosis_window": kurtosis_window,
             "volatility_window": volatility_window,
@@ -276,6 +278,8 @@ def _build_strategy_params(
             "long_allocation": long_allocation,
             "short_allocation": short_allocation,
             "max_positions": max_positions,
+            "regime_filter": regime_filter,
+            "reference_symbol": reference_symbol,
         }
 
     elif strategy_name == "volatility":

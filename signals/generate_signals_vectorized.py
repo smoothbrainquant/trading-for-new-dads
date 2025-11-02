@@ -20,11 +20,76 @@ Supported Factors:
 - Kurtosis Factor
 - Trendline Factor (normalized slope)
 - Mean Reversion (ADF-based)
+
+Regime Filtering:
+- Market regime detection (bull/bear based on 50MA vs 200MA)
+- Strategy activation filtering based on market conditions
 """
 
 import pandas as pd
 import numpy as np
 from typing import Optional, Literal, Tuple
+
+
+# ============================================================================
+# Market Regime Detection (Vectorized)
+# ============================================================================
+
+def calculate_regime_vectorized(
+    price_data: pd.DataFrame,
+    reference_symbol: str = "BTC",
+    ma_short: int = 50,
+    ma_long: int = 200,
+) -> pd.DataFrame:
+    """
+    Calculate market regime for ALL dates at once (vectorized).
+    
+    Uses moving average crossover on a reference symbol (typically BTC) to 
+    determine bull vs bear regimes across the entire backtest period.
+    
+    Args:
+        price_data: DataFrame with date, symbol, close columns
+        reference_symbol: Symbol to use for regime detection (default: "BTC")
+        ma_short: Short-term moving average window (default: 50 days)
+        ma_long: Long-term moving average window (default: 200 days)
+    
+    Returns:
+        pd.DataFrame: DataFrame with date and regime columns ('bull' or 'bear')
+    """
+    # Filter to reference symbol only
+    ref_data = price_data[price_data['symbol'] == reference_symbol].copy()
+    
+    if len(ref_data) == 0:
+        # Try common variations
+        for alt_symbol in ["BTC/USD", "BTCUSD", "BTC-USD"]:
+            alt_data = price_data[price_data['symbol'] == alt_symbol]
+            if len(alt_data) > 0:
+                ref_data = alt_data.copy()
+                reference_symbol = alt_symbol
+                break
+    
+    if len(ref_data) == 0:
+        raise ValueError(f"Reference symbol '{reference_symbol}' not found in price data")
+    
+    ref_data = ref_data.sort_values('date').reset_index(drop=True)
+    
+    # Calculate moving averages (vectorized)
+    ref_data[f'ma_{ma_short}'] = ref_data['close'].rolling(window=ma_short).mean()
+    ref_data[f'ma_{ma_long}'] = ref_data['close'].rolling(window=ma_long).mean()
+    
+    # Determine regime (vectorized)
+    # Bull: short MA > long MA, Bear: short MA < long MA
+    ref_data['regime'] = np.where(
+        ref_data[f'ma_{ma_short}'] > ref_data[f'ma_{ma_long}'],
+        'bull',
+        'bear'
+    )
+    
+    # Forward fill NaN regimes (before we have enough data for MAs)
+    # Default to 'bear' (conservative) for initial period
+    ref_data['regime'] = ref_data['regime'].fillna('bear')
+    
+    return ref_data[['date', 'regime']]
 
 
 def assign_quintiles_vectorized(
@@ -410,6 +475,8 @@ def generate_kurtosis_signals_vectorized(
     long_percentile: float = 20,
     short_percentile: float = 80,
     kurtosis_column: str = 'kurtosis_30d',
+    regime_filter: Optional[str] = None,
+    regime_data: Optional[pd.DataFrame] = None,
 ) -> pd.DataFrame:
     """
     Generate kurtosis factor signals for ALL dates at once.
@@ -421,6 +488,8 @@ def generate_kurtosis_signals_vectorized(
         long_percentile: Percentile threshold for longs
         short_percentile: Percentile threshold for shorts
         kurtosis_column: Kurtosis column name
+        regime_filter: Regime filter type ('bear_only', 'bull_only', 'always', or None)
+        regime_data: DataFrame with date and regime columns (from calculate_regime_vectorized)
     
     Returns:
         pd.DataFrame: DataFrame with signals for each date/symbol
@@ -446,6 +515,22 @@ def generate_kurtosis_signals_vectorized(
         df.loc[df['percentile'] >= short_percentile, 'signal'] = 1
         # Short low kurtosis (stable coins - expecting continuation)
         df.loc[df['percentile'] <= long_percentile, 'signal'] = -1
+    
+    # Apply regime filter if specified
+    if regime_filter and regime_filter != 'always' and regime_data is not None:
+        # Merge regime data
+        df = df.merge(regime_data[['date', 'regime']], on='date', how='left')
+        
+        # Zero out signals that don't match regime filter
+        if regime_filter == 'bear_only':
+            # Only allow signals in bear markets
+            df.loc[df['regime'] != 'bear', 'signal'] = 0
+        elif regime_filter == 'bull_only':
+            # Only allow signals in bull markets
+            df.loc[df['regime'] != 'bull', 'signal'] = 0
+        
+        # Drop regime column (not needed in output)
+        df = df.drop(columns=['regime'])
     
     return df[['date', 'symbol', kurtosis_column, 'percentile', 'quintile', 'signal']]
 
