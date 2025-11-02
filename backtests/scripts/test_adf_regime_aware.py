@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Test Regime-Switching Strategy
+Test ADF Strategy (Regime-Aware)
 
-Tests the regime-switching strategy implementation to ensure:
+Tests the ADF regime-aware strategy implementation to ensure:
 1. Regime detection works correctly
 2. Direction-aware allocation is applied
 3. Strategy selection is appropriate
@@ -19,10 +19,10 @@ WORKSPACE_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath
 sys.path.insert(0, WORKSPACE_ROOT)
 sys.path.insert(0, os.path.join(WORKSPACE_ROOT, "execution"))
 
-from execution.strategies.regime_switching import (
+from execution.strategies.adf import (
     detect_regime,
     get_optimal_allocation,
-    strategy_regime_switching,
+    strategy_adf,
 )
 
 
@@ -202,7 +202,7 @@ def test_strategy_execution():
         print("-" * 80)
         
         try:
-            positions = strategy_regime_switching(
+            positions = strategy_adf(
                 historical_data,
                 symbols,
                 strategy_notional=10000,
@@ -268,7 +268,7 @@ def test_regime_transitions():
 def main():
     """Run all tests"""
     print("=" * 80)
-    print("REGIME-SWITCHING STRATEGY TEST SUITE")
+    print("ADF STRATEGY (REGIME-AWARE) TEST SUITE")
     print("=" * 80)
     
     results = []
@@ -292,7 +292,7 @@ def main():
     
     if all_passed:
         print("\n?? ALL TESTS PASSED!")
-        print("\nThe regime-switching strategy is ready for backtesting and live trading.")
+        print("\nThe ADF regime-aware strategy is ready for backtesting and live trading.")
         return 0
     else:
         print("\n??  SOME TESTS FAILED!")
