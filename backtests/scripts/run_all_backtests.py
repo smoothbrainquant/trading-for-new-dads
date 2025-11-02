@@ -1099,8 +1099,8 @@ def main():
     parser.add_argument(
         "--marketcap-file",
         type=str,
-        default="data/raw/coinmarketcap_historical_all_snapshots.csv",
-        help="Path to market cap data CSV file",
+        default="data/raw/coinmarketcap_monthly_all_snapshots.csv",
+        help="Path to market cap data CSV file (monthly snapshots)",
     )
     parser.add_argument(
         "--funding-rates-file",
