@@ -1333,6 +1333,8 @@ def main():
 
         # Check which strategies returned no positions and rebalance
         # Fixed weight strategies that should maintain their allocation
+        # All other strategies are "flexible" and can receive reallocated capital
+        # This includes regime-filtered strategies like kurtosis that may return no positions
         FIXED_WEIGHT_STRATEGIES = {"breakout", "days_from_high"}
 
         active_strategies = {
@@ -1351,7 +1353,12 @@ def main():
             print("CAPITAL REALLOCATION: Some strategies returned no positions")
             print("=" * 80)
             for name, orig_weight in inactive_strategies.items():
-                print(f"  ? {name}: No positions found (original weight: {orig_weight*100:.2f}%)")
+                # Special messaging for regime-filtered strategies
+                if name == "kurtosis":
+                    print(f"  ? {name}: Regime filter blocked activation (original weight: {orig_weight*100:.2f}%)")
+                    print(f"     Strategy only activates in BEAR markets - capital will be reallocated")
+                else:
+                    print(f"  ? {name}: No positions found (original weight: {orig_weight*100:.2f}%)")
 
             if active_strategies:
                 # Separate fixed and flexible strategies
@@ -1377,6 +1384,15 @@ def main():
                 print(f"\n  Fixed allocations (maintaining original weights):")
                 for name, weight in fixed_active.items():
                     print(f"    {name}: {weight*100:.2f}% (fixed)")
+
+                # Show which strategies' capital is being redistributed
+                if inactive_flexible:
+                    print(f"\n  Capital being redistributed from inactive flexible strategies:")
+                    for name, weight in inactive_flexible.items():
+                        if name == "kurtosis":
+                            print(f"    {name}: {weight*100:.2f}% (regime-filtered, not active in current regime)")
+                        else:
+                            print(f"    {name}: {weight*100:.2f}%")
 
                 if flexible_active and capital_to_redistribute > 0:
                     # Renormalize only flexible strategies with the additional capital
