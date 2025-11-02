@@ -1,24 +1,44 @@
 {
   "strategy_weights": {
-    "mean_reversion": 0.05,
-    "size": 0.089,
-    "carry": 0.05,
-    "beta": 0.155,
-    "trendline_breakout": 0.082,
-    "volatility": 0.321,
-    "kurtosis": 0.05,
-    "breakout": 0.128,
-    "days_from_high": 0.075,
-    "adf": 0.05
+    "size": 0.4543,
+    "breakout": 0.3223,
+    "beta": 0.2234,
+    "mean_reversion": 0.0,
+    "carry": 0.0,
+    "volatility": 0.0,
+    "kurtosis": 0.0,
+    "days_from_high": 0.0,
+    "adf": 0.0,
+    "trendline_breakout": 0.0
   },
   "_weights_note": {
-    "_comment": "Updated 2025-11-02: Mean Reversion capped at 5% due to extreme volatility (76.9%), regime dependence, and zero edge (Sharpe -0.032). Kurtosis, Carry, and ADF also capped at 5% due to negative Sharpe ratios.",
-    "_original_mean_reversion_weight": 0.413702239789196,
-    "_reason": "Mean Reversion shows +37% in 2023 but -37% in 2024 and has 76.9% volatility with -62.6% max drawdown. Knife-catching strategy only works in bull markets. See docs/MEAN_REVERSION_ANALYSIS.md for details."
+    "_comment": "Updated 2025-11-02: Mean-Variance Optimization (MVO) with Volatility Factor capped at 5%. Final optimal allocation achieves Sharpe ratio of 0.891.",
+    "_optimization_method": "Constrained Mean-Variance Optimization (MVO)",
+    "_portfolio_sharpe": 0.891,
+    "_expected_return": "13.62%",
+    "_expected_volatility": "15.29%",
+    "_expected_max_drawdown": "-30.27%",
+    "_reason": "MVO analysis shows Size, Breakout, and Beta provide optimal risk-adjusted returns. Volatility Factor excluded despite 5% cap allowance due to high correlation with Beta (0.570) and low Sharpe (0.316). All negative-Sharpe strategies excluded: Mean Reversion (-0.032), Carry (-0.813), Kurtosis (-0.848), Days from High (-0.241), ADF (failed)."
   },
   "_weights_updated_history": {
-    "_2025_11_02": {
-      "_comment": "Weights rebalanced based on 2023-2025 backtest results. Positive Sharpe strategies scaled up, negative Sharpe capped at 5%.",
+    "_2025_11_02_MVO": {
+      "_comment": "Mean-Variance Optimization with correlation penalty. Portfolio optimized for maximum Sharpe ratio.",
+      "_active_strategies": "Size (45.43%, Sharpe 0.70), Breakout (32.23%, Sharpe 0.46), Beta (22.34%, Sharpe 0.56)",
+      "_excluded_strategies": "Volatility (0%, Sharpe 0.32, excluded due to 0.570 correlation with Beta), Mean Reversion (0%, Sharpe -0.032), Carry (0%, Sharpe -0.813), Kurtosis (0%, Sharpe -0.848), Days from High (0%, Sharpe -0.241), ADF (0%, failed backtest), Trendline Breakout (0%, not analyzed)",
+      "_optimization_constraint": "Volatility Factor capped at maximum 5%",
+      "_portfolio_metrics": {
+        "sharpe": 0.891,
+        "return": "13.62%",
+        "volatility": "15.29%",
+        "max_drawdown": "-30.27%"
+      },
+      "_correlation_analysis": {
+        "breakout_diversification": "Near-zero correlation with Size (0.028) and Beta (0.012) - excellent diversifier",
+        "volatility_redundant": "High correlation with Beta (0.570) and Size (0.464) - not worth including"
+      }
+    },
+    "_2025_11_02_OLD": {
+      "_comment": "OLD WEIGHTS - Weights rebalanced based on 2023-2025 backtest results. Positive Sharpe strategies scaled up, negative Sharpe capped at 5%.",
       "_positive_sharpe": "Size=0.70, Beta=0.56, Breakout=0.46, Volatility=0.32",
       "_negative_sharpe": "Mean Reversion=-0.032 (CAPPED), Kurtosis=-0.85 (CAPPED), Carry=-1.04 (CAPPED), ADF=-0.85 (CAPPED)",
       "_total_positive_sharpe": 2.04
