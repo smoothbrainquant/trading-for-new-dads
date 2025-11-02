@@ -1,28 +1,52 @@
 {
   "strategy_weights": {
-    "size": 0.4543,
-    "breakout": 0.3223,
-    "beta": 0.2234,
-    "mean_reversion": 0.0,
-    "carry": 0.0,
-    "volatility": 0.0,
-    "kurtosis": 0.0,
-    "days_from_high": 0.0,
+    "size": 0.3600,
+    "breakout": 0.2577,
+    "beta": 0.2372,
+    "mean_reversion": 0.0500,
+    "carry": 0.0000,
+    "volatility": 0.0398,
+    "kurtosis": 0.0500,
+    "days_from_high": 0.0052,
     "adf": 0.0,
     "trendline_breakout": 0.0
   },
   "_weights_note": {
-    "_comment": "Updated 2025-11-02: Mean-Variance Optimization (MVO) with Volatility Factor capped at 5%. Final optimal allocation achieves Sharpe ratio of 0.891.",
+    "_comment": "Updated 2025-11-02: MVO optimization with 5% caps on negative/regime-dependent strategies. Final optimal allocation achieves Sharpe ratio of 1.284 (significant improvement from 0.891).",
     "_optimization_method": "Constrained Mean-Variance Optimization (MVO)",
-    "_portfolio_sharpe": 0.891,
-    "_expected_return": "13.62%",
-    "_expected_volatility": "15.29%",
-    "_expected_max_drawdown": "-30.27%",
-    "_reason": "MVO analysis shows Size, Breakout, and Beta provide optimal risk-adjusted returns. Volatility Factor excluded despite 5% cap allowance due to high correlation with Beta (0.570) and low Sharpe (0.316). All negative-Sharpe strategies excluded: Mean Reversion (-0.032), Carry (-0.813), Kurtosis (-0.848), Days from High (-0.241), ADF (failed)."
+    "_portfolio_sharpe": 1.284,
+    "_expected_return": "16.30%",
+    "_expected_volatility": "12.70%",
+    "_expected_max_drawdown": "-30.72%",
+    "_reason": "MVO analysis (2023-2025 data) identifies Size, Breakout, and Beta as core holdings. Negative Sharpe strategies capped at 5%: Mean Reversion (-0.032), Carry (0%, worst performer at -0.813), Days from High (0.52%). Kurtosis capped at 5% despite positive Sharpe (0.675) due to regime-dependence (bear-only filter). Volatility included at 3.98% for diversification.",
+    "_capped_strategies": {
+      "kurtosis": "5% (regime-dependent: bear_only filter)",
+      "mean_reversion": "5% (negative Sharpe: -0.032)",
+      "days_from_high": "0.52% (negative Sharpe: -0.241)",
+      "carry": "0% (worst performer: Sharpe -0.813)"
+    }
   },
   "_weights_updated_history": {
-    "_2025_11_02_MVO": {
-      "_comment": "Mean-Variance Optimization with correlation penalty. Portfolio optimized for maximum Sharpe ratio.",
+    "_2025_11_02_MVO_V2": {
+      "_comment": "MVO optimization with 5% caps on negative/regime-dependent strategies. Backtest period: 2023-2025.",
+      "_date": "2025-11-02",
+      "_active_strategies": "Size (36.00%, Sharpe 0.70), Breakout (25.77%, Sharpe 0.46), Beta (23.72%, Sharpe 0.56), Kurtosis (5.00%, Sharpe 0.68, CAPPED), Mean Reversion (5.00%, Sharpe -0.03, CAPPED), Volatility (3.98%, Sharpe 0.32), Days from High (0.52%, Sharpe -0.24, CAPPED)",
+      "_excluded_strategies": "Carry (0%, Sharpe -0.81, worst performer), ADF (backtest error), Trendline Breakout (not analyzed)",
+      "_optimization_constraint": "Negative Sharpe strategies capped at 5%, regime-dependent strategies (Kurtosis) capped at 5%",
+      "_portfolio_metrics": {
+        "sharpe": 1.284,
+        "return": "16.30%",
+        "volatility": "12.70%",
+        "max_drawdown": "-30.72%"
+      },
+      "_correlation_analysis": {
+        "breakout_diversification": "Near-zero correlation with Size (0.028) and Beta (0.012) - excellent diversifier",
+        "volatility_correlation": "High correlation with Beta (0.570), included at 3.98% for additional diversification",
+        "kurtosis_note": "Positive Sharpe but regime-dependent (bear_only), capped at 5% for risk management"
+      }
+    },
+    "_2025_11_02_MVO_V1": {
+      "_comment": "OLD - Mean-Variance Optimization with correlation penalty. Portfolio optimized for maximum Sharpe ratio.",
       "_active_strategies": "Size (45.43%, Sharpe 0.70), Breakout (32.23%, Sharpe 0.46), Beta (22.34%, Sharpe 0.56)",
       "_excluded_strategies": "Volatility (0%, Sharpe 0.32, excluded due to 0.570 correlation with Beta), Mean Reversion (0%, Sharpe -0.032), Carry (0%, Sharpe -0.813), Kurtosis (0%, Sharpe -0.848), Days from High (0%, Sharpe -0.241), ADF (0%, failed backtest), Trendline Breakout (0%, not analyzed)",
       "_optimization_constraint": "Volatility Factor capped at maximum 5%",
