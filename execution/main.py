@@ -12,18 +12,19 @@ Execution Modes:
   * Second distance is automatically 2? the first distance
   * Orders <$20 sent entirely at closer spread (avoids <$10 notional limit)
 
-Supported signals (handlers implemented or stubbed):
-- days_from_high: Long-only instruments near 200d highs (inverse-vol weighted)
+Supported strategies:
+- size: Size factor - Long small cap, short large cap (10d rebalance optimal)
+- adf: ADF factor with regime-aware allocation (7d rebalance optimal)
+- beta: Betting Against Beta - Long low beta, short high beta (5d rebalance optimal)
 - breakout: Long/short based on 50d breakout with 70d exits (inverse-vol weighted)
-- carry: Long negative-funding symbols, short positive-funding symbols (basic)
-- mean_reversion: Long-only extreme dips with high volume (2d lookback, optimal per backtest)
-- size: Placeholder (prints notice if selected but not implemented)
-- trendline_breakout: Momentum continuation based on trendline analysis (daily rebalance, 5d holding)
-- beta: Betting Against Beta - Long low beta coins, short high beta coins (5d rebalance optimal)
-- kurtosis: Kurtosis factor - Long/short based on return distribution kurtosis (14d rebalance optimal)
-- volatility: Low volatility anomaly (long low vol, short high vol, 3d rebalance optimal)
-- adf: ADF factor with regime-aware allocation (dynamically adjusts long/short based on BTC regimes)
-- dilution: Token dilution factor - Long low dilution, short high dilution (7d rebalance optimal)  # testing
+- volatility: Low volatility anomaly - Long low vol, short high vol (3d rebalance optimal)
+- kurtosis: Kurtosis factor - Long/short based on return distribution (14d rebalance, BEAR ONLY)
+- mean_reversion: Long-only extreme dips with high volume (2d lookback optimal, capped at 5%)
+- days_from_high: Long-only instruments near 200d highs (inverse-vol weighted)
+- carry: Long negative-funding, short positive-funding (7d rebalance)
+- trendline_breakout: Momentum continuation based on trendline analysis (daily rebalance)
+- leverage_inverted: Long low-leverage, short high-leverage (testing, capped at 5%)
+- dilution: Token dilution factor - Long low dilution, short high dilution (testing, capped at 5%)
 
 Weights can be provided via an external JSON config file so the backtesting suite
 can update them without code changes. Example config structure:
