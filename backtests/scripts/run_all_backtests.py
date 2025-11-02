@@ -1566,7 +1566,7 @@ def main():
         "--initial-capital", type=float, default=10000, help="Initial portfolio capital in USD"
     )
     parser.add_argument(
-        "--start-date", type=str, default="2023-01-01", help="Start date for backtest (YYYY-MM-DD)"
+        "--start-date", type=str, default="2021-01-01", help="Start date for backtest (YYYY-MM-DD)"
     )
     parser.add_argument(
         "--end-date", type=str, default=None, help="End date for backtest (YYYY-MM-DD)"
