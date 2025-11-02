@@ -929,20 +929,24 @@ def create_summary_table(all_results):
     return summary_df
 
 
-def calculate_sharpe_weights_with_floor(summary_df, min_weight=0.05):
+def calculate_sharpe_weights_with_floor(summary_df, min_weight=0.05, strategy_caps=None):
     """
-    Calculate portfolio weights based on Sharpe ratios with a minimum weight floor.
+    Calculate portfolio weights based on Sharpe ratios with a minimum weight floor and optional caps.
     ALL strategies receive at least min_weight allocation (including negative Sharpe).
 
     Args:
         summary_df (pd.DataFrame): Summary DataFrame with backtest results
         min_weight (float): Minimum weight per strategy (default 5%)
+        strategy_caps (dict): Optional dict of strategy names to max weights (e.g., {'Mean Reversion': 0.05})
 
     Returns:
         pd.DataFrame: DataFrame with strategies and their weights
     """
     if summary_df.empty:
         return None
+
+    if strategy_caps is None:
+        strategy_caps = {}
 
     # Include ALL strategies (both positive and negative Sharpe)
     all_strategies = summary_df.copy()
@@ -974,6 +978,14 @@ def calculate_sharpe_weights_with_floor(summary_df, min_weight=0.05):
     # Apply floor to all strategies
     all_weights["Weight"] = all_weights["Initial_Weight"].apply(lambda x: max(x, min_weight))
 
+    # Apply caps to specific strategies
+    for strategy_name, max_weight in strategy_caps.items():
+        mask = all_weights["Strategy"] == strategy_name
+        if mask.any():
+            all_weights.loc[mask, "Weight"] = all_weights.loc[mask, "Weight"].apply(
+                lambda x: min(x, max_weight)
+            )
+
     # Renormalize to sum to 1.0
     weight_sum = all_weights["Weight"].sum()
     all_weights["Weight"] = all_weights["Weight"] / weight_sum
@@ -988,7 +1000,7 @@ def calculate_sharpe_weights_with_floor(summary_df, min_weight=0.05):
     return weights_df
 
 
-def print_sharpe_weights(weights_df, summary_df, min_weight=0.05):
+def print_sharpe_weights(weights_df, summary_df, min_weight=0.05, strategy_caps=None):
     """Print formatted Sharpe-based weights table."""
     print("\n" + "=" * 120)
     print("SHARPE-BASED PORTFOLIO WEIGHTS")
@@ -998,9 +1010,14 @@ def print_sharpe_weights(weights_df, summary_df, min_weight=0.05):
         print("\nNo weights to display")
         return
 
+    if strategy_caps is None:
+        strategy_caps = {}
+
     weight_sum = weights_df["Weight"].sum()
 
     print(f"\nWeighting Method: All strategies with {min_weight*100:.0f}% minimum floor")
+    if strategy_caps:
+        print(f"Strategy Caps: {', '.join([f'{k}: {v*100:.0f}%' for k, v in strategy_caps.items()])}")
     print(f"Strategies included: {len(weights_df)} (ALL strategies)")
     print(f"Total weight: {weight_sum:.6f} (should be 1.0)")
 
@@ -1560,12 +1577,15 @@ def main():
         summary_df.to_csv(args.output_file, index=False)
         print(f"\nSummary table saved to: {args.output_file}")
 
-        # Generate and save Sharpe-based weights with 5% floor
-        weights_df = calculate_sharpe_weights_with_floor(summary_df, min_weight=0.05)
+        # Generate and save Sharpe-based weights with 5% floor and strategy caps
+        strategy_caps = {
+            'Mean Reversion': 0.05,  # Cap at 5% due to extreme volatility and regime dependence
+        }
+        weights_df = calculate_sharpe_weights_with_floor(summary_df, min_weight=0.05, strategy_caps=strategy_caps)
 
         if weights_df is not None and not weights_df.empty:
             # Print weights table
-            print_sharpe_weights(weights_df, summary_df, min_weight=0.05)
+            print_sharpe_weights(weights_df, summary_df, min_weight=0.05, strategy_caps=strategy_caps)
 
             # Save weights to CSV
             weights_file = args.output_file.replace("_summary.csv", "_sharpe_weights.csv")
