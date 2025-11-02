@@ -26,15 +26,15 @@ Examples:
   python3 run_all_backtests.py --run-beta               # Run only beta
   python3 run_all_backtests.py --run-beta --run-carry  # Run only beta and carry
   python3 run_all_backtests.py --run-beta False        # Run all except beta
-  python3 run_all_backtests.py --run-regime-switching --regime-mode blended  # Regime-switching (blended)
-  python3 run_all_backtests.py --run-regime-switching --regime-mode optimal  # Regime-switching (optimal)
+  python3 run_all_backtests.py --run-adf --adf-mode blended  # ADF factor (blended)
+  python3 run_all_backtests.py --run-adf --adf-mode optimal  # ADF factor (optimal)
 
-REGIME-SWITCHING STRATEGY:
-New direction-aware regime-switching strategy that adjusts long/short allocation based on BTC market regimes:
+ADF FACTOR STRATEGY:
+Regime-aware ADF factor strategy that adjusts between trend-following and mean-reversion based on BTC market regimes:
 - Detects regimes using BTC 5-day % change (Strong Up, Moderate Up, Down, Strong Down)
 - Dynamically allocates between Trend Following and Mean Reversion strategies
 - Three modes: blended (80/20, conservative), moderate (70/30), optimal (100/0, aggressive)
-- Expected performance: +60-150% annualized (vs +42% basic regime-switching, +4% static)
+- Expected performance: +60-150% annualized
 
 PERFORMANCE OPTIMIZATIONS:
 - Data is loaded once upfront and shared across all backtests (eliminates repetitive I/O)
@@ -727,7 +727,7 @@ def run_kurtosis_factor_backtest(price_data, **kwargs):
 
     try:
         # Strategy and regime filter settings (matching live trading)
-        strategy = kwargs.get("strategy", "mean_reversion")  # mean_reversion = long LOW kurtosis, short HIGH kurtosis
+        strategy = kwargs.get("strategy", "long_low_short_high")  # Long low kurtosis (stable), Short high kurtosis (unstable)
         regime_filter = kwargs.get("regime_filter", "bear_only")  # Only trade in bear markets
         reference_symbol = kwargs.get("reference_symbol", "BTC")  # Use BTC 50MA/200MA for regime detection
         
@@ -1059,99 +1059,21 @@ def run_dilution_factor_backtest(price_data, **kwargs):
         return None
 
 
+# REMOVED: Single-strategy ADF backtest - superseded by regime-aware ADF below
+# The regime-aware ADF (formerly "regime-switching") is more sophisticated and
+# represents the primary ADF implementation.
+
+
 def run_adf_factor_backtest(price_data, **kwargs):
-    """Run ADF factor backtest (PARTIALLY VECTORIZED)."""
+    """Run ADF Factor backtest with regime-aware strategy switching (PARTIALLY VECTORIZED)."""
     print("\n" + "=" * 80)
-    print(f"Running ADF Factor Backtest - {kwargs.get('strategy', 'mean_reversion_premium')}")
-    print("(ADF calculation: iterative | Backtest loop: VECTORIZED - 5-10x faster)")
+    print(f"Running ADF Factor Backtest - {kwargs.get('mode', 'blended').upper()} mode")
+    print("(Regime detection + ADF calculation: iterative | Backtest loop: VECTORIZED)")
     print("=" * 80)
 
     try:
         # Import ADF calculation function
         from backtests.scripts.backtest_adf_factor import calculate_rolling_adf
-        
-        # Step 1: Calculate ADF (this part requires iteration - cannot be vectorized)
-        # Use the same price_data that will be used for backtesting to ensure symbol alignment
-        print("\nStep 1: Calculating ADF statistics (iterative - required for statsmodels)...")
-        adf_window = kwargs.get("adf_window", 60)
-        regression = kwargs.get("regression", "ct")
-        
-        # Calculate ADF on full historical data (before date filtering)
-        # ADF needs historical window for calculation
-        adf_data = calculate_rolling_adf(
-            price_data,
-            window=adf_window,
-            regression=regression
-        )
-        
-        print(f"  ? Calculated ADF for {adf_data['symbol'].nunique()} symbols")
-        
-        # Step 2: Use vectorized backtest engine for portfolio construction
-        print("\nStep 2: Running vectorized backtest loop...")
-        results = backtest_factor_vectorized(
-            price_data=price_data,
-            factor_type='adf',
-            strategy=kwargs.get("strategy", "mean_reversion_premium"),
-            adf_data=adf_data,  # Pass pre-calculated ADF data
-            num_quintiles=kwargs.get("num_quintiles", 5),
-            long_percentile=kwargs.get("long_percentile", 20),
-            short_percentile=kwargs.get("short_percentile", 80),
-            adf_column='adf_stat',
-            volatility_window=kwargs.get("volatility_window", 30),
-            rebalance_days=kwargs.get("rebalance_days", 7),
-            initial_capital=kwargs.get("initial_capital", 10000),
-            leverage=kwargs.get("leverage", 1.0),
-            long_allocation=kwargs.get("long_allocation", 0.5),
-            short_allocation=kwargs.get("short_allocation", 0.5),
-            weighting_method=kwargs.get("weighting_method", "risk_parity"),
-            start_date=kwargs.get("start_date"),
-            end_date=kwargs.get("end_date"),
-        )
-        
-        # Check if backtest succeeded
-        if results is None:
-            print("??  ADF backtest returned no results (likely date filtering issue)")
-            return None
-
-        # Calculate comprehensive metrics
-        metrics = calculate_comprehensive_metrics(
-            results["portfolio_values"], kwargs.get("initial_capital", 10000)
-        )
-        
-        # Extract daily returns
-        portfolio_df = results["portfolio_values"].copy()
-        portfolio_df["daily_return"] = portfolio_df["portfolio_value"].pct_change()
-        daily_returns = portfolio_df[["date", "daily_return"]].copy()
-        strategy_name = f'ADF Factor ({kwargs.get("strategy", "mean_reversion_premium")})'
-        daily_returns.columns = ["date", strategy_name]
-
-        return {
-            "strategy": strategy_name,
-            "description": f"ADF window: {kwargs.get('adf_window', 60)}d, Rebal: {kwargs.get('rebalance_days', 7)}d (PARTIALLY VECTORIZED)",
-            "metrics": metrics,
-            "results": results,
-            "daily_returns": daily_returns,
-        }
-    except Exception as e:
-        print(f"Error in ADF Factor backtest: {e}")
-        import traceback
-
-        traceback.print_exc()
-        return None
-
-
-def run_regime_switching_backtest(data_file, **kwargs):
-    """Run Regime-Switching backtest (PARTIALLY VECTORIZED)."""
-    print("\n" + "=" * 80)
-    print(f"Running Regime-Switching Backtest - {kwargs.get('mode', 'blended').upper()} mode")
-    print("(Regime detection + ADF calculation: iterative | Backtest loop: VECTORIZED)")
-    print("=" * 80)
-
-    try:
-        # Load data
-        from backtests.scripts.backtest_adf_factor import load_data, calculate_rolling_adf
-        
-        price_data = load_data(data_file)
         
         # Step 1: Calculate ADF (required for coin selection)
         print("\nStep 1: Calculating ADF statistics (iterative - required for statsmodels)...")
@@ -1314,10 +1236,10 @@ def run_regime_switching_backtest(data_file, **kwargs):
         # Extract daily returns
         regime_portfolio['daily_return'] = regime_portfolio['portfolio_value'].pct_change()
         daily_returns = regime_portfolio[['date', 'daily_return']].copy()
-        strategy_name = f'Regime-Switching ({mode.capitalize()})'
+        strategy_name = f'ADF ({mode.capitalize()})'
         daily_returns.columns = ["date", strategy_name]
         
-        print(f"\n  ? Regime-switching simulation complete")
+        print(f"\n  ? ADF regime-aware simulation complete")
         print(f"    Mode: {mode.upper()}")
         print(f"    Final portfolio value: ${regime_portfolio['portfolio_value'].iloc[-1]:,.2f}")
         print(f"    Annualized return: {metrics['annualized_return']:.2%}")
@@ -1331,7 +1253,7 @@ def run_regime_switching_backtest(data_file, **kwargs):
             "daily_returns": daily_returns,
         }
     except Exception as e:
-        print(f"Error in Regime-Switching backtest: {e}")
+        print(f"Error in ADF Factor backtest: {e}")
         import traceback
 
         traceback.print_exc()
@@ -1644,7 +1566,7 @@ def main():
         "--initial-capital", type=float, default=10000, help="Initial portfolio capital in USD"
     )
     parser.add_argument(
-        "--start-date", type=str, default="2023-01-01", help="Start date for backtest (YYYY-MM-DD)"
+        "--start-date", type=str, default="2021-01-01", help="Start date for backtest (YYYY-MM-DD)"
     )
     parser.add_argument(
         "--end-date", type=str, default=None, help="End date for backtest (YYYY-MM-DD)"
@@ -1736,15 +1658,15 @@ def main():
     parser.add_argument(
         "--kurtosis-strategy",
         type=str,
-        default="mean_reversion",
-        choices=["mean_reversion", "momentum"],
-        help="Kurtosis factor strategy type (IGNORED: hardcoded to mean_reversion for bear-only regime)",
+        default="long_low_short_high",
+        choices=["long_low_short_high", "long_high_short_low"],
+        help="Kurtosis factor strategy type: long_low_short_high (stable), long_high_short_low (volatile)",
     )
     parser.add_argument(
         "--kurtosis-rebalance-days",
         type=int,
         default=14,
-        help="Kurtosis rebalance frequency in days (optimal: 14 days for mean_reversion in bear markets)",
+        help="Kurtosis rebalance frequency in days (optimal: 14 days for long_low_short_high in bear markets)",
     )
     parser.add_argument(
         "--run-beta",
@@ -1782,19 +1704,14 @@ def main():
         const=True,
         default=None,
         type=lambda x: x.lower() in ['true', '1', 'yes'],
-        help="Run ADF factor backtest (no value=run only this, True=include, False=exclude)"
+        help="Run ADF factor backtest with regime-aware strategy switching (no value=run only this, True=include, False=exclude)"
     )
     parser.add_argument(
-        "--adf-strategy",
+        "--adf-mode",
         type=str,
-        default="trend_following_premium",
-        choices=[
-            "mean_reversion_premium",
-            "trend_following_premium",
-            "long_stationary",
-            "long_trending",
-        ],
-        help="ADF factor strategy type",
+        default="blended",
+        choices=["blended", "moderate", "optimal"],
+        help="ADF regime-switching mode: blended (conservative), moderate (balanced), optimal (aggressive)"
     )
     parser.add_argument("--adf-window", type=int, default=60, help="ADF calculation window in days")
     parser.add_argument(
@@ -1825,21 +1742,6 @@ def main():
         default=7,
         help="Dilution factor rebalance frequency in days (default: 7, optimal per backtest)"
     )
-    parser.add_argument(
-        "--run-regime-switching",
-        nargs='?',
-        const=True,
-        default=None,
-        type=lambda x: x.lower() in ['true', '1', 'yes'],
-        help="Run regime-switching backtest (no value=run only this, True=include, False=exclude)"
-    )
-    parser.add_argument(
-        "--regime-mode",
-        type=str,
-        default="blended",
-        choices=["blended", "moderate", "optimal"],
-        help="Regime-switching mode: blended (80/20, conservative), moderate (70/30), optimal (100/0, aggressive)"
-    )
 
     args = parser.parse_args()
 
@@ -1857,7 +1759,6 @@ def main():
         'adf': args.run_adf,
         'leverage_inverted': args.run_leverage_inverted,
         'dilution': args.run_dilution,
-        'regime_switching': args.run_regime_switching,
     }
 
     # Check if any flag was explicitly set to True or False
@@ -1900,7 +1801,6 @@ def main():
     args.run_adf = run_flags['adf']
     args.run_leverage_inverted = run_flags['leverage_inverted']
     args.run_dilution = run_flags['dilution']
-    args.run_regime_switching = run_flags['regime_switching']
 
     print("=" * 120)
     print("RUNNING ALL BACKTESTS")
@@ -2046,9 +1946,9 @@ def main():
         if loaded_data["price_data"] is not None:
             result = run_kurtosis_factor_backtest(
                 loaded_data["price_data"],
-                strategy="mean_reversion",  # mean_reversion = long LOW kurtosis (stable), short HIGH kurtosis (unstable)
+                strategy=args.kurtosis_strategy,  # Default: long_low_short_high (long low kurtosis, short high kurtosis)
                 kurtosis_window=30,
-                rebalance_days=14,  # Optimal for mean_reversion strategy in bear regimes
+                rebalance_days=args.kurtosis_rebalance_days,
                 weighting="risk_parity",
                 long_percentile=20,  # Top 20% = lowest kurtosis (most stable)
                 short_percentile=80,  # Top 80% = highest kurtosis (most unstable)
@@ -2079,26 +1979,22 @@ def main():
         else:
             print("? Skipping Beta Factor backtest: price data not available")
 
-    # 10. ADF Factor (Trend Following)
+    # 10. ADF Factor (Regime-Aware Strategy Switching)
     if args.run_adf:
         if loaded_data["price_data"] is not None:
             result = run_adf_factor_backtest(
                 loaded_data["price_data"],
-                strategy=args.adf_strategy,
+                mode=args.adf_mode,
                 adf_window=args.adf_window,
                 regression="ct",
-                rebalance_days=7,
-                weighting_method="risk_parity",
-                long_percentile=20,
-                short_percentile=80,
-                min_volume=5_000_000,
-                min_market_cap=50_000_000,
+                volatility_window=30,
+                regime_lookback=5,
                 **common_params,
             )
             if result:
                 all_results.append(result)
         else:
-            print("? Skipping ADF backtest: price data not available")
+            print("? Skipping ADF Factor backtest: price data not available")
     
     # 11. Inverted Leverage Factor (LONG low leverage, SHORT high leverage)
     if args.run_leverage_inverted:
@@ -2132,19 +2028,6 @@ def main():
         else:
             print("? Skipping Dilution Factor backtest: price data not available")
 
-    # 12. Regime-Switching (Direction-Aware)
-    if args.run_regime_switching:
-        result = run_regime_switching_backtest(
-            args.data_file,
-            mode=args.regime_mode,
-            adf_window=args.adf_window,
-            regression="ct",
-            volatility_window=30,
-            regime_lookback=5,
-            **common_params,
-        )
-        if result:
-            all_results.append(result)
 
     # Create and display summary table
     summary_df = create_summary_table(all_results)
@@ -2162,9 +2045,9 @@ def main():
         # Generate and save Sharpe-based weights with 5% floor and strategy caps
         strategy_caps = {
             'Mean Reversion': 0.05,  # Cap at 5% due to extreme volatility and regime dependence
-            'Regime-Switching (Blended)': 0.35,  # Cap at 35% - high Sharpe but new strategy, ensure diversification
-            'Regime-Switching (Moderate)': 0.35,  # Cap at 35% - balanced risk/reward
-            'Regime-Switching (Optimal)': 0.40,  # Cap at 40% - most aggressive, slightly higher cap
+            'ADF (Blended)': 0.35,  # Cap at 35% - high Sharpe but ensure diversification
+            'ADF (Moderate)': 0.35,  # Cap at 35% - balanced risk/reward
+            'ADF (Optimal)': 0.40,  # Cap at 40% - most aggressive, slightly higher cap
         }
         weights_df = calculate_sharpe_weights_with_floor(summary_df, min_weight=0.05, strategy_caps=strategy_caps)
 
