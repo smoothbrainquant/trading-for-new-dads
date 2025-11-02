@@ -823,7 +823,6 @@ def run_beta_factor_backtest(price_data, **kwargs):
         return None
 
 
-<<<<<<< HEAD
 def run_leverage_inverted_backtest(leverage_data, price_data, **kwargs):
     """
     Run inverted leverage factor backtest.
@@ -928,8 +927,8 @@ def run_dilution_factor_backtest(price_data, **kwargs):
         transaction_cost = kwargs.get("transaction_cost", 0.001)
         
         # Create rebalance dates
-        start_date = pd.to_datetime(kwargs.get("start_date", price_data['date'].min()))
-        end_date = pd.to_datetime(kwargs.get("end_date", price_data['date'].max()))
+        start_date = pd.to_datetime(kwargs.get("start_date") or price_data['date'].min())
+        end_date = pd.to_datetime(kwargs.get("end_date") or price_data['date'].max())
         
         rebalance_dates = []
         current_date = start_date
@@ -2128,7 +2127,6 @@ def main():
             mode=args.regime_mode,
             adf_window=args.adf_window,
             regression="ct",
-            volatility_window=30,
             regime_lookback=5,
             **common_params,
         )
