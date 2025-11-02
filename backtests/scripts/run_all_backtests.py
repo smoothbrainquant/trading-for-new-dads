@@ -487,7 +487,7 @@ def run_carry_factor_backtest(price_data, funding_data, **kwargs):
             leverage=kwargs.get("leverage", 1.0),
             long_allocation=kwargs.get("long_allocation", 0.5),
             short_allocation=kwargs.get("short_allocation", 0.5),
-            weighting_method='equal_weight',
+            weighting_method='risk_parity',
             start_date=kwargs.get("start_date"),
             end_date=kwargs.get("end_date"),
             funding_column='funding_rate_pct',
