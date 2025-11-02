@@ -217,24 +217,38 @@ def construct_risk_parity_portfolio(signals, price_df, rebal_date, top_n=10):
     if len(valid_signals) < top_n * 2:
         return {}
     
+    # *** FIX: Filter to coins with price data BEFORE selecting top/bottom ***
+    # Get list of coins with sufficient price data
+    available_coins = price_df['base'].unique()
+    valid_signals = valid_signals[valid_signals['symbol'].isin(available_coins)]
+    
+    # Pre-calculate volatility for all candidates
+    valid_signals['volatility'] = valid_signals['symbol'].apply(
+        lambda s: calculate_volatility(price_df, s, rebal_date)
+    )
+    
+    # Keep only coins with valid volatility (sufficient price history)
+    valid_signals = valid_signals[valid_signals['volatility'].notna()]
+    
+    # Dynamically adjust position count based on available coins
+    # Need at least 4 coins total (2 long + 2 short minimum)
+    if len(valid_signals) < 4:
+        print(f"  Warning: Only {len(valid_signals)} coins with valid data (need minimum 4)")
+        return {}
+    
+    # Adjust top_n if we don't have enough coins
+    # Each side needs at least 1, ideally top_n
+    adjusted_top_n = min(top_n, len(valid_signals) // 2)
+    
+    if adjusted_top_n < top_n:
+        print(f"  Note: Adjusted to {adjusted_top_n} positions per side (have {len(valid_signals)} valid coins)")
+    
     # Sort by dilution velocity
     valid_signals = valid_signals.sort_values('dilution_velocity')
     
     # Select long (lowest dilution) and short (highest dilution)
-    long_candidates = valid_signals.head(top_n).copy()
-    short_candidates = valid_signals.tail(top_n).copy()
-    
-    # Calculate volatility for each position
-    long_candidates['volatility'] = long_candidates['symbol'].apply(
-        lambda s: calculate_volatility(price_df, s, rebal_date)
-    )
-    short_candidates['volatility'] = short_candidates['symbol'].apply(
-        lambda s: calculate_volatility(price_df, s, rebal_date)
-    )
-    
-    # Remove positions without volatility data
-    long_candidates = long_candidates[long_candidates['volatility'].notna()]
-    short_candidates = short_candidates[short_candidates['volatility'].notna()]
+    long_candidates = valid_signals.head(adjusted_top_n).copy()
+    short_candidates = valid_signals.tail(adjusted_top_n).copy()
     
     if len(long_candidates) == 0 or len(short_candidates) == 0:
         return {}
@@ -242,7 +256,7 @@ def construct_risk_parity_portfolio(signals, price_df, rebal_date, top_n=10):
     # Risk parity: weight inversely proportional to volatility
     # Each position gets equal risk contribution
     
-    # Calculate inverse volatility weights
+    # Calculate inverse volatility weights (volatility already calculated)
     long_candidates['inv_vol'] = 1.0 / long_candidates['volatility']
     short_candidates['inv_vol'] = 1.0 / short_candidates['volatility']
     

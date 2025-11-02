@@ -1,0 +1,96 @@
+================================================================================
+DILUTION FACTOR BACKTEST INVESTIGATION - COMPLETE
+================================================================================
+Date: November 2, 2025
+
+QUESTION: Where are the 1000% returns coming from?
+
+ANSWER: Portfolio construction bug + lucky concentration
+
+================================================================================
+THE BUG
+================================================================================
+
+Problem: Data mismatch between dilution signals (565 coins) and price data (172 coins)
+
+Code Flow:
+  1. Select 20 coins based on dilution (10 long + 10 short)
+  2. Try to calculate volatility → needs price data
+  3. 15/20 coins have NO price data
+  4. Portfolio collapses to 1-4 positions
+  5. 100% weight in single coin on some days
+
+Example (Sept 2025):
+  - Selected: BNB, ADA, SHIB, FET, OKB, ZEC (10 longs)
+  - Have price data: ZEC only (1 long)
+  - Result: 100% long ZEC
+
+Impact:
+  - ZEC +63% on Oct 1, 2025
+  - Portfolio +58% in one day (instead of +7% if properly diversified)
+
+================================================================================
+THE FIX
+================================================================================
+
+Solution: Filter to coins with price data BEFORE selecting top/bottom
+
+Code change:
+  # BEFORE: Select first, filter later
+  long_candidates = valid_signals.head(10)
+  long_candidates = long_candidates[has_price_data()]  # Lose 9/10
+
+  # AFTER: Filter first, select from valid universe
+  valid_signals = valid_signals[has_price_data()]
+  long_candidates = valid_signals.head(N)  # All have data
+
+Result: 10-16 properly diversified positions throughout backtest
+
+================================================================================
+THE RESULTS
+================================================================================
+
+Version              | Total Return | Ann Return | Positions | Status
+---------------------|--------------|------------|-----------|--------
+Original (Broken)    | +2,641%      | +101.6%    | 1-4       | FAKE
+Outlier Filter (Bug) | +624%        | +52.1%     | 1-4       | FAKE  
+FIXED (Proper)       | -27.8%       | -6.7%      | 10-16     | REAL
+
+================================================================================
+THE TRUTH
+================================================================================
+
+✗ Dilution factor strategy LOSES MONEY with proper diversification
+✗ 2,641% return was entirely due to portfolio construction bug
+✗ Strategy caught lucky outliers in accidentally concentrated portfolio
+✗ Do NOT trade this strategy
+
+================================================================================
+FILES CREATED
+================================================================================
+
+Code:
+  - backtests/scripts/backtest_dilution_factor.py (FIXED)
+
+Documentation:  
+  - docs/factors/DILUTION_FACTOR_OUTLIER_ANALYSIS.md
+  - DILUTION_FACTOR_BUG_FIX_SUMMARY.md
+  - DILUTION_FACTOR_INVESTIGATION_COMPLETE.txt (this file)
+
+Results:
+  - dilution_factor_outlier_comparison.png
+  - dilution_factor_outlier_comparison.csv
+  - dilution_factor_metrics.csv (original & fixed versions)
+  - dilution_factor_portfolio_values.csv (original & fixed versions)
+
+================================================================================
+RECOMMENDATION
+================================================================================
+
+ABANDON THIS STRATEGY
+
+The dilution factor does not predict cryptocurrency returns when properly
+tested with adequate diversification. The apparent profitability was a result
+of a bug, not a real trading edge.
+
+================================================================================
