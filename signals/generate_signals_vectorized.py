@@ -136,9 +136,29 @@ def assign_top_bottom_n_vectorized(
     df['count_per_date'] = df.groupby('date')[factor_column].transform('count')
     
     # Mark selections
+    # CRITICAL FIX: Handle case where count < (top_n + bottom_n)
+    # When there aren't enough symbols, split proportionally between top and bottom
     df['selection'] = None
-    df.loc[df['rank'] <= bottom_n, 'selection'] = 'bottom'
-    df.loc[df['rank'] > (df['count_per_date'] - top_n), 'selection'] = 'top'
+    
+    def assign_selection(group):
+        n = len(group)
+        # If we have enough symbols for both top_n and bottom_n
+        if n >= (top_n + bottom_n):
+            group.loc[group['rank'] <= bottom_n, 'selection'] = 'bottom'
+            group.loc[group['rank'] > (n - top_n), 'selection'] = 'top'
+        else:
+            # Not enough symbols - split proportionally
+            # Ratio of bottom:top requests
+            total_requested = top_n + bottom_n
+            bottom_fraction = bottom_n / total_requested
+            actual_bottom_n = max(1, int(n * bottom_fraction))
+            actual_top_n = max(1, n - actual_bottom_n)
+            
+            group.loc[group['rank'] <= actual_bottom_n, 'selection'] = 'bottom'
+            group.loc[group['rank'] > (n - actual_top_n), 'selection'] = 'top'
+        return group
+    
+    df = df.groupby('date', group_keys=False).apply(assign_selection)
     
     return df
 
