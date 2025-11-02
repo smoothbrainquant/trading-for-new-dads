@@ -92,6 +92,7 @@ from execution.strategies import (
     strategy_kurtosis,
     strategy_volatility,
     strategy_adf,
+    strategy_regime_switching,
 )
 
 # Import shared strategy utilities for legacy path
@@ -129,6 +130,7 @@ STRATEGY_REGISTRY = {
     "kurtosis": strategy_kurtosis,
     "volatility": strategy_volatility,
     "adf": strategy_adf,
+    "regime_switching": strategy_regime_switching,
 }
 
 
@@ -316,6 +318,26 @@ def _build_strategy_params(
             "weighting_method": weighting_method,
             "long_allocation": long_allocation,
             "short_allocation": short_allocation,
+        }
+
+    elif strategy_name == "regime_switching":
+        mode = p.get("mode", "blended") if isinstance(p, dict) else "blended"
+        adf_window = int(p.get("adf_window", 60)) if isinstance(p, dict) else 60
+        regression = p.get("regression", "ct") if isinstance(p, dict) else "ct"
+        volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
+        regime_lookback = int(p.get("regime_lookback", 5)) if isinstance(p, dict) else 5
+        long_percentile = int(p.get("long_percentile", 20)) if isinstance(p, dict) else 20
+        short_percentile = int(p.get("short_percentile", 80)) if isinstance(p, dict) else 80
+        weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            "mode": mode,
+            "adf_window": adf_window,
+            "regression": regression,
+            "volatility_window": volatility_window,
+            "regime_lookback": regime_lookback,
+            "long_percentile": long_percentile,
+            "short_percentile": short_percentile,
+            "weighting_method": weighting_method,
         }
 
     else:
