@@ -39,6 +39,7 @@ from generate_signals_vectorized import (
     calculate_weights_vectorized,
     calculate_portfolio_returns_vectorized,
     calculate_cumulative_returns_vectorized,
+    calculate_regime_vectorized,
 )
 
 
@@ -274,6 +275,8 @@ def generate_signals_for_factor(
             long_percentile=signal_params.get('long_percentile', 20),
             short_percentile=signal_params.get('short_percentile', 80),
             kurtosis_column=signal_params.get('kurtosis_column', 'kurtosis_30d'),
+            regime_filter=signal_params.get('regime_filter'),
+            regime_data=signal_params.get('regime_data'),
         )
     
     elif factor_type == 'skew':
@@ -452,6 +455,32 @@ def backtest_factor_vectorized(
         raise ValueError(f"No factor data available for {factor_type} factor")
     
     print(f"  ? Calculated factor for {len(factor_df)} rows")
+    
+    # Step 2.5: Calculate market regime (if regime filter requested for kurtosis)
+    regime_filter = factor_params.get('regime_filter')
+    if factor_type == 'kurtosis' and regime_filter and regime_filter != 'always':
+        print(f"Step 2.5: Calculating market regime (filter: {regime_filter})...")
+        try:
+            reference_symbol = factor_params.get('reference_symbol', 'BTC')
+            regime_data = calculate_regime_vectorized(
+                price_df,
+                reference_symbol=reference_symbol,
+                ma_short=50,
+                ma_long=200
+            )
+            print(f"  ? Calculated regime for {len(regime_data)} dates")
+            
+            # Count regime distribution
+            regime_counts = regime_data['regime'].value_counts()
+            print(f"  ? Bull days: {regime_counts.get('bull', 0)} ({regime_counts.get('bull', 0)/len(regime_data)*100:.1f}%)")
+            print(f"  ? Bear days: {regime_counts.get('bear', 0)} ({regime_counts.get('bear', 0)/len(regime_data)*100:.1f}%)")
+            
+            # Add regime data to factor_params so it's passed to signal generation
+            factor_params['regime_data'] = regime_data
+        except Exception as e:
+            print(f"  ??  Warning: Regime calculation failed: {e}")
+            print(f"  Continuing without regime filter (signals will be generated for all dates)")
+            factor_params['regime_filter'] = 'always'
     
     # Step 3: Generate signals for ALL dates (vectorized)
     print("Step 3: Generating signals for ALL dates...")

@@ -94,6 +94,7 @@ from execution.strategies import (
     strategy_volatility,
     strategy_adf,
     strategy_leverage_inverted,  # testing
+    strategy_regime_switching,
 )
 
 # Import shared strategy utilities for legacy path
@@ -132,6 +133,7 @@ STRATEGY_REGISTRY = {
     "volatility": strategy_volatility,
     "adf": strategy_adf,
     "leverage_inverted": strategy_leverage_inverted,  # testing
+    "regime_switching": strategy_regime_switching,
 }
 
 
@@ -261,11 +263,13 @@ def _build_strategy_params(
         rebalance_days = int(p.get("rebalance_days", 14)) if isinstance(p, dict) else 14
         long_percentile = int(p.get("long_percentile", 20)) if isinstance(p, dict) else 20
         short_percentile = int(p.get("short_percentile", 80)) if isinstance(p, dict) else 80
-        strategy_type = p.get("strategy_type", "momentum") if isinstance(p, dict) else "momentum"
+        strategy_type = p.get("strategy_type", "mean_reversion") if isinstance(p, dict) else "mean_reversion"
         weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"
         long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
         short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
         max_positions = int(p.get("max_positions", 10)) if isinstance(p, dict) else 10
+        regime_filter = p.get("regime_filter", "bear_only") if isinstance(p, dict) else "bear_only"
+        reference_symbol = p.get("reference_symbol", "BTC/USD") if isinstance(p, dict) else "BTC/USD"
         return (historical_data, list(historical_data.keys()), strategy_notional), {
             "kurtosis_window": kurtosis_window,
             "volatility_window": volatility_window,
@@ -277,6 +281,8 @@ def _build_strategy_params(
             "long_allocation": long_allocation,
             "short_allocation": short_allocation,
             "max_positions": max_positions,
+            "regime_filter": regime_filter,
+            "reference_symbol": reference_symbol,
         }
 
     elif strategy_name == "volatility":
@@ -329,6 +335,26 @@ def _build_strategy_params(
             "rebalance_days": rebalance_days,
             "top_n": top_n,
             "bottom_n": bottom_n,
+        }
+
+    elif strategy_name == "regime_switching":
+        mode = p.get("mode", "blended") if isinstance(p, dict) else "blended"
+        adf_window = int(p.get("adf_window", 60)) if isinstance(p, dict) else 60
+        regression = p.get("regression", "ct") if isinstance(p, dict) else "ct"
+        volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
+        regime_lookback = int(p.get("regime_lookback", 5)) if isinstance(p, dict) else 5
+        long_percentile = int(p.get("long_percentile", 20)) if isinstance(p, dict) else 20
+        short_percentile = int(p.get("short_percentile", 80)) if isinstance(p, dict) else 80
+        weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            "mode": mode,
+            "adf_window": adf_window,
+            "regression": regression,
+            "volatility_window": volatility_window,
+            "regime_lookback": regime_lookback,
+            "long_percentile": long_percentile,
+            "short_percentile": short_percentile,
+            "weighting_method": weighting_method,
         }
 
     else:
