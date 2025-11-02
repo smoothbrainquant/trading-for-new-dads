@@ -1419,7 +1419,10 @@ def main():
             result = run_size_factor_backtest(
                 loaded_data["price_data"],
                 loaded_data["marketcap_data"],
-                strategy="long_small_short_large",
+                # CRITICAL: Large caps outperform in crypto (opposite of equity markets)
+                # Original backtest accidentally used "long_small_short_large" which gave +132.9%
+                # but was actually longing LARGE caps due to pd.qcut() label assignment
+                strategy="long_large_short_small",
                 num_buckets=5,
                 rebalance_days=10,  # Optimal: 10 days (Sharpe: 0.39)
                 **common_params,
