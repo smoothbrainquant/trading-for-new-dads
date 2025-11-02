@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Dilution Factor Strategy Backtest
+Dilution Factor Strategy Backtest - With Outlier Filtering
 
 Strategy:
 - Long top 10 coins with LOWEST dilution (most deflationary/stable supply)
@@ -9,7 +9,9 @@ Strategy:
 - Monthly rebalancing based on rolling dilution velocity
 - Universe: Top 150 coins by market cap
 
-Hypothesis: Coins with low dilution outperform high dilution coins
+MODIFICATION: Filter extreme daily returns to reduce impact of outliers
+- Winsorize daily returns at 1st and 99th percentile
+- Cap individual coin returns at ?20% per day
 """
 
 import pandas as pd
@@ -17,6 +19,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
 import os
+import sys
+
+# Add parent directory to path to import original functions
+sys.path.append('/workspace/backtests/scripts')
 
 
 def load_historical_price_data():
@@ -52,10 +58,30 @@ def load_historical_price_data():
     
     # Calculate daily returns (next day for proper lag)
     df = df.sort_values(['base', 'date'])
-    df['return'] = df.groupby('base')['close'].pct_change()
+    df['return_raw'] = df.groupby('base')['close'].pct_change()
+    
+    # Apply outlier filtering to returns
+    print("\nApplying outlier filtering to price returns...")
+    
+    # Method 1: Cap extreme returns at ?20% per day
+    df['return_capped'] = df['return_raw'].clip(-0.20, 0.20)
+    
+    # Method 2: Winsorize at 1st and 99th percentile
+    p01 = df['return_raw'].quantile(0.01)
+    p99 = df['return_raw'].quantile(0.99)
+    df['return_winsorized'] = df['return_raw'].clip(p01, p99)
+    
+    # Use capped returns as default
+    df['return'] = df['return_capped']
     df['return_next'] = df.groupby('base')['return'].shift(-1)  # Next day return
     
-    print(f"Loaded price data: {len(df)} records, {df['base'].nunique()} coins")
+    # Report filtering stats
+    n_capped = (df['return_raw'] != df['return_capped']).sum()
+    print(f"  Capped {n_capped} extreme returns (?20% threshold)")
+    print(f"  Raw return range: [{df['return_raw'].min()*100:.2f}%, {df['return_raw'].max()*100:.2f}%]")
+    print(f"  Capped return range: [{df['return'].min()*100:.2f}%, {df['return'].max()*100:.2f}%]")
+    
+    print(f"\nLoaded price data: {len(df)} records, {df['base'].nunique()} coins")
     print(f"Date range: {df['date'].min()} to {df['date'].max()}")
     
     return df
@@ -217,38 +243,24 @@ def construct_risk_parity_portfolio(signals, price_df, rebal_date, top_n=10):
     if len(valid_signals) < top_n * 2:
         return {}
     
-    # *** FIX: Filter to coins with price data BEFORE selecting top/bottom ***
-    # Get list of coins with sufficient price data
-    available_coins = price_df['base'].unique()
-    valid_signals = valid_signals[valid_signals['symbol'].isin(available_coins)]
-    
-    # Pre-calculate volatility for all candidates
-    valid_signals['volatility'] = valid_signals['symbol'].apply(
-        lambda s: calculate_volatility(price_df, s, rebal_date)
-    )
-    
-    # Keep only coins with valid volatility (sufficient price history)
-    valid_signals = valid_signals[valid_signals['volatility'].notna()]
-    
-    # Dynamically adjust position count based on available coins
-    # Need at least 4 coins total (2 long + 2 short minimum)
-    if len(valid_signals) < 4:
-        print(f"  Warning: Only {len(valid_signals)} coins with valid data (need minimum 4)")
-        return {}
-    
-    # Adjust top_n if we don't have enough coins
-    # Each side needs at least 1, ideally top_n
-    adjusted_top_n = min(top_n, len(valid_signals) // 2)
-    
-    if adjusted_top_n < top_n:
-        print(f"  Note: Adjusted to {adjusted_top_n} positions per side (have {len(valid_signals)} valid coins)")
-    
     # Sort by dilution velocity
     valid_signals = valid_signals.sort_values('dilution_velocity')
     
     # Select long (lowest dilution) and short (highest dilution)
-    long_candidates = valid_signals.head(adjusted_top_n).copy()
-    short_candidates = valid_signals.tail(adjusted_top_n).copy()
+    long_candidates = valid_signals.head(top_n).copy()
+    short_candidates = valid_signals.tail(top_n).copy()
+    
+    # Calculate volatility for each position
+    long_candidates['volatility'] = long_candidates['symbol'].apply(
+        lambda s: calculate_volatility(price_df, s, rebal_date)
+    )
+    short_candidates['volatility'] = short_candidates['symbol'].apply(
+        lambda s: calculate_volatility(price_df, s, rebal_date)
+    )
+    
+    # Remove positions without volatility data
+    long_candidates = long_candidates[long_candidates['volatility'].notna()]
+    short_candidates = short_candidates[short_candidates['volatility'].notna()]
     
     if len(long_candidates) == 0 or len(short_candidates) == 0:
         return {}
@@ -256,7 +268,7 @@ def construct_risk_parity_portfolio(signals, price_df, rebal_date, top_n=10):
     # Risk parity: weight inversely proportional to volatility
     # Each position gets equal risk contribution
     
-    # Calculate inverse volatility weights (volatility already calculated)
+    # Calculate inverse volatility weights
     long_candidates['inv_vol'] = 1.0 / long_candidates['volatility']
     short_candidates['inv_vol'] = 1.0 / short_candidates['volatility']
     
@@ -447,7 +459,7 @@ def calculate_performance_metrics(portfolio_df):
     return metrics
 
 
-def plot_backtest_results(portfolio_df, metrics, trades_df):
+def plot_backtest_results(portfolio_df, metrics, trades_df, suffix='_outlier_filtered'):
     """
     Plot backtest results.
     
@@ -455,15 +467,16 @@ def plot_backtest_results(portfolio_df, metrics, trades_df):
         portfolio_df (pd.DataFrame): Portfolio values
         metrics (dict): Performance metrics
         trades_df (pd.DataFrame): Trade history
+        suffix (str): Suffix for output filename
     """
     fig, axes = plt.subplots(3, 1, figsize=(14, 12))
     
     # Plot 1: Portfolio value
     ax1 = axes[0]
     ax1.plot(portfolio_df['date'], portfolio_df['portfolio_value'], 
-            linewidth=2, color='blue', label='Dilution Factor Strategy')
+            linewidth=2, color='blue', label='Dilution Factor Strategy (Outlier Filtered)')
     ax1.set_ylabel('Portfolio Value ($)', fontsize=12)
-    ax1.set_title('Dilution Factor Long/Short Strategy - Risk Parity Weighted', 
+    ax1.set_title('Dilution Factor Long/Short Strategy - With Outlier Filtering', 
                  fontsize=14, fontweight='bold')
     ax1.grid(True, alpha=0.3)
     ax1.legend(fontsize=10)
@@ -503,12 +516,13 @@ Volatility: {metrics['volatility_pct']:.1f}%"""
     ax3.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig('dilution_factor_backtest_results.png', dpi=300, bbox_inches='tight')
-    print(f"? Saved: dilution_factor_backtest_results.png")
+    filename = f'dilution_factor_backtest{suffix}.png'
+    plt.savefig(filename, dpi=300, bbox_inches='tight')
+    print(f"? Saved: {filename}")
     plt.close()
 
 
-def save_backtest_results(portfolio_df, trades_df, metrics):
+def save_backtest_results(portfolio_df, trades_df, metrics, suffix='_outlier_filtered'):
     """
     Save backtest results to CSV files.
     
@@ -516,32 +530,37 @@ def save_backtest_results(portfolio_df, trades_df, metrics):
         portfolio_df (pd.DataFrame): Portfolio values
         trades_df (pd.DataFrame): Trade history
         metrics (dict): Performance metrics
+        suffix (str): Suffix for output filenames
     """
     # Save portfolio values
-    portfolio_df.to_csv('dilution_factor_portfolio_values.csv', index=False)
-    print(f"? Saved: dilution_factor_portfolio_values.csv")
+    portfolio_file = f'dilution_factor_portfolio_values{suffix}.csv'
+    portfolio_df.to_csv(portfolio_file, index=False)
+    print(f"? Saved: {portfolio_file}")
     
     # Save trades
     if len(trades_df) > 0:
-        trades_df.to_csv('dilution_factor_trades.csv', index=False)
-        print(f"? Saved: dilution_factor_trades.csv")
+        trades_file = f'dilution_factor_trades{suffix}.csv'
+        trades_df.to_csv(trades_file, index=False)
+        print(f"? Saved: {trades_file}")
     
     # Save metrics
+    metrics_file = f'dilution_factor_metrics{suffix}.csv'
     metrics_df = pd.DataFrame([metrics])
-    metrics_df.to_csv('dilution_factor_metrics.csv', index=False)
-    print(f"? Saved: dilution_factor_metrics.csv")
+    metrics_df.to_csv(metrics_file, index=False)
+    print(f"? Saved: {metrics_file}")
 
 
 def main():
     """Main execution function."""
     print("=" * 80)
-    print("DILUTION FACTOR STRATEGY BACKTEST")
+    print("DILUTION FACTOR STRATEGY BACKTEST - WITH OUTLIER FILTERING")
     print("=" * 80)
     print("\nStrategy:")
     print("  - Long top 10 coins with LOWEST dilution")
     print("  - Short top 10 coins with HIGHEST dilution")
     print("  - Risk parity weighting (inverse volatility)")
     print("  - Monthly rebalancing")
+    print("  - OUTLIER FILTERING: Cap daily returns at ?20%")
     print()
     
     # Load data
