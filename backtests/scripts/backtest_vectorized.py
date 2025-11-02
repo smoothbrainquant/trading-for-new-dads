@@ -32,6 +32,10 @@ from generate_signals_vectorized import (
     generate_size_signals_vectorized,
     generate_skew_signals_vectorized,
     generate_kurtosis_signals_vectorized,
+    generate_days_from_high_signals_vectorized,
+    generate_breakout_signals_vectorized,
+    generate_mean_reversion_signals_vectorized,
+    generate_adf_signals_vectorized,
     calculate_weights_vectorized,
     calculate_portfolio_returns_vectorized,
     calculate_cumulative_returns_vectorized,
@@ -187,6 +191,26 @@ def prepare_factor_data(
         )
         return df
     
+    elif factor_type == 'days_from_high':
+        # No additional calculation needed - signals will be generated from price data
+        return price_data.copy()
+    
+    elif factor_type == 'breakout':
+        # No additional calculation needed - signals will be generated from price data
+        return price_data.copy()
+    
+    elif factor_type == 'mean_reversion':
+        # No additional calculation needed - signals will be generated from price data
+        return price_data.copy()
+    
+    elif factor_type == 'adf':
+        # ADF requires pre-calculation using statsmodels (cannot be vectorized)
+        # User must pass pre-calculated ADF data via adf_data parameter
+        adf_data = factor_params.get('adf_data')
+        if adf_data is None:
+            raise ValueError("ADF factor requires pre-calculated 'adf_data' parameter")
+        return adf_data
+    
     else:
         raise ValueError(f"Unknown factor type: {factor_type}")
 
@@ -260,6 +284,39 @@ def generate_signals_for_factor(
             long_percentile=signal_params.get('long_percentile', 20),
             short_percentile=signal_params.get('short_percentile', 80),
             skew_column=signal_params.get('skew_column', 'skewness_30d'),
+        )
+    
+    elif factor_type == 'days_from_high':
+        return generate_days_from_high_signals_vectorized(
+            factor_df,
+            max_days=signal_params.get('max_days', 20),
+            lookback_window=signal_params.get('lookback_window', 200),
+        )
+    
+    elif factor_type == 'breakout':
+        return generate_breakout_signals_vectorized(
+            factor_df,
+            entry_window=signal_params.get('entry_window', 50),
+            exit_window=signal_params.get('exit_window', 70),
+        )
+    
+    elif factor_type == 'mean_reversion':
+        return generate_mean_reversion_signals_vectorized(
+            factor_df,
+            zscore_threshold=signal_params.get('zscore_threshold', 1.5),
+            volume_threshold=signal_params.get('volume_threshold', 1.0),
+            lookback_window=signal_params.get('lookback_window', 30),
+            long_only=signal_params.get('long_only', True),
+        )
+    
+    elif factor_type == 'adf':
+        return generate_adf_signals_vectorized(
+            factor_df,
+            strategy=strategy,
+            num_quintiles=signal_params.get('num_quintiles', 5),
+            long_percentile=signal_params.get('long_percentile', 20),
+            short_percentile=signal_params.get('short_percentile', 80),
+            adf_column=signal_params.get('adf_column', 'adf_stat'),
         )
     
     else:
