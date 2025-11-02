@@ -409,9 +409,18 @@ def run_mean_reversion_backtest(price_data, **kwargs):
 
 
 def run_size_factor_backtest(price_data, marketcap_data, **kwargs):
-    """Run size factor backtest (VECTORIZED)."""
+    """
+    Run size factor backtest (VECTORIZED).
+    
+    Strategy: LONG small caps, SHORT large caps
+    
+    Rationale:
+    - Small caps have higher growth potential and volatility premium
+    - This is the traditional size premium strategy
+    """
     print("\n" + "=" * 80)
     print("Running Size Factor Backtest (VECTORIZED)")
+    print("Position: LONG small caps, SHORT large caps")
     print("=" * 80)
 
     try:
@@ -459,7 +468,7 @@ def run_size_factor_backtest(price_data, marketcap_data, **kwargs):
 
         return {
             "strategy": "Size Factor",
-            "description": f"Strategy: {kwargs.get('strategy', 'long_small_short_large')} (VECTORIZED)",
+            "description": f"LONG small caps, SHORT large caps, {kwargs.get('rebalance_days', 7)}d rebal (VECTORIZED)",
             "metrics": metrics,
             "results": results,
             "daily_returns": daily_returns,
@@ -1955,18 +1964,15 @@ def main():
         else:
             print("? Skipping Mean Reversion backtest: price data not available")
 
-    # 3. Size Factor
+    # 3. Size Factor (LONG small caps, SHORT large caps)
     if args.run_size:
         if loaded_data["price_data"] is not None and loaded_data["marketcap_data"] is not None:
             result = run_size_factor_backtest(
                 loaded_data["price_data"],
                 loaded_data["marketcap_data"],
-                # CRITICAL: Large caps outperform in crypto (opposite of equity markets)
-                # Original backtest accidentally used "long_small_short_large" which gave +132.9%
-                # but was actually longing LARGE caps due to pd.qcut() label assignment
-                strategy="long_large_short_small",
+                strategy="long_small_short_large",  # Traditional size premium: long SMALL, short LARGE
                 num_buckets=5,
-                rebalance_days=10,  # Optimal: 10 days (Sharpe: 0.39)
+                rebalance_days=10,  # Optimal: 10 days
                 **common_params,
             )
             if result:
