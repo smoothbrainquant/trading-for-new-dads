@@ -23,6 +23,7 @@ Supported signals (handlers implemented or stubbed):
 - kurtosis: Kurtosis factor - Long/short based on return distribution kurtosis (14d rebalance optimal)
 - volatility: Low volatility anomaly (long low vol, short high vol, 3d rebalance optimal)
 - adf: ADF factor (trend following vs mean reversion, 7d rebalance optimal)
+- dilution: Token dilution factor - Long low dilution, short high dilution (7d rebalance optimal)  # testing
 
 Weights can be provided via an external JSON config file so the backtesting suite
 can update them without code changes. Example config structure:
@@ -94,6 +95,7 @@ from execution.strategies import (
     strategy_adf,
     strategy_leverage_inverted,  # testing
     strategy_regime_switching,
+    strategy_dilution,  # testing
 )
 
 # Import shared strategy utilities for legacy path
@@ -133,6 +135,7 @@ STRATEGY_REGISTRY = {
     "adf": strategy_adf,
     "leverage_inverted": strategy_leverage_inverted,  # testing
     "regime_switching": strategy_regime_switching,
+    "dilution": strategy_dilution,  # testing
 }
 
 
@@ -354,6 +357,23 @@ def _build_strategy_params(
             "long_percentile": long_percentile,
             "short_percentile": short_percentile,
             "weighting_method": weighting_method,
+        }
+
+    elif strategy_name == "dilution":
+        # testing - dilution factor strategy
+        rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
+        lookback_months = int(p.get("lookback_months", 12)) if isinstance(p, dict) else 12
+        top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
+        volatility_window = int(p.get("volatility_window", 90)) if isinstance(p, dict) else 90
+        long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            "rebalance_days": rebalance_days,
+            "lookback_months": lookback_months,
+            "top_n": top_n,
+            "volatility_window": volatility_window,
+            "long_allocation": long_allocation,
+            "short_allocation": short_allocation,
         }
 
     else:
@@ -868,9 +888,11 @@ def load_signal_config(config_path):
             # Apply strategy caps (safety measure)
             # Cap Mean Reversion at 5% due to extreme volatility (76.9%) and regime dependence
             # Cap Leverage Inverted at 5% (testing)
+            # Cap Dilution at 5% - testing new strategy
             strategy_caps = {
                 "mean_reversion": 0.05,
                 "leverage_inverted": 0.05,  # testing
+                "dilution": 0.05,  # testing
             }
             
             capped_strategies = []
