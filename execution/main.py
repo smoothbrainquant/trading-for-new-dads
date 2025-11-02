@@ -391,31 +391,76 @@ def update_market_data():
         return None
 
 
-# def check_and_refresh_oi_data_if_needed():  # Removed: OI data not used
-#     """
-#     Check OI data freshness and automatically refresh if stale.
-#
-#     Triggers automatic download if:
-#     - OI data is 1+ days behind current date
-#     - OI data file is >8 hours old
-#
-#     Returns:
-#         dict: OI data status information after check/refresh
-#     """
-#     try:
-#         from data.scripts.refresh_oi_data import check_and_refresh_oi_data
-#
-#         # Check and auto-refresh if needed
-#         result = check_and_refresh_oi_data(force=False, start_year=2020)
-#
-#         return result
-#
-#     except Exception as e:
-#         print(f"\n??  Error in OI data check/refresh: {e}")
-#         import traceback
-#
-#         traceback.print_exc()
-#         return {"status": "error", "error": str(e), "refreshed": False}
+def check_and_refresh_factor_data_if_needed(strategies_used):
+    """
+    Check if leverage or dilution strategies are being used and refresh their data if needed.
+    
+    This ensures that OI and market cap data are fresh before running leverage/dilution strategies.
+    
+    Args:
+        strategies_used: List of strategy names being used
+        
+    Returns:
+        dict: Status information after check/refresh
+    """
+    # Check if leverage or dilution strategies are active
+    needs_leverage = "leverage_inverted" in strategies_used
+    needs_dilution = "dilution" in strategies_used
+    
+    if not (needs_leverage or needs_dilution):
+        return {"status": "not_needed", "refreshed": False}
+    
+    print("\n" + "=" * 80)
+    print("FACTOR DATA REFRESH CHECK")
+    print("=" * 80)
+    
+    if needs_leverage:
+        print("? Leverage strategy active - requires OI + Market Cap data")
+    if needs_dilution:
+        print("? Dilution strategy active - requires Market Cap data")
+    
+    try:
+        import subprocess
+        
+        # Run the unified data refresh script
+        refresh_script = os.path.join(WORKSPACE_ROOT, "data", "scripts", "refresh_all_factor_data.py")
+        
+        if not os.path.exists(refresh_script):
+            print(f"\n??  WARNING: Data refresh script not found: {refresh_script}")
+            print("   Will use existing data (may be stale)")
+            return {"status": "script_not_found", "refreshed": False}
+        
+        print("\nRunning data refresh pipeline...")
+        print("This will update: OI ? Market Cap ? Leverage ? Dilution\n")
+        
+        # Run with --skip-oi for faster refresh (OI data is large and slow)
+        # User can run manual full refresh if needed
+        result = subprocess.run(
+            [sys.executable, refresh_script, "--skip-oi"],
+            cwd=str(WORKSPACE_ROOT),
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 minute timeout
+        )
+        
+        if result.returncode == 0:
+            print("\n? Factor data refresh completed successfully")
+            return {"status": "success", "refreshed": True}
+        else:
+            print("\n??  WARNING: Factor data refresh had issues")
+            if result.stderr:
+                print(f"Error: {result.stderr[:500]}")  # Print first 500 chars
+            print("   Will use existing data (may be stale)")
+            return {"status": "refresh_failed", "refreshed": False}
+            
+    except subprocess.TimeoutExpired:
+        print("\n??  WARNING: Data refresh timed out (>5 minutes)")
+        print("   Will use existing data (may be stale)")
+        return {"status": "timeout", "refreshed": False}
+    except Exception as e:
+        print(f"\n??  WARNING: Error during data refresh: {e}")
+        print("   Will use existing data (may be stale)")
+        return {"status": "error", "error": str(e), "refreshed": False}
 
 
 def check_cache_freshness():
@@ -1100,36 +1145,32 @@ def main():
     print("\n[Pre-flight checks]")
     update_market_data()
 
-    # # Check and auto-refresh OI data if OI strategy is being used  # Removed: OI data not used
-    # if (
-    #     blend_weights
-    #     and "oi_divergence" in blend_weights
-    #     and blend_weights.get("oi_divergence", 0) > 0
-    # ):
-    #     print("\n[OI Data Check] OI Divergence strategy active - checking data freshness...")
-    #     oi_result = check_and_refresh_oi_data_if_needed()
-    #
-    #     # Check result
-    #     if oi_result.get("refreshed"):
-    #         print("\n" + "?" * 80)
-    #         print("? OI DATA AUTOMATICALLY REFRESHED")
-    #         print(f"? Fresh data downloaded and ready for trading")
-    #         print("?" * 80)
-    #     elif oi_result.get("status") == "current":
-    #         print("\n? OI data is current - no refresh needed")
-    #     elif oi_result.get("status") in ["refresh_failed", "error"]:
-    #         # Refresh failed - issue strong warning
-    #         print("\n" + "!" * 80)
-    #         print("??  CRITICAL: OI DATA REFRESH FAILED")
-    #         print(f"   Strategy weight: {blend_weights.get('oi_divergence', 0)*100:.1f}%")
-    #         print("   Impact: Will use existing data (potentially stale)")
-    #         print("   Recommendation: Check COINALYZE_API credentials and network")
-    #         if oi_result.get("error"):
-    #             print(f"   Error: {oi_result.get('error')}")
-    #         print("!" * 80)
-    #     else:
-    #         # Unknown status - warn but continue
-    #         print(f"\n??  Warning: Unexpected OI data status: {oi_result.get('status')}")
+    # Check and auto-refresh factor data if leverage/dilution strategies are being used
+    if blend_weights:
+        strategies_used = list(blend_weights.keys())
+        if any(s in strategies_used for s in ["leverage_inverted", "dilution"]):
+            print("\n[Factor Data Check] Leverage/Dilution strategies active - checking data freshness...")
+            factor_result = check_and_refresh_factor_data_if_needed(strategies_used)
+            
+            # Report result
+            if factor_result.get("refreshed"):
+                print("\n" + "?" * 80)
+                print("? FACTOR DATA AUTOMATICALLY REFRESHED")
+                print("? Fresh OI, Market Cap, Leverage, and Dilution data ready")
+                print("?" * 80)
+            elif factor_result.get("status") == "not_needed":
+                pass  # No action needed
+            elif factor_result.get("status") in ["refresh_failed", "error", "timeout", "script_not_found"]:
+                # Refresh failed - issue warning but continue
+                print("\n" + "?" * 80)
+                print("??  WARNING: FACTOR DATA REFRESH FAILED OR INCOMPLETE")
+                active_strategies = [s for s in strategies_used if s in ["leverage_inverted", "dilution"]]
+                print(f"   Active strategies: {', '.join(active_strategies)}")
+                print("   Impact: Will use existing data (potentially stale)")
+                print("   Recommendation: Run manually: python3 data/scripts/refresh_all_factor_data.py")
+                if factor_result.get("error"):
+                    print(f"   Error: {factor_result.get('error')}")
+                print("?" * 80)
 
     check_cache_freshness()
 

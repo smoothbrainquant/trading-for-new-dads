@@ -29,24 +29,86 @@ sns.set_style("whitegrid")
 plt.rcParams['figure.figsize'] = (14, 10)
 
 
+def find_latest_file(pattern):
+    """Find the most recent file matching a pattern."""
+    from glob import glob
+    files = sorted(glob(pattern), reverse=True)
+    if files:
+        return files[0]
+    return None
+
+
 def load_market_cap_data():
     """Load latest market cap data"""
-    df = pd.read_csv("data/raw/crypto_marketcap_latest.csv")
+    # Try to find the latest market cap file
+    marketcap_file = "data/raw/crypto_marketcap_latest.csv"
+    
+    if not Path(marketcap_file).exists():
+        raise FileNotFoundError(
+            f"Market cap data not found: {marketcap_file}\n"
+            "Run: python3 data/scripts/fetch_coinmarketcap_data.py --output data/raw/crypto_marketcap_latest.csv"
+        )
+    
+    df = pd.read_csv(marketcap_file)
     df = df[["symbol", "name", "cmc_rank", "market_cap", "price", "volume_24h"]]
     df.columns = ["coin_symbol", "coin_name", "rank", "market_cap", "price", "volume_24h"]
     return df
 
 
 def load_open_interest_data():
-    """Load historical open interest data"""
-    df = pd.read_csv("data/raw/historical_open_interest_top50_ALL_HISTORY_20251027_101817.csv")
+    """Load historical open interest data (automatically finds latest file)"""
+    # Try multiple patterns for OI data files
+    oi_patterns = [
+        "data/raw/historical_open_interest_all_perps_since2020_*.csv",
+        "data/raw/historical_open_interest_top50_*.csv",
+        "data/raw/historical_open_interest_top50_ALL_HISTORY_*.csv"
+    ]
+    
+    oi_file = None
+    for pattern in oi_patterns:
+        oi_file = find_latest_file(pattern)
+        if oi_file:
+            print(f"  Using OI data: {oi_file}")
+            break
+    
+    if not oi_file:
+        raise FileNotFoundError(
+            "No Open Interest data found. Run one of:\n"
+            "  python3 data/scripts/refresh_oi_data.py\n"
+            "  python3 data/scripts/fetch_historical_open_interest_top50.py"
+        )
+    
+    df = pd.read_csv(oi_file)
     df["date"] = pd.to_datetime(df["date"])
     return df
 
 
 def load_funding_rates_data():
-    """Load historical funding rates data"""
-    df = pd.read_csv("data/raw/historical_funding_rates_top50_ALL_HISTORY_20251027_102154.csv")
+    """Load historical funding rates data (automatically finds latest file)"""
+    # Try to find latest funding rates file (exclude summary files)
+    fr_patterns = [
+        "data/raw/historical_funding_rates_top50_ALL_HISTORY_*.csv",
+        "data/raw/historical_funding_rates_top50_*.csv"
+    ]
+    
+    fr_file = None
+    for pattern in fr_patterns:
+        from glob import glob
+        files = sorted(glob(pattern), reverse=True)
+        # Filter out summary files
+        files = [f for f in files if "summary" not in f.lower()]
+        if files:
+            fr_file = files[0]
+            print(f"  Using Funding Rates data: {fr_file}")
+            break
+    
+    if not fr_file:
+        raise FileNotFoundError(
+            "No Funding Rates data found. Run:\n"
+            "  python3 data/scripts/fetch_historical_funding_rates_top50.py"
+        )
+    
+    df = pd.read_csv(fr_file)
     df["date"] = pd.to_datetime(df["date"])
     return df
 
