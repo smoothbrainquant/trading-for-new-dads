@@ -1,0 +1,2 @@
+Strategy,Description,Sharpe Ratio,Weight,Weight_Pct
+Breakout Signal,"Entry: 50d, Exit: 70d",0.5591166900184968,1.0,100.0

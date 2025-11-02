@@ -155,6 +155,20 @@ def backtest(
     print(f"  Short allocation: {short_allocation:.1%}")
     print("=" * 80)
 
+    # *** CRITICAL FIX: Calculate signals ONCE upfront for all data ***
+    print("\nCalculating breakout signals for all data (one-time calculation)...")
+    try:
+        all_signals_df = calculate_breakout_signals(data)
+        print(f"  Signals calculated for {len(all_signals_df)} data points")
+    except Exception as e:
+        print(f"Error calculating signals: {e}")
+        raise
+
+    # *** OPTIMIZATION: Pre-calculate volatilities for all data ***
+    print("Pre-calculating volatilities for all data...")
+    all_volatilities_df = calculate_rolling_volatility_custom(data, window=volatility_window)
+    print(f"  Volatilities calculated for {len(all_volatilities_df)} data points")
+
     # Initialize tracking variables
     portfolio_values = []
     trades_history = []
@@ -169,34 +183,29 @@ def backtest(
 
     # Main backtest loop
     for i, current_date in enumerate(backtest_dates):
-        # Get data up to current date
-        historical_data = data[data["date"] <= current_date].copy()
-
-        # Step 1: Calculate breakout signals
+        # Step 1: Get pre-calculated signals for current date (no recalculation!)
         try:
-            signals_df = calculate_breakout_signals(historical_data)
-            current_signals = signals_df[signals_df["date"] == current_date]
+            current_signals = all_signals_df[all_signals_df["date"] == current_date]
         except Exception as e:
-            print(f"Error calculating signals on {current_date}: {e}")
+            print(f"Error getting signals on {current_date}: {e}")
             continue
 
         # Step 2: Separate into LONG and SHORT positions
         long_symbols = current_signals[current_signals["position"] == "LONG"]["symbol"].tolist()
         short_symbols = current_signals[current_signals["position"] == "SHORT"]["symbol"].tolist()
 
-        # Step 3: Calculate volatility for all active positions
+        # Step 3: Get pre-calculated volatilities for active positions
         all_active_symbols = long_symbols + short_symbols
 
         new_weights = {}
 
         if len(all_active_symbols) > 0:
-            active_data = historical_data[historical_data["symbol"].isin(all_active_symbols)]
-
             try:
-                volatility_df = calculate_rolling_volatility_custom(
-                    active_data, window=volatility_window
-                )
-                latest_volatility = volatility_df[volatility_df["date"] == current_date]
+                # Get volatilities for current date and active symbols (no recalculation!)
+                latest_volatility = all_volatilities_df[
+                    (all_volatilities_df["date"] == current_date) &
+                    (all_volatilities_df["symbol"].isin(all_active_symbols))
+                ]
 
                 # Separate volatilities for longs and shorts
                 long_volatilities = {}
@@ -223,7 +232,7 @@ def backtest(
                     new_weights[symbol] = -weight * short_allocation * leverage
 
             except Exception as e:
-                print(f"Error calculating volatility/weights on {current_date}: {e}")
+                print(f"Error getting volatility/weights on {current_date}: {e}")
 
         # Step 6: Calculate portfolio return based on previous weights
         if i > 0 and current_weights:
