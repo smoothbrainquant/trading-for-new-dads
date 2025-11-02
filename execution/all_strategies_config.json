@@ -1,23 +1,28 @@
 {
   "strategy_weights": {
-    "mean_reversion": 0.05,
-    "size": 0.089,
-    "carry": 0.05,
-    "beta": 0.155,
-    "trendline_breakout": 0.082,
-    "volatility": 0.321,
-    "kurtosis": 0.05,
-    "breakout": 0.128,
-    "days_from_high": 0.075,
-    "adf": 0.05
+    "mean_reversion": 0.045,
+    "size": 0.0801,
+    "carry": 0.10,
+    "beta": 0.1395,
+    "trendline_breakout": 0.0738,
+    "volatility": 0.2889,
+    "kurtosis": 0.045,
+    "breakout": 0.1152,
+    "days_from_high": 0.0675,
+    "adf": 0.045
   },
   "_weights_note": {
-    "_comment": "Updated 2025-11-02: Mean Reversion capped at 5% due to extreme volatility (76.9%), regime dependence, and zero edge (Sharpe -0.032). Kurtosis, Carry, and ADF also capped at 5% due to negative Sharpe ratios.",
+    "_comment": "Updated 2025-11-02 (v2): Carry weight FORCED to 10.00% (doubled from 5%) despite negative Sharpe (-0.814 on 2023-2025 period). Mean Reversion, Kurtosis, and ADF at 4.50% due to negative/zero Sharpe ratios. All other strategies proportionally scaled down by 0.90x to maintain sum=1.0.",
     "_original_mean_reversion_weight": 0.413702239789196,
-    "_reason": "Mean Reversion shows +37% in 2023 but -37% in 2024 and has 76.9% volatility with -62.6% max drawdown. Knife-catching strategy only works in bull markets. See docs/MEAN_REVERSION_ANALYSIS.md for details."
+    "_reason": "Carry forced to 10% for strategic diversification despite recent underperformance (-30.77% total return, -12.26% annualized on 2023-2025 period). Inverted carry test showed -100% loss, confirming signal direction is correct but regime has been unfavorable. Mean Reversion shows +37% in 2023 but -37% in 2024 with 76.9% volatility."
   },
   "_weights_updated_history": {
-    "_2025_11_02": {
+    "_2025_11_02_v2": {
+      "_comment": "Carry weight FORCED to 10.0% (doubled from 5%) for strategic diversification despite negative Sharpe (-0.814). All other strategies proportionally scaled down by 0.9474 to maintain sum=1.0.",
+      "_carry_override": "10.0% (forced, despite -30.77% return 2023-2025)",
+      "_inverted_carry_test": "Inverted strategy lost -100% (confirms direction is correct, just bad recent regime)"
+    },
+    "_2025_11_02_v1": {
       "_comment": "Weights rebalanced based on 2023-2025 backtest results. Positive Sharpe strategies scaled up, negative Sharpe capped at 5%.",
       "_positive_sharpe": "Size=0.70, Beta=0.56, Breakout=0.46, Volatility=0.32",
       "_negative_sharpe": "Mean Reversion=-0.032 (CAPPED), Kurtosis=-0.85 (CAPPED), Carry=-1.04 (CAPPED), ADF=-0.85 (CAPPED)",
