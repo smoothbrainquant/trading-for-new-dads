@@ -209,7 +209,14 @@ def prepare_factor_data(
         adf_data = factor_params.get('adf_data')
         if adf_data is None:
             raise ValueError("ADF factor requires pre-calculated 'adf_data' parameter")
-        return adf_data
+        
+        # CRITICAL FIX: Normalize ADF symbols to match price data format
+        # ADF data comes with symbols like 'BTC/USD', but price data uses 'BTC'
+        adf_df = adf_data.copy()
+        if len(adf_df) > 0 and '/' in str(adf_df['symbol'].iloc[0]):
+            adf_df['symbol'] = adf_df['symbol'].apply(lambda x: x.split('/')[0] if '/' in str(x) else x)
+        
+        return adf_df
     
     else:
         raise ValueError(f"Unknown factor type: {factor_type}")
@@ -519,6 +526,15 @@ def backtest_factor_vectorized(
         returns_df,
     )
     print(f"  ? Calculated returns for {len(portfolio_returns)} days")
+    
+    # Check if we have any returns
+    if len(portfolio_returns) == 0:
+        print("\nERROR: No portfolio returns calculated. This could be due to:")
+        print("  - Date misalignment between signals/weights and returns")
+        print("  - Insufficient data overlap")
+        print(f"  - Weights date range: {weights_daily['date'].min()} to {weights_daily['date'].max()}")
+        print(f"  - Returns date range: {returns_df['date'].min()} to {returns_df['date'].max()}")
+        raise ValueError("No portfolio returns calculated - check date alignment")
     
     # Step 9: Calculate cumulative returns (vectorized)
     print("Step 9: Calculating cumulative performance...")
