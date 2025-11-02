@@ -433,16 +433,19 @@ def generate_kurtosis_signals_vectorized(
     df['signal'] = 0
     
     if strategy == 'momentum':
-        # Long high kurtosis (volatile, fat tails - momentum persists)
-        df.loc[df['percentile'] >= short_percentile, 'signal'] = 1
-        # Short low kurtosis (stable, thin tails - underperformers)
-        df.loc[df['percentile'] <= long_percentile, 'signal'] = -1
+        # CRITICAL: Fixed swap bug - momentum should long LOW kurtosis
+        # Original implementation had this correct, vectorized version had it backwards
+        # Long low kurtosis (stable, consistent returns - momentum persists)
+        df.loc[df['percentile'] <= long_percentile, 'signal'] = 1
+        # Short high kurtosis (volatile, fat tails - unstable)
+        df.loc[df['percentile'] >= short_percentile, 'signal'] = -1
     
     elif strategy == 'mean_reversion':
-        # Long low kurtosis (stable coins - expecting normalization)
-        df.loc[df['percentile'] <= long_percentile, 'signal'] = 1
-        # Short high kurtosis (volatile coins - expecting reversion)
-        df.loc[df['percentile'] >= short_percentile, 'signal'] = -1
+        # CRITICAL: Fixed swap bug - mean reversion should long HIGH kurtosis
+        # Long high kurtosis (volatile coins - expecting reversion to mean)
+        df.loc[df['percentile'] >= short_percentile, 'signal'] = 1
+        # Short low kurtosis (stable coins - expecting continuation)
+        df.loc[df['percentile'] <= long_percentile, 'signal'] = -1
     
     return df[['date', 'symbol', kurtosis_column, 'percentile', 'quintile', 'signal']]
 
