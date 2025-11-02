@@ -1,3 +1,9 @@
 Strategy,Description,Sharpe Ratio,Weight,Weight_Pct
-Carry Factor,"Top 10 short, Bottom 10 long (VECTORIZED)",-1.5089314113275683,0.5,50.0
-Kurtosis Factor,"Strategy: momentum, Rebal: 14d (VECTORIZED)",-0.5202404293923201,0.5,50.0
+Kurtosis Factor,"Strategy: momentum, Rebal: 14d (VECTORIZED)",0.7950147995001107,0.2980152584229898,29.801525842298982
+Beta Factor (BAB),"Strategy: BAB, Weighting: equal_weight, Rebal: 5d (VECTORIZED)",0.5595100925794301,0.20973514572958163,20.973514572958162
+Breakout Signal,"Entry: 50d, Exit: 70d (VECTORIZED)",0.4632697475031562,0.1736589729002738,17.36589729002738
+Volatility Factor,Strategy: long_low_short_high (VECTORIZED),0.3163640037219392,0.11859062294715471,11.859062294715471
+Mean Reversion,"Z-score threshold: 1.0, 2d holding (VECTORIZED)",-0.031625948938786425,0.05,5.0
+Size Factor,Strategy: long_small_short_large (VECTORIZED),-0.7884841671588592,0.05,5.0
+Carry Factor,"Top 10 short, Bottom 10 long (VECTORIZED)",-1.0379877224665126,0.05,5.0
+Days from High,Max 20 days from 200d high (VECTORIZED),-0.24102212284009455,0.05,5.0
