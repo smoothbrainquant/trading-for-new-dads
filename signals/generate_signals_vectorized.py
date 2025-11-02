@@ -489,9 +489,11 @@ def calculate_weights_vectorized(
         longs = df[df['signal'] == 1].groupby('date', group_keys=False).apply(calc_risk_parity_weights)
         shorts = df[df['signal'] == -1].groupby('date', group_keys=False).apply(calc_risk_parity_weights)
         
-        # Scale by allocations
-        longs['weight'] = longs['weight'] * long_allocation
-        shorts['weight'] = shorts['weight'] * -short_allocation
+        # Scale by allocations (only if positions exist)
+        if not longs.empty:
+            longs['weight'] = longs['weight'] * long_allocation
+        if not shorts.empty:
+            shorts['weight'] = shorts['weight'] * -short_allocation
         
         # Combine back
         df = pd.concat([
