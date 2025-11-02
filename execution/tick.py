@@ -7,7 +7,7 @@ This script fetches all open orders and adjusts their prices to best bid/ask:
 
 Modes:
 - 'best': Move all orders to best bid/ask (default)
-- 'proximity': For pairs of orders, move furthest order halfway between closer order and best bid/ask
+- 'leapfrog': For pairs of orders, move furthest order halfway between closer order and best bid/ask
 """
 
 import ccxt
@@ -205,12 +205,12 @@ def move_order_to_best_price(
     return move_order_to_target_price(exchange, order, target_price, price_type, dry_run)
 
 
-def process_proximity_mode(
+def process_leapfrog_mode(
     orders: List[dict],
     bid_ask_dict: Dict[str, Dict[str, float]]
 ) -> Dict[str, List[Tuple[dict, Optional[float], str]]]:
     """
-    Group orders and calculate target prices for proximity mode.
+    Group orders and calculate target prices for leapfrog mode.
     
     For each symbol-side pair with 2 orders:
     - Move furthest order 1/2 way between closer order and best bid/ask
@@ -238,7 +238,7 @@ def process_proximity_mode(
     
     for (symbol, side), group_orders in grouped.items():
         if len(group_orders) != 2:
-            # Not exactly 2 orders, skip proximity mode for this group
+            # Not exactly 2 orders, skip leapfrog mode for this group
             for order in group_orders:
                 order_targets[order.get("id")] = (order, None, "Not 2 orders in group")
             continue
@@ -297,12 +297,12 @@ def tick_orders(dry_run: bool = True, verbose: bool = False, mode: str = "best")
     Args:
         dry_run: If True, only simulate changes without executing
         verbose: If True, show detailed information
-        mode: 'best' (move to best bid/ask) or 'proximity' (adjust based on order proximity)
+        mode: 'best' (move to best bid/ask) or 'leapfrog' (adjust based on order proximity)
 
     Returns:
         dict: Summary of the operation
     """
-    mode_display = "PROXIMITY MODE" if mode == "proximity" else "BEST BID/ASK MODE"
+    mode_display = "LEAPFROG MODE" if mode == "leapfrog" else "BEST BID/ASK MODE"
     print("=" * 80)
     print(f"TICK ORDERS - {mode_display}")
     print("=" * 80)
@@ -347,9 +347,9 @@ def tick_orders(dry_run: bool = True, verbose: bool = False, mode: str = "best")
         skipped_count = 0
         error_count = 0
 
-        if mode == "proximity":
-            # Proximity mode: calculate targets for order pairs
-            order_targets = process_proximity_mode(orders, bid_ask_dict)
+        if mode == "leapfrog":
+            # Leapfrog mode: calculate targets for order pairs
+            order_targets = process_leapfrog_mode(orders, bid_ask_dict)
             
             for i, order in enumerate(orders, 1):
                 order_id = order.get("id")
@@ -367,7 +367,7 @@ def tick_orders(dry_run: bool = True, verbose: bool = False, mode: str = "best")
                 )
                 print(f"  Amount:        {amount:.6f}" if amount else "  Amount: N/A")
 
-                # Get target from proximity calculation
+                # Get target from leapfrog calculation
                 if order_id in order_targets:
                     _, target_price, description = order_targets[order_id]
                     
@@ -488,11 +488,11 @@ Examples:
   # Live with verbose output
   python3 tick.py --verbose
   
-  # Proximity mode: Adjust order pairs based on proximity
-  python3 tick.py --mode proximity
+  # Leapfrog mode: Adjust order pairs based on proximity
+  python3 tick.py --mode leapfrog
   
-  # Proximity mode dry run
-  python3 tick.py --mode proximity --dry-run
+  # Leapfrog mode dry run
+  python3 tick.py --mode leapfrog --dry-run
 
 How it works:
   
@@ -503,7 +503,7 @@ How it works:
     - Moves SELL orders to best ASK price
     - Skips orders already at the target price
   
-  Proximity Mode (--mode proximity):
+  Leapfrog Mode (--mode leapfrog):
     - Groups orders by symbol and side (buy/sell)
     - For groups with exactly 2 orders:
       * Identifies closer and furthest orders from best bid/ask
@@ -531,9 +531,9 @@ Safety:
     )
     parser.add_argument(
         "--mode",
-        choices=["best", "proximity"],
+        choices=["best", "leapfrog"],
         default="best",
-        help="Order adjustment mode: 'best' (move to best bid/ask) or 'proximity' (adjust based on order proximity)"
+        help="Order adjustment mode: 'best' (move to best bid/ask) or 'leapfrog' (adjust based on order proximity)"
     )
 
     args = parser.parse_args()
