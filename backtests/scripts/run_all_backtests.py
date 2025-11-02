@@ -1809,6 +1809,9 @@ def main():
         # Generate and save Sharpe-based weights with 5% floor and strategy caps
         strategy_caps = {
             'Mean Reversion': 0.05,  # Cap at 5% due to extreme volatility and regime dependence
+            'Regime-Switching (Blended)': 0.35,  # Cap at 35% - high Sharpe but new strategy, ensure diversification
+            'Regime-Switching (Moderate)': 0.35,  # Cap at 35% - balanced risk/reward
+            'Regime-Switching (Optimal)': 0.40,  # Cap at 40% - most aggressive, slightly higher cap
         }
         weights_df = calculate_sharpe_weights_with_floor(summary_df, min_weight=0.05, strategy_caps=strategy_caps)
 
