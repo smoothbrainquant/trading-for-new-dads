@@ -198,6 +198,22 @@ def load_all_data(args):
         print(f"Loading price data from {args.data_file}...")
         df = pd.read_csv(args.data_file)
         df["date"] = pd.to_datetime(df["date"])
+        
+        # Deduplicate symbols: filter to keep only symbols with ":USDC" suffix
+        # This fixes the duplicate HYPE/USDC and HYPE/USDC:USDC issue
+        # We prefer the ":USDC" format as it has higher volume in the data
+        if len(df) > 0 and ":" in str(df["symbol"].iloc[0]):
+            df = df[df["symbol"].str.contains(":")].copy()
+            print(f"  ? Deduplicated symbols (kept format with ':' suffix)")
+        
+        # Check for remaining duplicates
+        base_symbols = df["symbol"].str.split("/").str[0]
+        duplicates_by_date = df.groupby(["date", base_symbols])["symbol"].nunique()
+        if (duplicates_by_date > 1).any():
+            print("  ??  WARNING: Found duplicate base symbols after filtering!")
+            problem_symbols = duplicates_by_date[duplicates_by_date > 1]
+            print(f"      Affected: {len(problem_symbols)} date-symbol combinations")
+        
         df = df.sort_values(["symbol", "date"]).reset_index(drop=True)
         data["price_data"] = df
         print(f"  ? Loaded {len(df)} rows, {df['symbol'].nunique()} symbols")

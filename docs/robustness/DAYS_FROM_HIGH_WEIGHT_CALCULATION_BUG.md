@@ -281,3 +281,31 @@ Total:          100.00% ✓
 **ISSUE RESOLVED** ✅
 
 The weight calculation error has been successfully fixed by implementing symbol deduplication in the data loading process. The backtest now correctly allocates weights without duplicate symbols, resulting in more accurate performance metrics and proper portfolio construction.
+
+---
+
+## Impact on run_all_backtests.py
+
+### Additional Discovery
+
+The standalone script `backtest_20d_from_200d_high.py` is **NOT** used by `run_all_backtests.py`. Instead:
+
+1. `run_all_backtests.py` uses the **vectorized** implementation through `run_days_from_high_backtest()` 
+2. The data loading function `load_all_data()` **also had the same bug** - no symbol deduplication
+3. This means **ALL backtests** in `run_all_backtests.py` were potentially affected by duplicate symbols
+
+### Fix Applied
+
+Updated `run_all_backtests.py` line 196-206 to add the same deduplication logic:
+- Filter to keep only symbols with `:USDC` suffix
+- Add validation to detect remaining duplicates
+- Log the deduplication process
+
+This ensures all backtests (breakout, mean reversion, volatility, beta, carry, days from high, etc.) work with clean, deduplicated data.
+
+### Files Fixed
+
+1. ✅ `/workspace/backtests/scripts/backtest_20d_from_200d_high.py` - Standalone script
+2. ✅ `/workspace/backtests/scripts/run_all_backtests.py` - Centralized backtest runner
+
+**Note:** The deduplication should ideally happen at the data collection/ingestion stage to prevent this issue from affecting any analysis or trading code that uses the raw data.
