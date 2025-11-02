@@ -826,8 +826,29 @@ def load_signal_config(config_path):
             weights = cfg.get("strategy_weights", {}) or {}
             params = cfg.get("params", {}) or {}
             weights = _normalize_weights(weights)
+            
+            # Apply strategy caps (safety measure)
+            # Cap Mean Reversion at 5% due to extreme volatility (76.9%) and regime dependence
+            strategy_caps = {
+                "mean_reversion": 0.05,
+            }
+            
+            capped_strategies = []
+            for strategy_name, max_weight in strategy_caps.items():
+                if strategy_name in weights and weights[strategy_name] > max_weight:
+                    old_weight = weights[strategy_name]
+                    weights[strategy_name] = max_weight
+                    capped_strategies.append((strategy_name, old_weight, max_weight))
+            
+            # Renormalize after capping
+            weights = _normalize_weights(weights)
+            
             print(f"\nLoaded signal blend config from: {config_path}")
-            print("Strategy weights:")
+            if capped_strategies:
+                print("\nStrategy caps applied:")
+                for name, old_w, new_w in capped_strategies:
+                    print(f"  {name}: {old_w:.4f} ({old_w*100:.2f}%) ? {new_w:.4f} ({new_w*100:.2f}%) [CAPPED]")
+            print("\nStrategy weights (after caps and normalization):")
             for name, w in weights.items():
                 print(f"  {name}: {w:.4f} ({w*100:.2f}%)")
             return {"strategy_weights": weights, "params": params}

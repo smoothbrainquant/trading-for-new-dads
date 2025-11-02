@@ -1,20 +1,34 @@
 {
   "strategy_weights": {
-    "mean_reversion": 0.413702239789196,
-    "size": 0.051383399209486,
-    "carry": 0.100131752305665,
-    "beta": 0.089591567852437,
-    "trendline_breakout": 0.047430830039526,
-    "volatility": 0.185770750988142,
-    "kurtosis": 0.111989459815547,
-    "breakout": 0.0,
-    "days_from_high": 0.0,
-    "adf": 0.0
+    "mean_reversion": 0.05,
+    "size": 0.089,
+    "carry": 0.05,
+    "beta": 0.155,
+    "trendline_breakout": 0.082,
+    "volatility": 0.321,
+    "kurtosis": 0.05,
+    "breakout": 0.128,
+    "days_from_high": 0.075,
+    "adf": 0.05
   },
-  "_weights_updated": {
-    "_comment": "Weights updated based on Sharpe ratios: Size=0.39, Carry=0.76, Mean Reversion=3.14, Beta=0.68, Volatility=1.41, TLBO=0.36, Kurtosis=0.85",
-    "_date": "2025-10-30",
-    "_total_sharpe": 7.59
+  "_weights_note": {
+    "_comment": "Updated 2025-11-02: Mean Reversion capped at 5% due to extreme volatility (76.9%), regime dependence, and zero edge (Sharpe -0.032). Kurtosis, Carry, and ADF also capped at 5% due to negative Sharpe ratios.",
+    "_original_mean_reversion_weight": 0.413702239789196,
+    "_reason": "Mean Reversion shows +37% in 2023 but -37% in 2024 and has 76.9% volatility with -62.6% max drawdown. Knife-catching strategy only works in bull markets. See docs/MEAN_REVERSION_ANALYSIS.md for details."
+  },
+  "_weights_updated_history": {
+    "_2025_11_02": {
+      "_comment": "Weights rebalanced based on 2023-2025 backtest results. Positive Sharpe strategies scaled up, negative Sharpe capped at 5%.",
+      "_positive_sharpe": "Size=0.70, Beta=0.56, Breakout=0.46, Volatility=0.32",
+      "_negative_sharpe": "Mean Reversion=-0.032 (CAPPED), Kurtosis=-0.85 (CAPPED), Carry=-1.04 (CAPPED), ADF=-0.85 (CAPPED)",
+      "_total_positive_sharpe": 2.04
+    },
+    "_2025_10_30_OLD": {
+      "_comment": "OLD WEIGHTS - Weights updated based on Sharpe ratios: Size=0.39, Carry=0.76, Mean Reversion=3.14, Beta=0.68, Volatility=1.41, TLBO=0.36, Kurtosis=0.85",
+      "_date": "2025-10-30",
+      "_total_sharpe": 7.59,
+      "_note": "These weights included an error - Mean Reversion had incorrect Sharpe (3.14 vs actual -0.032)"
+    }
   },
   "_removed_strategy": {
     "_comment": "oi_divergence strategy removed - OI data not used anymore",
