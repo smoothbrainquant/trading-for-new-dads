@@ -1,0 +1,142 @@
+================================================================================
+TOP 100 COINS - PRICE DATA COVERAGE ANALYSIS
+================================================================================
+
+QUESTION: How is SOL missing from Coinbase spot?
+
+ANSWER: SOL is NOT missing! But there's a bigger problem...
+
+================================================================================
+KEY FINDING: DATA HAS MAJOR TEMPORAL GAPS
+================================================================================
+
+SOL Example:
+  ✅ EXISTS in price dataset
+  ❌ Only has data from 2021-06-17 to 2021-10-28 (133 days)
+  ❌ Then STOPS - no recent data!
+
+This is true for many major coins:
+  - XRP: Only 2020-2021 (stops Jan 2021)
+  - DOGE: Only Jun-Oct 2021 (4 months)
+  - ADA: Only Mar-Oct 2021 (7 months)
+  - BNB: Only 2 days! (Oct 22-24, 2025)
+  - USDT: Only May-Oct 2021 (5 months)
+
+================================================================================
+TOP 100 COVERAGE SUMMARY
+================================================================================
+
+Overall: 63/100 coins exist in dataset (63%)
+But:
+  - Current data (2025):  33/100 (33%)
+  - Old data (pre-2025):  30/100 (30%)  ← THE PROBLEM
+  - Missing entirely:     37/100 (37%)
+
+Top 10 Coins:
+  ✅ Current: 3/10 (BTC, ETH, LINK)
+  ⚠️  Old:    5/10 (XRP, USDT, BNB, SOL, DOGE, ADA)
+  ❌ Missing: 2/10 (USDC, TRX)
+
+Only 30% of top 10 coins have usable current data!
+
+================================================================================
+WHY THIS HAPPENS
+================================================================================
+
+Pattern 1: Data Collection Stopped in October 2021
+  Many coins have data that suddenly ends Oct 2021:
+    SOL, DOGE, ADA, USDT, DOT, AVAX, SHIB, ICP, etc.
+  
+  → Likely: Data collection script broke/stopped
+
+Pattern 2: Very Short Periods
+  Some coins have only days/weeks of data:
+    BNB: 2 days
+    HBAR: 15 days
+    AVAX: 28 days
+    SHIB: 49 days
+
+Pattern 3: Completely Missing (37 coins)
+  Including major ones:
+    USDC (rank #7, $74B!), TRX (#9, $32B), HYPE (#11, $16B)
+
+================================================================================
+IMPACT ON BACKTESTING
+================================================================================
+
+Even though 63% exist in dataset, join rate is only 21.8% because:
+
+  1. Temporal mismatch - coin not available at that date
+  2. Insufficient history - need 90 days for volatility calc
+  3. Data gaps - missing critical periods
+
+Example: October 2025 rebalance
+  - Top 150 coins needed
+  - 87 exist in dataset overall (58%)
+  - Only 42 available at that date (28%)  ← Why join rate is low
+
+================================================================================
+COVERAGE BY TIER
+================================================================================
+
+Market Cap Tier    Current   Old Data   Missing   Total
+----------------------------------------------------------
+Top 10             3 (30%)   5 (50%)    2 (20%)   8/10
+11-20              4 (40%)   3 (30%)    3 (30%)   7/10
+21-30              2 (20%)   4 (40%)    4 (40%)   6/10
+31-50              5 (25%)   6 (30%)    9 (45%)   11/20
+51-100            19 (38%)  12 (24%)   19 (38%)   31/50
+
+The larger the coin, the MORE LIKELY it has data issues!
+
+================================================================================
+WHAT NEEDS TO HAPPEN
+================================================================================
+
+Immediate:
+  1. Resume data collection for stopped coins (Oct 2021 batch)
+  2. Backfill gaps from 2021-2025
+  3. Add missing top coins (USDC, TRX, HYPE, TON, etc.)
+
+Long-term:
+  1. Expand data sources:
+     - Binance (for BNB, many altcoins)
+     - Kraken (for XRP continuous coverage)
+     - Hyperliquid (already trading there)
+     - CoinGecko (comprehensive backup)
+  
+  2. Automated daily collection with monitoring
+  3. Target: 90%+ coverage of top 100 (currently 33%)
+
+================================================================================
+FILES GENERATED
+================================================================================
+
+✅ TOP100_PRICE_COVERAGE_SUMMARY.md        - Full detailed report
+✅ top100_price_coverage_analysis.png      - Visual timeline
+✅ top100_price_data_coverage.csv          - Spreadsheet
+✅ top100_price_coverage_detailed.csv      - With date ranges
+
+================================================================================
+CONCLUSION
+================================================================================
+
+"SOL is missing" → FALSE
+  SOL exists but has incomplete temporal coverage (4 months only)
+
+Real problem:
+  • 63% of top 100 coins exist in dataset (good!)
+  • But only 33% have current usable data (bad!)
+  • Data collection stopped for major coins in Oct 2021
+  • Creates low backtest join rate (21.8%)
+
+Fix priority:
+  1. Resume stopped coins (highest priority!)
+  2. Backfill 2021-2025 gaps
+  3. Expand data sources
+  4. Maintain pipeline
+
+Current state: Can only backtest with ~33 continuously available coins
+Target state: Should be able to use 90+ coins from top 100
+
+================================================================================
