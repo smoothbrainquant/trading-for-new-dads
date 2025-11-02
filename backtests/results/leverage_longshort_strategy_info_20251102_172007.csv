@@ -1,0 +1,2 @@
+strategy_name,description,rebalance_frequency,start_date,end_date,total_return_pct,annualized_return_pct,sharpe_ratio,max_drawdown_pct,win_rate_pct
+Leverage Long/Short,"Long top 10 leveraged coins, Short bottom 10 least leveraged",Monthly,2021-06-07,2025-10-24,-30.177748262425098,-7.873044112725669,-0.364172186028792,-56.04131298187016,44.75

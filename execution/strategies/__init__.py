@@ -9,6 +9,7 @@ from .trendline_breakout import strategy_trendline_breakout
 from .kurtosis import strategy_kurtosis
 from .volatility import strategy_volatility
 from .adf import strategy_adf
+from .leverage_inverted import strategy_leverage_inverted
 from .regime_switching import strategy_regime_switching
 
 __all__ = [
@@ -23,5 +24,6 @@ __all__ = [
     "strategy_kurtosis",
     "strategy_volatility",
     "strategy_adf",
+    "strategy_leverage_inverted",
     "strategy_regime_switching",
 ]
