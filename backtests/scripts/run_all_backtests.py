@@ -823,7 +823,6 @@ def run_beta_factor_backtest(price_data, **kwargs):
         return None
 
 
-<<<<<<< HEAD
 def run_leverage_inverted_backtest(leverage_data, price_data, **kwargs):
     """
     Run inverted leverage factor backtest.
