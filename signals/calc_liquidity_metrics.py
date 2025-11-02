@@ -197,7 +197,13 @@ def calculate_single_asset_metrics(
     
     # 7. AMIHUD ILLIQUIDITY (requires volume data)
     volume_24h = ticker.get('quoteVolume', ticker.get('baseVolume', 0))
-    daily_return = ticker.get('percentage', 0) / 100  # Convert to decimal
+    if volume_24h is None:
+        volume_24h = 0
+    
+    percentage = ticker.get('percentage', 0)
+    if percentage is None:
+        percentage = 0
+    daily_return = percentage / 100  # Convert to decimal
     
     # Amihud illiquidity: |return| / volume (in millions)
     amihud = abs(daily_return) / (volume_24h / 1e6) if volume_24h > 0 else np.nan
