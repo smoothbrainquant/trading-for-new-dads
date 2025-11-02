@@ -1,0 +1,2 @@
+Strategy,Description,Sharpe Ratio,Weight,Weight_Pct
+Size Factor,Strategy: long_small_short_large (VECTORIZED),-0.5635928023402081,1.0,100.0

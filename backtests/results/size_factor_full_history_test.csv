@@ -1,0 +1,2 @@
+Strategy,Description,Avg Return,Avg Drawdown,Stdev Return,Stdev Downside Return,Sharpe Ratio,Sortino Ratio,Information Coefficient,Max Drawdown,Win Rate,Calmar Ratio,Total Return,Final Value,Num Days
+Size Factor,Strategy: long_small_short_large (VECTORIZED),-0.11305392207798626,-0.40745843624721456,0.24840280327538639,0.17351146352599,-0.5635928023402081,-0.8068517731462069,0.04018099775408433,-0.6487002449211741,0.4715447154471545,-0.21581313264981136,-0.5784587494153095,4215.412505846905,2092
