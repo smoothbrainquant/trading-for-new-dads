@@ -275,7 +275,7 @@ portfolio_value *= (1 - turnover * transaction_cost)
 | top_n (shorts) | 10 | 10 | ? |
 | bottom_n (longs) | 10 | 10 | ? |
 | rebalance_days | 10 | 10 | ? |
-| weighting | equal_weight | inverse_vol | ?? |
+| weighting | risk_parity | inverse_vol | ? |
 
 ### Beta Factor
 | Parameter | Backtest | Live Trading | Match? |
@@ -362,13 +362,12 @@ None identified. Systems are fundamentally compatible.
    - **Impact**: Minor difference in position sizing
    - **Recommendation**: Update backtest to use `inverse_vol` or update live to use `equal_weight`
 
-2. **Rebalancing Logic Difference**
    - **Backtest**: Time-based (every N days)
    - **Live**: Threshold-based (only if drift > 3%)
    - **Impact**: Live trading has fewer trades than backtests
    - **Recommendation**: This is intentional for cost efficiency - document clearly
 
-3. **Transaction Costs**
+2. **Transaction Costs**
    - **Backtest**: Fixed 0.1% per trade
    - **Live**: Actual exchange fees
    - **Impact**: Real costs may differ from simulated
