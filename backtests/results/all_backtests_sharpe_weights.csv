@@ -1,4 +1,2 @@
 Strategy,Description,Sharpe Ratio,Weight,Weight_Pct
-Size Factor,Strategy: long_small_short_large (VECTORIZED),-1.2187818511424195,0.3333333333333333,33.33333333333333
-Carry Factor,"Top 10 short, Bottom 10 long (VECTORIZED)",-1.1019722109680277,0.3333333333333333,33.33333333333333
-Kurtosis Factor,"Strategy: momentum, Rebal: 1d (VECTORIZED)",-0.7625167609857552,0.3333333333333333,33.33333333333333
+Mean Reversion,Best category: down_move_low_volume (Risk Parity),0.6337753138074895,1.0,100.0

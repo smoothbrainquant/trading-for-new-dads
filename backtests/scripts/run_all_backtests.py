@@ -314,9 +314,9 @@ def run_breakout_backtest(price_data, **kwargs):
 
 
 def run_mean_reversion_backtest(price_data, **kwargs):
-    """Run mean reversion backtest."""
+    """Run mean reversion backtest with risk parity weighting."""
     print("\n" + "=" * 80)
-    print("Running Mean Reversion Backtest")
+    print("Running Mean Reversion Backtest (Risk Parity)")
     print("=" * 80)
 
     try:
@@ -344,7 +344,7 @@ def run_mean_reversion_backtest(price_data, **kwargs):
         # Analyze mean reversion
         results = analyze_mean_reversion(data_categorized)
 
-        # Create a synthetic portfolio based on mean reversion signals
+        # Create a portfolio based on mean reversion signals with risk parity weighting
         # We'll use the directional category with best performance
         directional_stats = results["by_directional_category"]
 
@@ -360,28 +360,72 @@ def run_mean_reversion_backtest(price_data, **kwargs):
             ].copy()
 
             if len(strategy_data) > 0:
-                # Create cumulative portfolio value
+                print(f"  Selected category: {best_strategy['category']}")
+                print(f"  Total signals: {len(strategy_data)}")
+                print(f"  Unique dates: {strategy_data['date'].nunique()}")
+                
+                # Calculate volatility for each symbol (using return_std from data)
+                strategy_data = strategy_data.sort_values(["date", "symbol"])
+                
+                # Use return_std as volatility measure (already calculated in z-score function)
+                strategy_data['volatility'] = strategy_data['return_std']
+                
+                # Fill missing volatility with median
+                median_vol = strategy_data['volatility'].median()
+                strategy_data['volatility'] = strategy_data['volatility'].fillna(median_vol)
+                
+                # Apply floor to volatility to avoid extreme weights
+                min_vol = strategy_data['volatility'].quantile(0.05)
+                strategy_data['volatility'] = strategy_data['volatility'].clip(lower=min_vol)
+                
+                # Calculate risk parity weights (inverse volatility)
+                strategy_data['inv_vol'] = 1.0 / strategy_data['volatility']
+                
+                # Normalize weights by date (so each day's weights sum to 1)
+                strategy_data['weight'] = strategy_data.groupby('date')['inv_vol'].transform(
+                    lambda x: x / x.sum()
+                )
+                
+                # Calculate weighted returns for each position
+                strategy_data['weighted_return'] = (
+                    strategy_data['forward_1d_return'] * strategy_data['weight']
+                )
+                
+                # Aggregate by date to get daily portfolio returns
+                daily_portfolio_returns = (
+                    strategy_data.groupby('date')['weighted_return']
+                    .sum()
+                    .reset_index()
+                )
+                daily_portfolio_returns.columns = ['date', 'portfolio_return']
+                
+                print(f"  Trading days: {len(daily_portfolio_returns)}")
+                print(f"  Average positions per day: {len(strategy_data) / len(daily_portfolio_returns):.1f}")
+                
+                # Create portfolio value time series
                 initial_capital = kwargs.get("initial_capital", 10000)
-                strategy_data = strategy_data.sort_values("date")
-                strategy_data["cumulative_return"] = (
-                    1 + strategy_data["forward_1d_return"].fillna(0)
+                daily_portfolio_returns = daily_portfolio_returns.sort_values('date')
+                daily_portfolio_returns['portfolio_return'] = daily_portfolio_returns['portfolio_return'].fillna(0)
+                
+                # Calculate cumulative portfolio value
+                daily_portfolio_returns['cumulative_return'] = (
+                    1 + daily_portfolio_returns['portfolio_return']
                 ).cumprod()
-                strategy_data["portfolio_value"] = (
-                    initial_capital * strategy_data["cumulative_return"]
+                daily_portfolio_returns['portfolio_value'] = (
+                    initial_capital * daily_portfolio_returns['cumulative_return']
                 )
 
                 # Calculate metrics
-                portfolio_df = strategy_data[["date", "portfolio_value"]].copy()
+                portfolio_df = daily_portfolio_returns[["date", "portfolio_value"]].copy()
                 metrics = calculate_comprehensive_metrics(portfolio_df, initial_capital)
                 
                 # Extract daily returns
-                portfolio_df["daily_return"] = portfolio_df["portfolio_value"].pct_change()
-                daily_returns = portfolio_df[["date", "daily_return"]].copy()
+                daily_returns = daily_portfolio_returns[["date", "portfolio_return"]].copy()
                 daily_returns.columns = ["date", "Mean Reversion"]
 
                 return {
                     "strategy": "Mean Reversion",
-                    "description": f"Best category: {best_strategy['category']}",
+                    "description": f"Best category: {best_strategy['category']} (Risk Parity)",
                     "metrics": metrics,
                     "results": results,
                     "daily_returns": daily_returns,
