@@ -20,6 +20,12 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import argparse
+import sys
+import os
+
+# Add signals directory to path for imports
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "signals"))
+
 from calc_vola import calculate_rolling_30d_volatility
 from calc_weights import calculate_weights
 
@@ -83,19 +89,23 @@ def load_funding_rates(filepath):
         filepath (str): Path to funding rates CSV file
 
     Returns:
-        pd.DataFrame: DataFrame with date, coin_symbol, funding_rate_pct
+        pd.DataFrame: DataFrame with date, coin_symbol, funding_rate_pct, fr_low, fr_high
     """
     df = pd.read_csv(filepath)
     df["date"] = pd.to_datetime(df["date"])
     df = df.sort_values(["coin_symbol", "date"]).reset_index(drop=True)
 
-    # Keep only necessary columns
-    df = df[["date", "coin_symbol", "funding_rate_pct", "rank", "coin_name"]]
+    # Keep only necessary columns (including fr_low and fr_high for extremes)
+    columns_to_keep = ["date", "coin_symbol", "funding_rate_pct", "rank", "coin_name"]
+    if "fr_low" in df.columns and "fr_high" in df.columns:
+        columns_to_keep.extend(["fr_low", "fr_high"])
+    
+    df = df[columns_to_keep]
 
     return df
 
 
-def rank_by_funding_rate(funding_df, date, top_n=10, bottom_n=10):
+def rank_by_funding_rate(funding_df, date, top_n=10, bottom_n=10, use_extremes=False):
     """
     Rank coins by funding rate on a specific date.
 
@@ -104,6 +114,7 @@ def rank_by_funding_rate(funding_df, date, top_n=10, bottom_n=10):
         date (pd.Timestamp): Date to rank on
         top_n (int): Number of top (highest funding rate) coins to select
         bottom_n (int): Number of bottom (lowest funding rate) coins to select
+        use_extremes (bool): If True, use fr_low for longs and fr_high for shorts
 
     Returns:
         dict: Dictionary with 'long' (lowest funding) and 'short' (highest funding) lists
@@ -114,23 +125,41 @@ def rank_by_funding_rate(funding_df, date, top_n=10, bottom_n=10):
     if date_data.empty:
         return {"long": [], "short": []}
 
-    # Remove any NaN funding rates
-    date_data = date_data.dropna(subset=["funding_rate_pct"])
+    if use_extremes:
+        # Remove any NaN values in the extreme columns
+        date_data = date_data.dropna(subset=["fr_low", "fr_high"])
+        
+        if len(date_data) < (top_n + bottom_n):
+            # Not enough coins, scale down
+            available = len(date_data)
+            top_n = min(top_n, available // 2)
+            bottom_n = min(bottom_n, available // 2)
+        
+        # Long: coins with LOWEST intraday funding rates (fr_low) -> we receive funding
+        long_candidates = date_data.nsmallest(bottom_n, "fr_low")
+        long_symbols = long_candidates["coin_symbol"].tolist()
+        
+        # Short: coins with HIGHEST intraday funding rates (fr_high) -> we collect funding
+        short_candidates = date_data.nlargest(top_n, "fr_high")
+        short_symbols = short_candidates["coin_symbol"].tolist()
+    else:
+        # Remove any NaN funding rates
+        date_data = date_data.dropna(subset=["funding_rate_pct"])
 
-    if len(date_data) < (top_n + bottom_n):
-        # Not enough coins, scale down
-        available = len(date_data)
-        top_n = min(top_n, available // 2)
-        bottom_n = min(bottom_n, available // 2)
+        if len(date_data) < (top_n + bottom_n):
+            # Not enough coins, scale down
+            available = len(date_data)
+            top_n = min(top_n, available // 2)
+            bottom_n = min(bottom_n, available // 2)
 
-    # Sort by funding rate
-    date_data = date_data.sort_values("funding_rate_pct")
+        # Sort by funding rate
+        date_data = date_data.sort_values("funding_rate_pct")
 
-    # Long: coins with LOWEST funding rates (most negative) -> we receive funding
-    long_symbols = date_data.head(bottom_n)["coin_symbol"].tolist()
+        # Long: coins with LOWEST funding rates (most negative) -> we receive funding
+        long_symbols = date_data.head(bottom_n)["coin_symbol"].tolist()
 
-    # Short: coins with HIGHEST funding rates (most positive) -> we receive funding
-    short_symbols = date_data.tail(top_n)["coin_symbol"].tolist()
+        # Short: coins with HIGHEST funding rates (most positive) -> we receive funding
+        short_symbols = date_data.tail(top_n)["coin_symbol"].tolist()
 
     return {"long": long_symbols, "short": short_symbols}
 
@@ -172,6 +201,7 @@ def backtest(
     leverage=1.0,
     long_allocation=0.5,
     short_allocation=0.5,
+    use_extremes=False,
 ):
     """
     Run backtest for the carry factor strategy.
@@ -189,6 +219,7 @@ def backtest(
         leverage (float): Leverage multiplier (default 1.0 for no leverage)
         long_allocation (float): Allocation to long side (default 0.5 = 50%)
         short_allocation (float): Allocation to short side (default 0.5 = 50%)
+        use_extremes (bool): If True, use fr_low for longs and fr_high for shorts
 
     Returns:
         dict: Dictionary containing backtest results
@@ -264,7 +295,7 @@ def backtest(
         if is_rebalance_day:
             # Rank coins by funding rate on this date
             selected = rank_by_funding_rate(
-                funding_data, current_date, top_n=top_n, bottom_n=bottom_n
+                funding_data, current_date, top_n=top_n, bottom_n=bottom_n, use_extremes=use_extremes
             )
 
             long_symbols = selected["long"]
@@ -668,6 +699,11 @@ def main():
         default="backtest_carry_factor",
         help="Prefix for output CSV files",
     )
+    parser.add_argument(
+        "--use-extremes",
+        action="store_true",
+        help="Use fr_low for longs and fr_high for shorts (instead of funding_rate_pct)",
+    )
 
     args = parser.parse_args()
 
@@ -703,6 +739,11 @@ def main():
 
     # Run backtest
     print("\nRunning backtest...")
+    if args.use_extremes:
+        print("  Using fr_low for LONG positions and fr_high for SHORT positions")
+    else:
+        print("  Using funding_rate_pct (average) for both LONG and SHORT positions")
+    
     results = backtest(
         price_data=price_data,
         funding_data=funding_data,
@@ -716,6 +757,7 @@ def main():
         short_allocation=args.short_allocation,
         start_date=args.start_date,
         end_date=args.end_date,
+        use_extremes=args.use_extremes,
     )
 
     # Print results
