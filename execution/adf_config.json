@@ -1,9 +1,9 @@
 {
   "strategy_weights": {
-    "regime_switching": 1.0
+    "adf": 1.0
   },
   "params": {
-    "regime_switching": {
+    "adf": {
       "mode": "blended",
       "adf_window": 60,
       "regression": "ct",
@@ -51,6 +51,6 @@
       }
     },
     "backtested_period": "March 2021 - October 2025 (1,698 days)",
-    "improvement_vs_static": "Current +42% ann. ? Direction-aware +60-100% ann. (+20-60pp improvement)"
+    "improvement_vs_static": "Static ADF +4-42% ann. ? Regime-aware +60-150% ann. (10-40x improvement)"
   }
 }

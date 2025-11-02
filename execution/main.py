@@ -22,7 +22,7 @@ Supported signals (handlers implemented or stubbed):
 - beta: Betting Against Beta - Long low beta coins, short high beta coins (5d rebalance optimal)
 - kurtosis: Kurtosis factor - Long/short based on return distribution kurtosis (14d rebalance optimal)
 - volatility: Low volatility anomaly (long low vol, short high vol, 3d rebalance optimal)
-- adf: ADF factor (trend following vs mean reversion, 7d rebalance optimal)
+- adf: ADF factor with regime-aware allocation (dynamically adjusts long/short based on BTC regimes)
 
 Weights can be provided via an external JSON config file so the backtesting suite
 can update them without code changes. Example config structure:
@@ -93,7 +93,6 @@ from execution.strategies import (
     strategy_volatility,
     strategy_adf,
     strategy_leverage_inverted,  # testing
-    strategy_regime_switching,
 )
 
 # Import shared strategy utilities for legacy path
@@ -132,7 +131,6 @@ STRATEGY_REGISTRY = {
     "volatility": strategy_volatility,
     "adf": strategy_adf,
     "leverage_inverted": strategy_leverage_inverted,  # testing
-    "regime_switching": strategy_regime_switching,
 }
 
 
@@ -303,40 +301,6 @@ def _build_strategy_params(
         }
 
     elif strategy_name == "adf":
-        adf_window = int(p.get("adf_window", 60)) if isinstance(p, dict) else 60
-        regression = p.get("regression", "ct") if isinstance(p, dict) else "ct"
-        volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
-        rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
-        long_percentile = int(p.get("long_percentile", 20)) if isinstance(p, dict) else 20
-        short_percentile = int(p.get("short_percentile", 80)) if isinstance(p, dict) else 80
-        strategy_type = p.get("strategy_type", "trend_following_premium") if isinstance(p, dict) else "trend_following_premium"
-        weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"
-        long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
-        short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
-        return (historical_data, list(historical_data.keys()), strategy_notional), {
-            "adf_window": adf_window,
-            "regression": regression,
-            "volatility_window": volatility_window,
-            "rebalance_days": rebalance_days,
-            "long_percentile": long_percentile,
-            "short_percentile": short_percentile,
-            "strategy_type": strategy_type,
-            "weighting_method": weighting_method,
-            "long_allocation": long_allocation,
-            "short_allocation": short_allocation,
-        }
-
-    elif strategy_name == "leverage_inverted":  # testing
-        rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
-        top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
-        bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
-        return (historical_data, list(historical_data.keys()), strategy_notional), {
-            "rebalance_days": rebalance_days,
-            "top_n": top_n,
-            "bottom_n": bottom_n,
-        }
-
-    elif strategy_name == "regime_switching":
         mode = p.get("mode", "blended") if isinstance(p, dict) else "blended"
         adf_window = int(p.get("adf_window", 60)) if isinstance(p, dict) else 60
         regression = p.get("regression", "ct") if isinstance(p, dict) else "ct"
@@ -355,6 +319,17 @@ def _build_strategy_params(
             "short_percentile": short_percentile,
             "weighting_method": weighting_method,
         }
+
+    elif strategy_name == "leverage_inverted":  # testing
+        rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
+        top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
+        bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            "rebalance_days": rebalance_days,
+            "top_n": top_n,
+            "bottom_n": bottom_n,
+        }
+
 
     else:
         # Default: just pass historical_data and notional
