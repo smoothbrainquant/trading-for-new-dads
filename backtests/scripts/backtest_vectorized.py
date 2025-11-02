@@ -210,7 +210,53 @@ def prepare_factor_data(
         adf_data = factor_params.get('adf_data')
         if adf_data is None:
             raise ValueError("ADF factor requires pre-calculated 'adf_data' parameter")
-        return adf_data
+        
+        # Symbol format normalization: ADF uses full symbols (e.g., 'AAVE/USD')
+        # while price_data may use base symbols (e.g., 'AAVE')
+        # Check if we need to normalize
+        sample_adf_symbol = str(adf_data['symbol'].iloc[0])
+        sample_price_symbol = str(price_data['symbol'].iloc[0])
+        
+        # If formats differ, use 'base' column from ADF or extract base from symbol
+        if '/' in sample_adf_symbol and '/' not in sample_price_symbol:
+            if 'base' in adf_data.columns:
+                # Use existing base column
+                adf_data = adf_data.copy()
+                adf_data['symbol_normalized'] = adf_data['base']
+            else:
+                # Extract base from symbol (e.g., 'AAVE/USD' -> 'AAVE')
+                adf_data = adf_data.copy()
+                adf_data['symbol_normalized'] = adf_data['symbol'].str.split('/').str[0]
+            merge_on_col = 'symbol_normalized'
+        else:
+            merge_on_col = 'symbol'
+        
+        # Merge with price_data to ensure alignment (only keep dates/symbols in price_data)
+        # This is critical when price_data has been filtered by start_date/end_date
+        # First, select only the ADF columns we need
+        adf_cols = ['date', merge_on_col, 'adf_stat']
+        if 'adf_pvalue' in adf_data.columns:
+            adf_cols.append('adf_pvalue')
+        if 'is_stationary' in adf_data.columns:
+            adf_cols.append('is_stationary')
+        
+        adf_subset = adf_data[adf_cols].copy()
+        
+        # Rename the merge column to 'symbol' for consistency
+        if merge_on_col != 'symbol':
+            adf_subset = adf_subset.rename(columns={merge_on_col: 'symbol'})
+        
+        # Merge with price data (left join to keep all price_data rows)
+        merged = price_data.merge(
+            adf_subset,
+            on=['date', 'symbol'],
+            how='left'  # Left join: keep all price_data rows, add ADF where available
+        )
+        
+        # Drop rows where adf_stat is NaN (no ADF data available)
+        merged = merged.dropna(subset=['adf_stat'])
+        
+        return merged
     
     else:
         raise ValueError(f"Unknown factor type: {factor_type}")
@@ -558,6 +604,16 @@ def backtest_factor_vectorized(
     
     # Step 10: Calculate performance metrics
     print("Step 10: Computing performance metrics...")
+    
+    # Check if we have results
+    if len(results) == 0:
+        print("\n??  WARNING: No portfolio returns calculated (empty results DataFrame)")
+        print("This may be due to:")
+        print("  - Start date filtering removed all data")
+        print("  - No valid signals generated")
+        print("  - Date alignment issues between factor data and price data")
+        return None
+    
     total_return = results['cum_return'].iloc[-1] - 1
     num_days = len(results)
     years = num_days / 365.25
