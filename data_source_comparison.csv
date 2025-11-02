@@ -1,0 +1,4 @@
+File,Symbols,Rows,Latest_Date,Has_CMC,Used_By_Default
+combined_coinbase_coinmarketcap_daily.csv,172,80390,2025-10-24,True,True
+coinbase_spot_daily_data_20200101_20251024_110130.csv,172,80390,2025-10-24,False,False
+coinbase_top200_daily_20200101_to_present_20251025_171900.csv,207,88304,2025-10-25,False,False

@@ -1,0 +1,167 @@
+================================================================================
+DATA SOURCE SINGLE SOURCE OF TRUTH - ANSWER
+================================================================================
+
+QUESTION: Is this the same data being used in run_all_backtests? 
+          Is there a single source of truth?
+
+ANSWER: YES to both! (With one important caveat)
+
+================================================================================
+THE SINGLE SOURCE OF TRUTH
+================================================================================
+
+File: data/raw/combined_coinbase_coinmarketcap_daily.csv
+
+✅ Used by:
+   - run_all_backtests.py (DEFAULT)
+   - All individual backtest scripts (DEFAULT)
+   - My analysis scripts (analyze_dilution_backtest.py, etc.)
+   
+✅ Consistent:
+   - All backtests use the SAME file
+   - No fragmentation or inconsistency
+   - Can be overridden with --data-file argument
+
+Specs:
+   - Symbols: 172
+   - Rows: 80,390
+   - Date range: 2020-01-01 to 2025-10-24
+   - Content: Coinbase OHLCV + CoinMarketCap metadata (market cap, rank)
+   - Size: 12.4 MB
+
+================================================================================
+THE PROBLEM: BETTER DATA EXISTS BUT ISN'T USED
+================================================================================
+
+There's a NEWER, MORE COMPLETE file that should be the source of truth:
+
+File: data/raw/coinbase_top200_daily_20200101_to_present_20251025_171900.csv
+
+Specs:
+   - Symbols: 207 (+35 more!)
+   - Rows: 88,304
+   - Date range: 2020-01-01 to 2025-10-25 (1 day newer)
+   - Content: Coinbase OHLCV only (no CMC metadata yet)
+
+Missing from combined but in top200:
+   ABT, ACH, ALT, AVNT, AWE, BERA, BLAST, BLZ, C98, CBBTC, COW, 
+   DEGEN, EURC, G, GIGA, GTC, HYPE, HIGH, IP, KAITO, LAYER, LCX, 
+   LINEA, LQTY, MATIC, MELANIA, MOTHER, RETARDIO, RLY, SNEK, 
+   SWELL, TRUMP, USTC, VANRY, VIRTUAL
+
+Key coins we're missing:
+   • HYPE (rank #11, $16B market cap!)
+   • IP (rank #42, Story Protocol)
+   • TRUMP (rank #66)
+   • Many new trending coins
+
+================================================================================
+VERIFICATION: EVERYTHING USES THE SAME FILE
+================================================================================
+
+run_all_backtests.py:
+   default="data/raw/combined_coinbase_coinmarketcap_daily.csv" ✓
+
+backtest_adf_factor.py:
+   default="data/raw/combined_coinbase_coinmarketcap_daily.csv" ✓
+
+backtest_beta_factor.py:
+   default="data/raw/combined_coinbase_coinmarketcap_daily.csv" ✓
+
+backtest_dilution_factor.py:
+   Uses combined_coinbase_coinmarketcap_daily.csv ✓
+
+My analysis scripts:
+   Uses combined_coinbase_coinmarketcap_daily.csv ✓
+
+✅ CONFIRMED: Single source of truth, consistently used
+
+================================================================================
+IMPACT
+================================================================================
+
+Current state (172 symbols):
+   • Top 100 coverage: 63% exist, 33% have current data
+   • Backtest join rate: 21.8%
+   • Missing key coins: HYPE, IP, etc.
+
+If we upgrade to top200 (207 symbols):
+   • Top 100 coverage: ~70% exist, ~36% have current data
+   • Backtest join rate: ~24-25% (small improvement)
+   • Would have HYPE, IP, TRUMP, etc.
+
+Main limitation remains:
+   • Temporal gaps (Oct 2021 cutoff) - BIGGER ISSUE
+   • Even with 207 symbols, many have incomplete coverage
+   • Need to fix both quantity (207 vs 172) AND quality (temporal gaps)
+
+================================================================================
+RECOMMENDATION
+================================================================================
+
+Short-term (Quick Win):
+   1. Merge coinbase_top200 (207 symbols) + CMC metadata
+   2. Save as NEW combined_coinbase_coinmarketcap_daily.csv
+   3. All backtests automatically use it (no code changes!)
+   
+   Result: 172 → 207 symbols (+35), ~2-3% better join rate
+   Effort: 1-2 hours
+
+Long-term (Complete Fix):
+   1. Use top200 as base (207 symbols)
+   2. Backfill Oct 2021 gaps (SOL, XRP, DOGE, etc.)
+   3. Add Binance/Kraken/Hyperliquid data
+   4. Automate daily updates
+   
+   Result: 250+ symbols, 60-70% join rate, full temporal coverage
+   Effort: 1 week
+
+================================================================================
+ANSWER SUMMARY
+================================================================================
+
+Q1: Is this the same data being used in run_all_backtests?
+A1: ✅ YES. My analysis and run_all_backtests both use:
+    data/raw/combined_coinbase_coinmarketcap_daily.csv
+    Same 172 symbols, same temporal gaps
+
+Q2: Is there a single source of truth?
+A2: ✅ YES. The single source of truth is:
+    data/raw/combined_coinbase_coinmarketcap_daily.csv
+    Used consistently across all backtests by default
+    
+    ⚠️ BUT: A better file exists (top200 with 207 symbols)
+           Should upgrade combined file to use this as base
+
+================================================================================
+FILES GENERATED
+================================================================================
+
+✅ DATA_SOURCE_TRUTH_REPORT.md - Full detailed analysis
+✅ data_source_comparison.csv  - File comparison spreadsheet
+✅ check_data_consistency.py   - Analysis script
+
+================================================================================
+CONCLUSION
+================================================================================
+
+Architecture: ✅ GOOD
+   - Single source of truth exists
+   - Used consistently everywhere
+   - No fragmentation
+
+Data Quality: ⚠️ NEEDS UPGRADE
+   - Using 172-symbol file
+   - Better 207-symbol file exists
+   - Should merge top200 + CMC → new combined file
+
+Main Issue: ⚠️ TEMPORAL GAPS (Oct 2021)
+   - More important than symbol count
+   - SOL, XRP, DOGE, etc. stop in Oct 2021
+   - Need to backfill regardless of symbol count
+
+The single source of truth architecture is CORRECT.
+We just need to populate it with BETTER DATA.
+
+================================================================================
