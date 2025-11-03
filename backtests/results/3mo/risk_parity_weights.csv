@@ -1,0 +1,12 @@
+Strategy,Weight,Weight_Pct
+Volatility Factor,0.28157773731146174,28.157773731146175
+Beta Factor (BAB),0.1717806943755203,17.17806943755203
+Breakout Signal,0.14664156831301797,14.664156831301797
+Size Factor,0.05,5.0
+Mean Reversion,0.05,5.0
+Days from High,0.05,5.0
+Carry Factor,0.05,5.0
+Kurtosis Factor,0.05,5.0
+ADF (Blended),0.05,5.0
+Leverage Inverted,0.05,5.0
+Dilution Factor,0.05,5.0

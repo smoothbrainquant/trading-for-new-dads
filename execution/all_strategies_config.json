@@ -1,37 +1,75 @@
 {
   "strategy_weights": {
-    "size": 0.2249,
-    "breakout": 0.1486,
-    "beta": 0.1617,
-    "mean_reversion": 0.0450,
-    "carry": 0.0000,
-    "volatility": 0.0563,
-    "kurtosis": 0.0450,
-    "days_from_high": 0.0000,
-    "adf": 0.2185,
+    "size": 0.0500,
+    "breakout": 0.0911,
+    "beta": 0.0825,
+    "mean_reversion": 0.0500,
+    "carry": 0.0500,
+    "volatility": 0.1436,
+    "kurtosis": 0.0500,
+    "days_from_high": 0.0500,
+    "adf": 0.0500,
     "trendline_breakout": 0.0,
-    "leverage_inverted": 0.0500,
+    "leverage_inverted": 0.3328,
     "dilution": 0.0500
   },
   "_weights_note": {
-    "_comment": "TESTING: Added leverage_inverted (5%) and dilution (5%) for testing. Other strategies scaled down proportionally to maintain 100% total. Core MVO allocation remains intact but at 90% scale.",
-    "_optimization_method": "Constrained Mean-Variance Optimization (MVO) + Testing Strategies",
-    "_testing_strategies": "leverage_inverted (5%), dilution (5%)",
-    "_core_strategies_scaled": "90% of original MVO weights to accommodate testing strategies",
-    "_original_portfolio_sharpe": 1.424,
-    "_reason": "Testing two new strategies at 5% each (capped for safety). Original MVO allocation: Size and ADF as co-equal core holdings (24.99% and 24.28%), now scaled to 22.49% and 21.85%. Beta (16.17%) and Breakout (14.86%) round out top-4. Kurtosis (4.5%, regime-dependent bear-only). Mean Reversion (4.5%, negative Sharpe). Days from High and Carry excluded (negative Sharpe).",
+    "_comment": "ENSEMBLE METHOD: Robust portfolio weights optimized using ensemble averaging (Regularized MVO + Risk Parity + Max Diversification). 30% more stable than standard MVO.",
+    "_optimization_method": "Ensemble (Avg of Regularized MVO, Risk Parity, Max Diversification)",
+    "_stability_improvement": "30% reduction in portfolio turnover vs standard MVO (16.6% vs 23.7%)",
+    "_backtest_period": "2021-01-01 to 2025-10-24 (4.8 years)",
+    "_portfolio_sharpe": 1.709,
+    "_expected_return": "13.70%",
+    "_expected_volatility": "8.02%",
+    "_expected_max_drawdown": "-38%",
+    "_reason": "Ensemble method provides optimal balance of stability and performance. Leverage Inverted (33.28%) dominates due to low correlation and consistent returns. Volatility Factor (14.36%) provides strong risk-adjusted returns. All other strategies maintain 5% minimum for diversification.",
     "_capped_strategies": {
-      "kurtosis": "4.5% (regime-dependent: bear_only filter)",
-      "mean_reversion": "4.5% (negative Sharpe: -0.032)",
-      "leverage_inverted": "5% (TESTING - capped for safety)",
-      "dilution": "5% (TESTING - capped for safety)",
-      "days_from_high": "0% (negative Sharpe: -0.241)",
-      "carry": "0% (worst performer: Sharpe -0.813)"
+      "size": "5% (negative Sharpe: -0.41, capped)",
+      "mean_reversion": "5% (negative Sharpe: -0.16, capped)",
+      "carry": "5% (negative Sharpe: -0.03, capped)",
+      "kurtosis": "5% (regime-dependent: bear_only, capped)",
+      "days_from_high": "5% (negative Sharpe: -0.51, capped)",
+      "adf": "5% (negative Sharpe: -0.03, capped)",
+      "dilution": "5% (high volatility, capped for safety)",
+      "trendline_breakout": "0% (not included in analysis)"
+    },
+    "_methodology": {
+      "_shrinkage": "Applied James-Stein (returns) and Ledoit-Wolf (covariance) shrinkage to reduce estimation error",
+      "_regularization": "L2 penalty (lambda=0.5) to discourage extreme allocations",
+      "_diversification": "5% minimum weight floor ensures broad diversification"
     }
   },
   "_weights_updated_history": {
+    "_2025_11_02_ENSEMBLE_ROBUST": {
+      "_comment": "CURRENT - ENSEMBLE METHOD: Robust weights using ensemble optimization (Regularized MVO + Risk Parity + Max Diversification). 30% more stable than standard MVO.",
+      "_date": "2025-11-02",
+      "_optimization_method": "Ensemble (Average of 3 methods)",
+      "_active_strategies": "Leverage_Inverted (33.28%), Volatility (14.36%), Breakout (9.11%), Beta (8.25%), All others (5.00% minimum)",
+      "_portfolio_metrics": {
+        "sharpe": 1.709,
+        "expected_return": "13.70%",
+        "volatility": "8.02%",
+        "max_drawdown": "-38%",
+        "turnover_stability": "30% improvement vs standard MVO"
+      },
+      "_key_changes": {
+        "leverage_inverted": "5% ? 33.28% (largest allocation, low correlation diversifier)",
+        "volatility": "5.63% ? 14.36% (high Sharpe 1.08, proven performer)",
+        "size": "22.49% ? 5.00% (negative Sharpe -0.41, capped)",
+        "adf": "21.85% ? 5.00% (negative Sharpe -0.03, capped)",
+        "beta": "16.17% ? 8.25% (moderate allocation)",
+        "breakout": "14.86% ? 9.11% (reduced but still meaningful)"
+      },
+      "_stability_analysis": {
+        "full_period_vs_3mo_turnover": "16.60%",
+        "standard_mvo_turnover": "23.66%",
+        "improvement": "30% reduction in turnover",
+        "method_stability_rating": "4/5 stars"
+      },
+      "_documentation": "See docs/MVO_STABILITY_SOLUTIONS.md for full analysis"
+    },
     "_2025_11_02_TESTING_LEVERAGE_DILUTION": {
-      "_comment": "CURRENT - TESTING VERSION: Added leverage_inverted (5%) and dilution (5%) for testing. Core MVO strategies scaled to 90% to accommodate. Original MVO weights preserved at 90% scale.",
+      "_comment": "OLD - TESTING VERSION: Added leverage_inverted (5%) and dilution (5%) for testing. Core MVO strategies scaled to 90% to accommodate. Original MVO weights preserved at 90% scale.",
       "_date": "2025-11-02",
       "_active_strategies": "Size (22.49%), ADF (21.85%), Beta (16.17%), Breakout (14.86%), Volatility (5.63%), Leverage_Inverted (5.00% TESTING), Dilution (5.00% TESTING), Kurtosis (4.50%, regime-dependent), Mean Reversion (4.50%)",
       "_testing_note": "This is a testing configuration. Leverage_inverted and dilution are experimental strategies capped at 5% for safety.",
