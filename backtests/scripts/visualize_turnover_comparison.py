@@ -15,7 +15,7 @@ comparison = pd.read_csv('backtests/results/turnover_construction_comparison.csv
 
 # Create visualization
 fig, axes = plt.subplots(2, 2, figsize=(16, 10))
-fig.suptitle('Turnover Factor: Top/Bottom 10 vs Deciles Comparison', fontsize=16, fontweight='bold')
+fig.suptitle('Turnover Factor: Top/Bottom 10 vs Deciles Comparison (Risk Parity)', fontsize=16, fontweight='bold')
 
 # Plot 1: Equity Curves
 ax = axes[0, 0]

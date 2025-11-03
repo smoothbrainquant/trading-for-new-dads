@@ -116,7 +116,7 @@ def generate_signals_top_bottom_n(price_data, marketcap_data, top_n=10, bottom_n
     return df[['date', 'symbol', 'turnover_pct', 'signal']]
 
 
-def backtest_strategy(signals_df, price_data, initial_capital=10000):
+def backtest_strategy(signals_df, price_data, initial_capital=10000, weighting_method='risk_parity'):
     """Run backtest with given signals"""
     # Prepare returns data
     price_df = price_data.copy()
@@ -124,10 +124,17 @@ def backtest_strategy(signals_df, price_data, initial_capital=10000):
     price_df['daily_return'] = price_df.groupby('symbol')['close'].pct_change()
     returns_df = price_df[['date', 'symbol', 'daily_return']].dropna()
     
+    # Calculate volatility for risk parity weighting
+    price_df['volatility'] = price_df.groupby('symbol')['daily_return'].transform(
+        lambda x: x.rolling(window=30, min_periods=10).std()
+    )
+    volatility_df = price_df[['date', 'symbol', 'volatility']].dropna()
+    
     # Calculate weights
     weights_df = calculate_weights_vectorized(
         signals_df,
-        weighting_method='equal_weight',
+        volatility_df=volatility_df if weighting_method == 'risk_parity' else None,
+        weighting_method=weighting_method,
         long_allocation=0.5,
         short_allocation=0.5,
     )
@@ -272,7 +279,7 @@ def print_comparison(metrics1, metrics2, signals1, signals2, name1, name2):
 def main():
     """Main execution"""
     print("=" * 80)
-    print("TURNOVER FACTOR: TOP/BOTTOM N vs DECILES COMPARISON")
+    print("TURNOVER FACTOR: TOP/BOTTOM N vs DECILES COMPARISON (RISK PARITY)")
     print("=" * 80)
     
     # Load data
@@ -283,7 +290,7 @@ def main():
     
     # Method 1: Top/Bottom 10 coins
     print("\n" + "=" * 80)
-    print("METHOD 1: TOP/BOTTOM 10 COINS (FIXED COUNT)")
+    print("METHOD 1: TOP/BOTTOM 10 COINS (FIXED COUNT) - RISK PARITY")
     print("=" * 80)
     
     signals_top10 = generate_signals_top_bottom_n(
@@ -294,12 +301,14 @@ def main():
     )
     
     print(f"✓ Generated {len(signals_top10)} signals")
-    results_top10, signals_top10 = backtest_strategy(signals_top10, price_data, initial_capital)
+    results_top10, signals_top10 = backtest_strategy(
+        signals_top10, price_data, initial_capital, weighting_method='risk_parity'
+    )
     metrics_top10 = calculate_metrics(results_top10, initial_capital)
     
     # Method 2: Top/Bottom deciles (10%)
     print("\n" + "=" * 80)
-    print("METHOD 2: TOP/BOTTOM DECILES (10% EACH SIDE)")
+    print("METHOD 2: TOP/BOTTOM DECILES (10% EACH SIDE) - RISK PARITY")
     print("=" * 80)
     
     signals_deciles = generate_turnover_signals_vectorized(
@@ -313,7 +322,9 @@ def main():
     )
     
     print(f"✓ Generated {len(signals_deciles)} signals")
-    results_deciles, signals_deciles = backtest_strategy(signals_deciles, price_data, initial_capital)
+    results_deciles, signals_deciles = backtest_strategy(
+        signals_deciles, price_data, initial_capital, weighting_method='risk_parity'
+    )
     metrics_deciles = calculate_metrics(results_deciles, initial_capital)
     
     # Print comparison
@@ -332,13 +343,13 @@ def main():
     
     comparison_df = pd.DataFrame([
         {
-            "Method": "Top/Bottom 10 Coins",
-            "Description": "Fixed count: 10 longs, 10 shorts",
+            "Method": "Top/Bottom 10 Coins (Risk Parity)",
+            "Description": "Fixed count: 10 longs, 10 shorts, risk parity weighting",
             **{k: v for k, v in metrics_top10.items()}
         },
         {
-            "Method": "Top/Bottom Deciles",
-            "Description": "Top 10% and Bottom 10% by percentile",
+            "Method": "Top/Bottom Deciles (Risk Parity)",
+            "Description": "Top 10% and Bottom 10% by percentile, risk parity weighting",
             **{k: v for k, v in metrics_deciles.items()}
         }
     ])
