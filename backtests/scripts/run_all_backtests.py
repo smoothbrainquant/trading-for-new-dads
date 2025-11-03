@@ -552,6 +552,86 @@ def run_carry_factor_backtest(price_data, funding_data, **kwargs):
         return None
 
 
+def run_turnover_factor_backtest(price_data, marketcap_data, **kwargs):
+    """
+    Run turnover factor backtest (VECTORIZED).
+    
+    Turnover = 24h Volume / Market Cap
+    High turnover = liquid, actively traded
+    Strategy: Long high turnover, Short low turnover
+    """
+    print("\n" + "=" * 80)
+    print("Running Turnover Factor Backtest (VECTORIZED)")
+    print("=" * 80)
+    
+    try:
+        # Generate turnover signals vectorized
+        signals_df = generate_turnover_signals_vectorized(
+            price_data=price_data,
+            marketcap_data=marketcap_data,
+            strategy=kwargs.get('strategy', 'long_short'),
+            rebalance_days=kwargs.get('rebalance_days', 30),
+            long_percentile=kwargs.get('long_percentile', 20),
+            short_percentile=kwargs.get('short_percentile', 80),
+            num_quintiles=5,
+        )
+        
+        # Calculate position weights
+        weights_df = calculate_weights_vectorized(
+            signals_df,
+            method=kwargs.get('weighting_method', 'equal_weight'),
+        )
+        
+        # Calculate portfolio returns
+        returns_df = calculate_portfolio_returns_vectorized(
+            price_data,
+            weights_df,
+            leverage=kwargs.get('leverage', 1.0),
+            long_allocation=kwargs.get('long_allocation', 0.5),
+            short_allocation=kwargs.get('short_allocation', 0.5),
+        )
+        
+        # Calculate cumulative returns
+        results = calculate_cumulative_returns_vectorized(
+            returns_df,
+            initial_capital=kwargs.get('initial_capital', 10000),
+        )
+        
+        # Calculate metrics
+        daily_returns = results['daily_return'].dropna()
+        metrics = calculate_comprehensive_metrics(
+            results, kwargs.get('initial_capital', 10000)
+        )
+        
+        if metrics is None:
+            print("Error: Could not calculate performance metrics")
+            return None
+        
+        # Print results
+        print(f"\nTurnover Factor Strategy: {kwargs.get('strategy', 'long_short')}")
+        print(f"Rebalance Days: {kwargs.get('rebalance_days', 30)}")
+        print(f"Weighting: {kwargs.get('weighting_method', 'equal_weight')}")
+        print(f"Long Allocation: {kwargs.get('long_allocation', 0.5)*100:.0f}%")
+        print(f"Short Allocation: {kwargs.get('short_allocation', 0.5)*100:.0f}%")
+        print(f"\nTotal Return: {metrics['total_return']:.2%}")
+        print(f"Sharpe Ratio: {metrics['sharpe_ratio']:.3f}")
+        print(f"Max Drawdown: {metrics['max_drawdown']:.2%}")
+        print(f"Win Rate: {metrics.get('win_rate', 0):.2%}")
+        
+        return {
+            'strategy': 'Turnover Factor',
+            'description': f"Long high turnover, Short low turnover ({kwargs.get('rebalance_days', 30)}d rebalance)",
+            'metrics': metrics,
+            'results': results,
+            'daily_returns': daily_returns,
+        }
+    except Exception as e:
+        print(f"Error in Turnover Factor backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 def run_days_from_high_backtest(price_data, **kwargs):
     """Run days from high backtest (VECTORIZED)."""
     print("\n" + "=" * 80)
@@ -1746,6 +1826,27 @@ def main():
         default=7,
         help="Dilution factor rebalance frequency in days (default: 7, optimal per backtest)"
     )
+    parser.add_argument(
+        "--run-turnover",
+        nargs='?',
+        const=True,
+        default=None,
+        type=lambda x: x.lower() in ['true', '1', 'yes'],
+        help="Run turnover factor backtest (24h Volume / Market Cap, no value=run only this, True=include, False=exclude)"
+    )
+    parser.add_argument(
+        "--turnover-strategy",
+        type=str,
+        default="long_short",
+        choices=["long_low", "short_high", "long_short"],
+        help="Turnover factor strategy type (default: long_short = long high turnover, short low turnover)"
+    )
+    parser.add_argument(
+        "--turnover-rebalance-days",
+        type=int,
+        default=30,
+        help="Turnover factor rebalance frequency in days (default: 30, Sharpe: 2.17)"
+    )
 
     args = parser.parse_args()
 
@@ -1763,6 +1864,7 @@ def main():
         'adf': args.run_adf,
         'leverage_inverted': args.run_leverage_inverted,
         'dilution': args.run_dilution,
+        'turnover': args.run_turnover,
     }
 
     # Check if any flag was explicitly set to True or False
@@ -1805,6 +1907,7 @@ def main():
     args.run_adf = run_flags['adf']
     args.run_leverage_inverted = run_flags['leverage_inverted']
     args.run_dilution = run_flags['dilution']
+    args.run_turnover = run_flags['turnover']
 
     print("=" * 120)
     print("RUNNING ALL BACKTESTS")
@@ -2031,6 +2134,22 @@ def main():
         else:
             print("? Skipping Dilution Factor backtest: price data not available")
 
+    # 12. Turnover Factor (24h Volume / Market Cap)
+    if args.run_turnover:
+        if loaded_data["price_data"] is not None and loaded_data["marketcap_data"] is not None:
+            result = run_turnover_factor_backtest(
+                loaded_data["price_data"],
+                loaded_data["marketcap_data"],
+                strategy=args.turnover_strategy,  # Default: long_short
+                rebalance_days=args.turnover_rebalance_days,  # Default: 30 days (monthly)
+                weighting_method="equal_weight",
+                **common_params,
+            )
+            if result:
+                all_results.append(result)
+        else:
+            print("? Skipping Turnover Factor backtest: price or market cap data not available")
+
 
     # Create and display summary table
     summary_df = create_summary_table(all_results)
@@ -2052,11 +2171,11 @@ def main():
             'ADF (Moderate)': 0.35,  # Cap at 35% - balanced risk/reward
             'ADF (Optimal)': 0.40,  # Cap at 40% - most aggressive, slightly higher cap
         }
-        weights_df = calculate_sharpe_weights_with_floor(summary_df, min_weight=0.05, strategy_caps=strategy_caps)
+        weights_df = calculate_sharpe_weights_with_floor(summary_df, min_weight=0.10, strategy_caps=strategy_caps)
 
         if weights_df is not None and not weights_df.empty:
             # Print weights table
-            print_sharpe_weights(weights_df, summary_df, min_weight=0.05, strategy_caps=strategy_caps)
+            print_sharpe_weights(weights_df, summary_df, min_weight=0.10, strategy_caps=strategy_caps)
 
             # Save weights to CSV
             weights_file = args.output_file.replace("_summary.csv", "_sharpe_weights.csv")

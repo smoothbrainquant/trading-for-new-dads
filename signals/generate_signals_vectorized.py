@@ -980,3 +980,82 @@ def generate_adf_signals_vectorized(
         df.loc[df['percentile'] >= short_percentile, 'signal'] = 1
     
     return df[['date', 'symbol', adf_column, 'percentile', 'quintile', 'signal']]
+
+
+# ============================================================================
+# Turnover Factor Signal Generation (Vectorized)
+# ============================================================================
+
+def generate_turnover_signals_vectorized(
+    price_data: pd.DataFrame,
+    marketcap_data: pd.DataFrame,
+    strategy: Literal['long_low', 'short_high', 'long_short'] = 'long_short',
+    rebalance_days: int = 30,
+    long_percentile: float = 20,
+    short_percentile: float = 80,
+    num_quintiles: int = 5,
+) -> pd.DataFrame:
+    """
+    Generate turnover factor signals (24h Volume / Market Cap).
+    
+    High turnover = liquid, active trading
+    Low turnover = illiquid, less active
+    
+    Strategy typically: Long high turnover, Short low turnover
+    
+    Args:
+        price_data: DataFrame with date, symbol, close, volume columns
+        marketcap_data: DataFrame with date, symbol, market_cap columns
+        strategy: 'long_low', 'short_high', or 'long_short'
+        rebalance_days: Days between rebalancing (default: 30)
+        long_percentile: Percentile threshold for long positions (default: 20 = top 20%)
+        short_percentile: Percentile threshold for short positions (default: 80 = bottom 20%)
+        num_quintiles: Number of quintiles for factor ranking
+    
+    Returns:
+        pd.DataFrame: Signals with date, symbol, turnover_pct, percentile, quintile, signal columns
+    """
+    # Merge price and market cap data
+    df = pd.merge(
+        price_data[['date', 'symbol', 'volume']],
+        marketcap_data[['date', 'symbol', 'market_cap']],
+        on=['date', 'symbol'],
+        how='inner'
+    )
+    
+    # Calculate turnover = 24h Volume / Market Cap
+    df['turnover_pct'] = (df['volume'] / df['market_cap'] * 100).replace([np.inf, -np.inf], np.nan)
+    
+    # Remove invalid values
+    df = df[df['turnover_pct'].notna()]
+    df = df[(df['turnover_pct'] > 0) & (df['turnover_pct'] < 100)]  # Filter extreme values
+    
+    # Apply rebalancing: Only generate signals on rebalance dates
+    df = df.sort_values('date')
+    unique_dates = df['date'].unique()
+    rebalance_dates = unique_dates[::rebalance_days]
+    df = df[df['date'].isin(rebalance_dates)]
+    
+    # Assign quintiles and percentiles per date
+    df = assign_quintiles_vectorized(
+        df,
+        factor_column='turnover_pct',
+        num_quintiles=num_quintiles,
+        ascending=False  # High turnover = lower quintile number (better)
+    )
+    
+    # Generate signals based on strategy
+    df['signal'] = 0
+    
+    if strategy == 'long_low':
+        # Long LOW turnover (illiquid)
+        df.loc[df['percentile'] <= long_percentile, 'signal'] = 1
+    elif strategy == 'short_high':
+        # Short HIGH turnover (very liquid/speculative)
+        df.loc[df['percentile'] >= short_percentile, 'signal'] = -1
+    elif strategy == 'long_short':
+        # Long HIGH turnover (liquid), Short LOW turnover (illiquid)
+        df.loc[df['percentile'] >= short_percentile, 'signal'] = 1  # Top 20% = high turnover = long
+        df.loc[df['percentile'] <= long_percentile, 'signal'] = -1  # Bottom 20% = low turnover = short
+    
+    return df[['date', 'symbol', 'turnover_pct', 'percentile', 'quintile', 'signal']]

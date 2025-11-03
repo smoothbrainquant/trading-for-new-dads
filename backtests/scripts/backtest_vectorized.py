@@ -36,6 +36,7 @@ from generate_signals_vectorized import (
     generate_breakout_signals_vectorized,
     generate_mean_reversion_signals_vectorized,
     generate_adf_signals_vectorized,
+    generate_turnover_signals_vectorized,
     calculate_weights_vectorized,
     calculate_portfolio_returns_vectorized,
     calculate_cumulative_returns_vectorized,
