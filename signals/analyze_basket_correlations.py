@@ -22,7 +22,6 @@ Outputs:
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 from pathlib import Path
 from sklearn.decomposition import PCA
 from scipy import stats
@@ -221,19 +220,27 @@ def plot_correlation_heatmap(corr_matrix, category_name, output_path):
     mask = np.triu(np.ones_like(corr_matrix, dtype=bool), k=1)
 
     # Plot heatmap
-    sns.heatmap(
-        corr_matrix,
-        mask=mask,
-        annot=True if len(corr_matrix) <= 15 else False,
-        fmt=".2f",
-        cmap="RdYlGn",
-        center=0.5,
-        vmin=0,
-        vmax=1,
-        square=True,
-        linewidths=0.5,
-        cbar_kws={"label": "Correlation"},
-    )
+    try:
+        import seaborn as sns
+        sns.heatmap(
+            corr_matrix,
+            mask=mask,
+            annot=True if len(corr_matrix) <= 15 else False,
+            fmt=".2f",
+            cmap="RdYlGn",
+            center=0.5,
+            vmin=0,
+            vmax=1,
+            square=True,
+            linewidths=0.5,
+            cbar_kws={"label": "Correlation"},
+        )
+    except ImportError:
+        # Fallback if seaborn not available
+        im = plt.imshow(corr_matrix.values, cmap='RdYlGn', aspect='auto', vmin=0, vmax=1)
+        plt.xticks(range(len(corr_matrix.columns)), corr_matrix.columns, rotation=45, ha='right')
+        plt.yticks(range(len(corr_matrix.index)), corr_matrix.index)
+        plt.colorbar(im, label="Correlation")
 
     plt.title(f"Correlation Matrix: {category_name}\n(Daily Returns)", fontsize=14, pad=20)
     plt.xlabel("Symbol", fontsize=12)
@@ -256,7 +263,7 @@ def analyze_category(category_name, category_df, price_df, returns_pivot, valid_
     basket_symbols = get_basket_symbols(category_df, category_name, valid_symbols)
 
     if len(basket_symbols) < MIN_BASKET_SIZE:
-        print(f"⚠️  Skipping: Only {len(basket_symbols)} symbols (min: {MIN_BASKET_SIZE})")
+        print(f"??  Skipping: Only {len(basket_symbols)} symbols (min: {MIN_BASKET_SIZE})")
         return None
 
     print(f"Basket size: {len(basket_symbols)} symbols")
@@ -266,7 +273,7 @@ def analyze_category(category_name, category_df, price_df, returns_pivot, valid_
     corr_matrix, avg_corr = calculate_pairwise_correlation(returns_pivot, basket_symbols)
 
     if corr_matrix is None:
-        print(f"⚠️  Skipping: Insufficient overlapping data")
+        print(f"??  Skipping: Insufficient overlapping data")
         return None
 
     print(f"Average pairwise correlation: {avg_corr:.3f}")
@@ -279,7 +286,7 @@ def analyze_category(category_name, category_df, price_df, returns_pivot, valid_
             rolling_stats[f"rolling_{window}d_mean"] = rolling_corr.mean()
             rolling_stats[f"rolling_{window}d_std"] = rolling_corr.std()
             print(
-                f"Rolling {window}d correlation: {rolling_corr.mean():.3f} ± {rolling_corr.std():.3f}"
+                f"Rolling {window}d correlation: {rolling_corr.mean():.3f} ? {rolling_corr.std():.3f}"
             )
 
     # Perform PCA analysis
@@ -362,7 +369,7 @@ def main():
 
     # Create summary DataFrame
     if not all_summaries:
-        print("\n⚠️  No categories met minimum requirements for analysis")
+        print("\n??  No categories met minimum requirements for analysis")
         return
 
     summary_df = pd.DataFrame(all_summaries)
@@ -373,7 +380,7 @@ def main():
     # Save summary
     summary_path = OUTPUT_PATH / "basket_correlation_summary.csv"
     summary_df.to_csv(summary_path, index=False)
-    print(f"\n✅ Saved summary to: {summary_path}")
+    print(f"\n? Saved summary to: {summary_path}")
 
     # Print top categories by correlation
     print("\n" + "=" * 80)
@@ -405,7 +412,7 @@ def main():
 
     if len(suitable) > 0:
         for idx, row in suitable.iterrows():
-            print(f"✅ {row['category']}")
+            print(f"? {row['category']}")
             print(
                 f"   Correlation: {row['avg_correlation']:.3f}, Symbols: {row['n_symbols']}, PC1: {row.get('pca_pc1_var', 0)*100:.1f}%"
             )
@@ -417,7 +424,7 @@ def main():
         ].head(10)
 
         for idx, row in relaxed.iterrows():
-            print(f"⚠️  {row['category']}")
+            print(f"??  {row['category']}")
             print(f"   Correlation: {row['avg_correlation']:.3f}, Symbols: {row['n_symbols']}")
 
     print("\n" + "=" * 80)

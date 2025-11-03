@@ -14,10 +14,9 @@ import numpy as np
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import seaborn as sns
 from pathlib import Path
 
-sns.set_style("whitegrid")
+plt.style.use('seaborn-v0_8-whitegrid')
 plt.rcParams['figure.figsize'] = (16, 10)
 
 
@@ -439,8 +438,17 @@ def create_time_series_visualizations(df, daily_agg, coin_avg, output_dir="signa
     pivot = heatmap_monthly.pivot(index="coin_symbol", columns="month", values="oi_to_mcap_ratio")
     
     # Plot heatmap
-    sns.heatmap(pivot, cmap="RdYlGn_r", ax=ax, cbar_kws={'label': 'OI/MCap Ratio (%)'}, 
-                vmin=0, vmax=pivot.max().max(), linewidths=0.5)
+    try:
+        import seaborn as sns
+        sns.heatmap(pivot, cmap="RdYlGn_r", ax=ax, cbar_kws={'label': 'OI/MCap Ratio (%)'}, 
+                    vmin=0, vmax=pivot.max().max(), linewidths=0.5)
+    except ImportError:
+        im = ax.imshow(pivot.values, cmap='RdYlGn_r', aspect='auto', vmin=0, vmax=pivot.max().max())
+        ax.set_xticks(range(len(pivot.columns)))
+        ax.set_yticks(range(len(pivot.index)))
+        ax.set_xticklabels(pivot.columns, rotation=45, ha='right')
+        ax.set_yticklabels(pivot.index)
+        plt.colorbar(im, ax=ax, label='OI/MCap Ratio (%)')
     
     ax.set_xlabel("Date", fontweight='bold')
     ax.set_ylabel("Coin Symbol", fontweight='bold')
