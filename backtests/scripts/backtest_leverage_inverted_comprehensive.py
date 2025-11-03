@@ -18,12 +18,11 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
-import seaborn as sns
 from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
 
-sns.set_style("whitegrid")
+plt.style.use('seaborn-v0_8-whitegrid')
 plt.rcParams['figure.figsize'] = (16, 10)
 
 
@@ -525,8 +524,19 @@ def create_comparison_visualizations(results_df, all_portfolio_dfs, output_dir="
     # Heatmap 1: Sharpe Ratio
     ax1 = axes[0, 0]
     pivot = results_df.pivot(index='ranking_metric', columns='rebalance_days', values='sharpe_ratio')
-    sns.heatmap(pivot, annot=True, fmt='.2f', cmap='RdYlGn', center=0, ax=ax1,
-               cbar_kws={'label': 'Sharpe Ratio'})
+    # Heatmap visualization (requires seaborn for full functionality)
+    # Fallback to simple imshow if seaborn not available
+    try:
+        import seaborn as sns
+        sns.heatmap(pivot, annot=True, fmt='.2f', cmap='RdYlGn', center=0, ax=ax1,
+                   cbar_kws={'label': 'Sharpe Ratio'})
+    except ImportError:
+        im = ax1.imshow(pivot.values, cmap='RdYlGn', aspect='auto')
+        ax1.set_xticks(range(len(pivot.columns)))
+        ax1.set_yticks(range(len(pivot.index)))
+        ax1.set_xticklabels(pivot.columns)
+        ax1.set_yticklabels(pivot.index)
+        plt.colorbar(im, ax=ax1, label='Sharpe Ratio')
     ax1.set_xlabel("Rebalance Period (days)", fontweight='bold')
     ax1.set_ylabel("Ranking Metric", fontweight='bold')
     ax1.set_title("Sharpe Ratio Heatmap", fontweight='bold')
@@ -534,8 +544,17 @@ def create_comparison_visualizations(results_df, all_portfolio_dfs, output_dir="
     # Heatmap 2: Total Return
     ax2 = axes[0, 1]
     pivot = results_df.pivot(index='ranking_metric', columns='rebalance_days', values='total_return')
-    sns.heatmap(pivot, annot=True, fmt='.1f', cmap='RdYlGn', center=0, ax=ax2,
-               cbar_kws={'label': 'Total Return (%)'})
+    try:
+        import seaborn as sns
+        sns.heatmap(pivot, annot=True, fmt='.1f', cmap='RdYlGn', center=0, ax=ax2,
+                   cbar_kws={'label': 'Total Return (%)'})
+    except ImportError:
+        im = ax2.imshow(pivot.values, cmap='RdYlGn', aspect='auto')
+        ax2.set_xticks(range(len(pivot.columns)))
+        ax2.set_yticks(range(len(pivot.index)))
+        ax2.set_xticklabels(pivot.columns)
+        ax2.set_yticklabels(pivot.index)
+        plt.colorbar(im, ax=ax2, label='Total Return (%)')
     ax2.set_xlabel("Rebalance Period (days)", fontweight='bold')
     ax2.set_ylabel("Ranking Metric", fontweight='bold')
     ax2.set_title("Total Return Heatmap (%)", fontweight='bold')
@@ -543,8 +562,17 @@ def create_comparison_visualizations(results_df, all_portfolio_dfs, output_dir="
     # Heatmap 3: Max Drawdown
     ax3 = axes[1, 0]
     pivot = results_df.pivot(index='ranking_metric', columns='rebalance_days', values='max_drawdown')
-    sns.heatmap(pivot, annot=True, fmt='.1f', cmap='RdYlGn_r', center=-25, ax=ax3,
-               cbar_kws={'label': 'Max Drawdown (%)'})
+    try:
+        import seaborn as sns
+        sns.heatmap(pivot, annot=True, fmt='.1f', cmap='RdYlGn_r', center=-25, ax=ax3,
+                   cbar_kws={'label': 'Max Drawdown (%)'})
+    except ImportError:
+        im = ax3.imshow(pivot.values, cmap='RdYlGn_r', aspect='auto')
+        ax3.set_xticks(range(len(pivot.columns)))
+        ax3.set_yticks(range(len(pivot.index)))
+        ax3.set_xticklabels(pivot.columns)
+        ax3.set_yticklabels(pivot.index)
+        plt.colorbar(im, ax=ax3, label='Max Drawdown (%)')
     ax3.set_xlabel("Rebalance Period (days)", fontweight='bold')
     ax3.set_ylabel("Ranking Metric", fontweight='bold')
     ax3.set_title("Max Drawdown Heatmap (%)", fontweight='bold')

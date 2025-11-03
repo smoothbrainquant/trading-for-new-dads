@@ -21,7 +21,6 @@ from scipy.stats import skew
 from datetime import datetime
 import argparse
 import matplotlib.pyplot as plt
-import seaborn as sns
 
 
 def load_data(filepath):
@@ -473,7 +472,7 @@ def create_visualizations(results, output_dir="backtests/results"):
     portfolio_df = results["portfolio_values"]
 
     # Set style
-    sns.set_style("darkgrid")
+    plt.style.use('seaborn-v0_8-darkgrid')
 
     # 1. Equity Curve
     fig, ax = plt.subplots(figsize=(12, 6))

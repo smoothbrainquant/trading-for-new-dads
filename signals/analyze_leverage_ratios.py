@@ -21,11 +21,10 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
-import seaborn as sns
 from pathlib import Path
 
 # Set style
-sns.set_style("whitegrid")
+plt.style.use('seaborn-v0_8-whitegrid')
 plt.rcParams['figure.figsize'] = (14, 10)
 
 

@@ -18,10 +18,9 @@ import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 import matplotlib.pyplot as plt
-import seaborn as sns
 from pathlib import Path
 
-sns.set_style("whitegrid")
+plt.style.use('seaborn-v0_8-whitegrid')
 plt.rcParams['figure.figsize'] = (16, 10)
 
 
@@ -491,9 +490,18 @@ def create_visualizations(portfolio_df, metrics, holdings, output_dir="backtests
     pivot = pivot.applymap(lambda x: monthly_returns[x] if pd.notna(x) else np.nan)
     
     # Plot heatmap
-    sns.heatmap(pivot, annot=True, fmt='.1f', cmap='RdYlGn', center=0,
-               ax=ax, cbar_kws={'label': 'Monthly Return (%)'}, 
-               linewidths=0.5, vmin=-20, vmax=20)
+    try:
+        import seaborn as sns
+        sns.heatmap(pivot, annot=True, fmt='.1f', cmap='RdYlGn', center=0,
+                   ax=ax, cbar_kws={'label': 'Monthly Return (%)'}, 
+                   linewidths=0.5, vmin=-20, vmax=20)
+    except ImportError:
+        im = ax.imshow(pivot.values, cmap='RdYlGn', aspect='auto', vmin=-20, vmax=20)
+        ax.set_xticks(range(len(pivot.columns)))
+        ax.set_yticks(range(len(pivot.index)))
+        ax.set_xticklabels(pivot.columns)
+        ax.set_yticklabels(pivot.index)
+        plt.colorbar(im, ax=ax, label='Monthly Return (%)')
     
     ax.set_xlabel("Month", fontweight='bold', fontsize=12)
     ax.set_ylabel("Year", fontweight='bold', fontsize=12)
