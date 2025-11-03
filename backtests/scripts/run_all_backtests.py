@@ -62,6 +62,15 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "backtest
 # Import vectorized backtest engine
 from backtest_vectorized import backtest_factor_vectorized
 
+# Import turnover factor vectorized functions
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "..", "signals"))
+from generate_signals_vectorized import (
+    generate_turnover_signals_vectorized,
+    calculate_weights_vectorized,
+    calculate_portfolio_returns_vectorized,
+    calculate_cumulative_returns_vectorized,
+)
+
 
 def calculate_comprehensive_metrics(portfolio_df, initial_capital, benchmark_returns=None):
     """
@@ -576,29 +585,33 @@ def run_turnover_factor_backtest(price_data, marketcap_data, **kwargs):
             num_quintiles=5,
         )
         
-        # Calculate position weights
+        # Prepare returns data
+        price_df = price_data.copy()
+        price_df = price_df.sort_values(['symbol', 'date'])
+        price_df['daily_return'] = price_df.groupby('symbol')['close'].pct_change()
+        returns_df = price_df[['date', 'symbol', 'daily_return']].dropna()
+        
+        # Calculate position weights (includes long/short allocation)
         weights_df = calculate_weights_vectorized(
             signals_df,
-            method=kwargs.get('weighting_method', 'equal_weight'),
-        )
-        
-        # Calculate portfolio returns
-        returns_df = calculate_portfolio_returns_vectorized(
-            price_data,
-            weights_df,
-            leverage=kwargs.get('leverage', 1.0),
+            weighting_method=kwargs.get('weighting_method', 'equal_weight'),
             long_allocation=kwargs.get('long_allocation', 0.5),
             short_allocation=kwargs.get('short_allocation', 0.5),
         )
         
+        # Calculate portfolio returns
+        portfolio_returns_df = calculate_portfolio_returns_vectorized(
+            weights_df,
+            returns_df,
+        )
+        
         # Calculate cumulative returns
         results = calculate_cumulative_returns_vectorized(
-            returns_df,
+            portfolio_returns_df,
             initial_capital=kwargs.get('initial_capital', 10000),
         )
         
         # Calculate metrics
-        daily_returns = results['daily_return'].dropna()
         metrics = calculate_comprehensive_metrics(
             results, kwargs.get('initial_capital', 10000)
         )
@@ -606,6 +619,12 @@ def run_turnover_factor_backtest(price_data, marketcap_data, **kwargs):
         if metrics is None:
             print("Error: Could not calculate performance metrics")
             return None
+        
+        # Extract daily returns for output (calculated by metrics function)
+        results_with_returns = results.copy()
+        results_with_returns['daily_return'] = results_with_returns['portfolio_value'].pct_change()
+        daily_returns = results_with_returns[['date', 'daily_return']].copy()
+        daily_returns.columns = ['date', 'Turnover Factor']
         
         # Print results
         print(f"\nTurnover Factor Strategy: {kwargs.get('strategy', 'long_short')}")
@@ -622,7 +641,7 @@ def run_turnover_factor_backtest(price_data, marketcap_data, **kwargs):
             'strategy': 'Turnover Factor',
             'description': f"Long high turnover, Short low turnover ({kwargs.get('rebalance_days', 30)}d rebalance)",
             'metrics': metrics,
-            'results': results,
+            'results': {'portfolio_values': results},
             'daily_returns': daily_returns,
         }
     except Exception as e:
