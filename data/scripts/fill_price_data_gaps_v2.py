@@ -109,9 +109,10 @@ class StaleDataAnalyzer:
 class CoinGeckoFetcher:
     """Fetch data from CoinGecko API."""
     
-    def __init__(self):
+    def __init__(self, api_key=None):
         self.base_url = "https://api.coingecko.com/api/v3"
-        self.rate_limit = 1.5  # seconds between calls (free tier: 50/min)
+        self.rate_limit = 3.0  # seconds between calls (increased for stability)
+        self.api_key = api_key or os.environ.get('COINGECKO_API_KEY')
         self.symbol_map = self._build_symbol_map()
         
     def _build_symbol_map(self) -> Dict[str, str]:
@@ -220,9 +221,13 @@ class CoinGeckoFetcher:
                 'to': int(end_date.timestamp())
             }
             
+            headers = {}
+            if self.api_key:
+                headers['x-cg-demo-api-key'] = self.api_key
+            
             print(f"    Fetching {symbol} ({start_date.date()} to {end_date.date()})...")
             
-            response = requests.get(url, params=params, timeout=30)
+            response = requests.get(url, params=params, headers=headers, timeout=30)
             time.sleep(self.rate_limit)
             
             if response.status_code != 200:
