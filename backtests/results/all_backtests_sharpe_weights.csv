@@ -1,2 +1,2 @@
 Strategy,Description,Sharpe Ratio,Weight,Weight_Pct
-Dilution Factor,"Long low dilution, Short high dilution, 7d rebal",1.034394448565923,1.0,100.0
+Dilution Factor,"Long low dilution, Short high dilution, 7d rebal",0.9630824486531375,1.0,100.0
