@@ -1,0 +1,237 @@
+/workspace/backtests/scripts/backtest_beta_factor.py:107: FutureWarning: DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+  df["beta"] = df.groupby("symbol", group_keys=False).apply(calculate_beta).values
+/workspace/backtests/scripts/../../signals/generate_signals_vectorized.py:596: FutureWarning: DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+  longs = df[df['signal'] == 1].groupby('date', group_keys=False).apply(calc_risk_parity_weights)
+/workspace/backtests/scripts/../../signals/generate_signals_vectorized.py:597: FutureWarning: DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+  shorts = df[df['signal'] == -1].groupby('date', group_keys=False).apply(calc_risk_parity_weights)
+/workspace/backtests/scripts/backtest_beta_factor.py:107: FutureWarning: DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+  df["beta"] = df.groupby("symbol", group_keys=False).apply(calculate_beta).values
+/workspace/backtests/scripts/../../signals/generate_signals_vectorized.py:596: FutureWarning: DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+  longs = df[df['signal'] == 1].groupby('date', group_keys=False).apply(calc_risk_parity_weights)
+/workspace/backtests/scripts/../../signals/generate_signals_vectorized.py:597: FutureWarning: DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+  shorts = df[df['signal'] == -1].groupby('date', group_keys=False).apply(calc_risk_parity_weights)
+/workspace/backtests/scripts/../../signals/generate_signals_vectorized.py:596: FutureWarning: DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+  longs = df[df['signal'] == 1].groupby('date', group_keys=False).apply(calc_risk_parity_weights)
+/workspace/backtests/scripts/../../signals/generate_signals_vectorized.py:597: FutureWarning: DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+  shorts = df[df['signal'] == -1].groupby('date', group_keys=False).apply(calc_risk_parity_weights)
+/workspace/backtests/scripts/../../signals/generate_signals_vectorized.py:596: FutureWarning: DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+  longs = df[df['signal'] == 1].groupby('date', group_keys=False).apply(calc_risk_parity_weights)
+/workspace/backtests/scripts/../../signals/generate_signals_vectorized.py:597: FutureWarning: DataFrameGroupBy.apply operated on the grouping columns. This behavior is deprecated, and in a future version of pandas the grouping columns will be excluded from the operation. Either pass `include_groups=False` to exclude the groupings or explicitly select the grouping columns after groupby to silence this warning.
+  shorts = df[df['signal'] == -1].groupby('date', group_keys=False).apply(calc_risk_parity_weights)
+================================================================================
+PORTFOLIO CONSTRUCTION COMPARISON
+================================================================================
+
+Loading data from /workspace/data/raw/combined_coinbase_coinmarketcap_daily.csv...
+✓ Loaded 161813 rows, 172 symbols
+
+================================================================================
+BETA FACTOR (BAB) COMPARISONS
+================================================================================
+
+--------------------------------------------------------------------------------
+Top/Bottom Quintile (20%): Long 20%, Short 80%
+--------------------------------------------------------------------------------
+
+================================================================================
+Running Vectorized Backtest: BETA Factor - betting_against_beta
+================================================================================
+Step 1: Preparing price data...
+  ? Prepared 155236 rows, 172 symbols
+Step 2: Calculating beta factor for ALL dates...
+  ? Calculated factor for 155236 rows
+Step 3: Generating signals for ALL dates...
+  ? Generated 144652 signals
+  ? Long positions: 28216
+  ? Short positions: 29921
+Step 4: Filtering to rebalance dates (every 5 days)...
+  ? 341 rebalance dates
+Step 5: Calculating portfolio weights...
+  ? Calculated weights for 28883 positions
+Step 6: Forward-filling weights between rebalances...
+  ? Forward-filled to 1705 days
+Step 7: Aligning returns (avoiding lookahead bias)...
+Step 8: Calculating portfolio returns...
+  ? Calculated returns for 1704 days
+Step 9: Calculating cumulative performance...
+Step 10: Computing performance metrics...
+
+================================================================================
+BACKTEST RESULTS
+================================================================================
+Total Return:          196.74%
+Annualized Return:      26.26%
+Volatility:             49.66%
+Sharpe Ratio:            0.529
+Sortino Ratio:           1.139
+Max Drawdown:          -32.65%
+Win Rate:               49.35%
+Number of Days:           1704
+================================================================================
+
+✓ Total Return: 196.74%
+✓ Sharpe Ratio: 0.690
+✓ Max Drawdown: -32.65%
+
+--------------------------------------------------------------------------------
+Top/Bottom Decile (10%): Long 10%, Short 90%
+--------------------------------------------------------------------------------
+
+================================================================================
+Running Vectorized Backtest: BETA Factor - betting_against_beta
+================================================================================
+Step 1: Preparing price data...
+  ? Prepared 155236 rows, 172 symbols
+Step 2: Calculating beta factor for ALL dates...
+  ? Calculated factor for 155236 rows
+Step 3: Generating signals for ALL dates...
+  ? Generated 144652 signals
+  ? Long positions: 13582
+  ? Short positions: 15287
+Step 4: Filtering to rebalance dates (every 5 days)...
+  ? 341 rebalance dates
+Step 5: Calculating portfolio weights...
+  ? Calculated weights for 28883 positions
+Step 6: Forward-filling weights between rebalances...
+  ? Forward-filled to 1705 days
+Step 7: Aligning returns (avoiding lookahead bias)...
+Step 8: Calculating portfolio returns...
+  ? Calculated returns for 1704 days
+Step 9: Calculating cumulative performance...
+Step 10: Computing performance metrics...
+
+================================================================================
+BACKTEST RESULTS
+================================================================================
+Total Return:          261.38%
+Annualized Return:      31.70%
+Volatility:             60.55%
+Sharpe Ratio:            0.524
+Sortino Ratio:           1.152
+Max Drawdown:          -39.27%
+Win Rate:               49.24%
+Number of Days:           1704
+================================================================================
+
+✓ Total Return: 261.38%
+✓ Sharpe Ratio: 0.712
+✓ Max Drawdown: -39.27%
+
+================================================================================
+VOLATILITY FACTOR COMPARISONS
+================================================================================
+
+--------------------------------------------------------------------------------
+Top/Bottom Quintile (20%): Long 20%, Short 80%
+--------------------------------------------------------------------------------
+
+================================================================================
+Running Vectorized Backtest: VOLATILITY Factor - long_low_short_high
+================================================================================
+Step 1: Preparing price data...
+  ? Prepared 155236 rows, 172 symbols
+Step 2: Calculating volatility factor for ALL dates...
+  ? Calculated factor for 155236 rows
+Step 3: Generating signals for ALL dates...
+  ? Generated 150094 signals
+  ? Long positions: 30693
+  ? Short positions: 30335
+Step 4: Filtering to rebalance dates (every 3 days)...
+  ? 579 rebalance dates
+Step 5: Calculating portfolio weights...
+  ? Calculated weights for 50011 positions
+Step 6: Forward-filling weights between rebalances...
+  ? Forward-filled to 1737 days
+Step 7: Aligning returns (avoiding lookahead bias)...
+Step 8: Calculating portfolio returns...
+  ? Calculated returns for 1736 days
+Step 9: Calculating cumulative performance...
+Step 10: Computing performance metrics...
+
+================================================================================
+BACKTEST RESULTS
+================================================================================
+Total Return:          632.56%
+Annualized Return:      52.04%
+Volatility:             48.01%
+Sharpe Ratio:            1.084
+Sortino Ratio:           2.386
+Max Drawdown:          -35.19%
+Win Rate:               49.71%
+Number of Days:           1736
+================================================================================
+
+✓ Total Return: 632.56%
+✓ Sharpe Ratio: 1.079
+✓ Max Drawdown: -35.19%
+
+--------------------------------------------------------------------------------
+Top/Bottom Decile (10%): Long 10%, Short 90%
+--------------------------------------------------------------------------------
+
+================================================================================
+Running Vectorized Backtest: VOLATILITY Factor - long_low_short_high
+================================================================================
+Step 1: Preparing price data...
+  ? Prepared 155236 rows, 172 symbols
+Step 2: Calculating volatility factor for ALL dates...
+  ? Calculated factor for 155236 rows
+Step 3: Generating signals for ALL dates...
+  ? Generated 150094 signals
+  ? Long positions: 15689
+  ? Short positions: 15538
+Step 4: Filtering to rebalance dates (every 3 days)...
+  ? 579 rebalance dates
+Step 5: Calculating portfolio weights...
+  ? Calculated weights for 50011 positions
+Step 6: Forward-filling weights between rebalances...
+  ? Forward-filled to 1737 days
+Step 7: Aligning returns (avoiding lookahead bias)...
+Step 8: Calculating portfolio returns...
+  ? Calculated returns for 1736 days
+Step 9: Calculating cumulative performance...
+Step 10: Computing performance metrics...
+
+================================================================================
+BACKTEST RESULTS
+================================================================================
+Total Return:         1895.59%
+Annualized Return:      87.73%
+Volatility:             54.49%
+Sharpe Ratio:            1.610
+Sortino Ratio:           3.277
+Max Drawdown:          -38.41%
+Win Rate:               51.90%
+Number of Days:           1736
+================================================================================
+
+✓ Total Return: 1895.59%
+✓ Sharpe Ratio: 1.401
+✓ Max Drawdown: -38.41%
+
+================================================================================
+COMPARISON SUMMARY
+================================================================================
+
+BETA (BAB) RESULTS:
+--------------------------------------------------------------------------------
+                   Method   Sharpe  Total Return (%)  Max DD (%)
+Top/Bottom Quintile (20%) 0.690486        196.742611  -32.650654
+  Top/Bottom Decile (10%) 0.711643        261.382929  -39.273835
+
+✓ Best: Top/Bottom Decile (10%) (Sharpe: 0.712)
+
+
+VOLATILITY RESULTS:
+--------------------------------------------------------------------------------
+                   Method   Sharpe  Total Return (%)  Max DD (%)
+Top/Bottom Quintile (20%) 1.078705        632.559379  -35.190864
+  Top/Bottom Decile (10%) 1.400704       1895.585762  -38.409939
+
+✓ Best: Top/Bottom Decile (10%) (Sharpe: 1.401)
+
+✓ Results saved to: /workspace/backtests/results/portfolio_construction_comparison.csv
+
+================================================================================
+DONE
+================================================================================
