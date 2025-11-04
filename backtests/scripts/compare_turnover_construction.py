@@ -279,7 +279,7 @@ def print_comparison(metrics1, metrics2, signals1, signals2, name1, name2):
 def main():
     """Main execution"""
     print("=" * 80)
-    print("TURNOVER FACTOR: TOP/BOTTOM N vs QUINTILES vs DECILES (RISK PARITY)")
+    print("TURNOVER FACTOR: FIXED COUNT vs QUINTILES vs DECILES (RISK PARITY)")
     print("=" * 80)
     
     # Load data
@@ -288,9 +288,27 @@ def main():
     initial_capital = 10000
     rebalance_days = 30
     
-    # Method 1: Top/Bottom 10 coins
+    # Method 1: Top/Bottom 5 coins (most extreme)
     print("\n" + "=" * 80)
-    print("METHOD 1: TOP/BOTTOM 10 COINS (FIXED COUNT) - RISK PARITY")
+    print("METHOD 1: TOP/BOTTOM 5 COINS (MOST EXTREME) - RISK PARITY")
+    print("=" * 80)
+    
+    signals_top5 = generate_signals_top_bottom_n(
+        price_data, mcap_data, 
+        top_n=5, 
+        bottom_n=5, 
+        rebalance_days=rebalance_days
+    )
+    
+    print(f"✓ Generated {len(signals_top5)} signals")
+    results_top5, signals_top5 = backtest_strategy(
+        signals_top5, price_data, initial_capital, weighting_method='risk_parity'
+    )
+    metrics_top5 = calculate_metrics(results_top5, initial_capital)
+    
+    # Method 2: Top/Bottom 10 coins
+    print("\n" + "=" * 80)
+    print("METHOD 2: TOP/BOTTOM 10 COINS (FIXED COUNT) - RISK PARITY")
     print("=" * 80)
     
     signals_top10 = generate_signals_top_bottom_n(
@@ -306,9 +324,9 @@ def main():
     )
     metrics_top10 = calculate_metrics(results_top10, initial_capital)
     
-    # Method 2: Top/Bottom quintiles (20%)
+    # Method 3: Top/Bottom quintiles (20%)
     print("\n" + "=" * 80)
-    print("METHOD 2: TOP/BOTTOM QUINTILES (20% EACH SIDE) - RISK PARITY")
+    print("METHOD 3: TOP/BOTTOM QUINTILES (20% EACH SIDE) - RISK PARITY")
     print("=" * 80)
     
     signals_quintiles = generate_turnover_signals_vectorized(
@@ -327,9 +345,9 @@ def main():
     )
     metrics_quintiles = calculate_metrics(results_quintiles, initial_capital)
     
-    # Method 3: Top/Bottom deciles (10%)
+    # Method 4: Top/Bottom deciles (10%)
     print("\n" + "=" * 80)
-    print("METHOD 3: TOP/BOTTOM DECILES (10% EACH SIDE) - RISK PARITY")
+    print("METHOD 4: TOP/BOTTOM DECILES (10% EACH SIDE) - RISK PARITY")
     print("=" * 80)
     
     signals_deciles = generate_turnover_signals_vectorized(
@@ -350,10 +368,11 @@ def main():
     
     # Print all comparisons
     print("\n" + "=" * 80)
-    print("THREE-WAY COMPARISON SUMMARY")
+    print("FOUR-WAY COMPARISON SUMMARY")
     print("=" * 80)
     
     all_metrics = [
+        ("Top/Bottom 5", metrics_top5, signals_top5),
         ("Top/Bottom 10", metrics_top10, signals_top10),
         ("Top/Bottom Quintiles (20%)", metrics_quintiles, signals_quintiles),
         ("Top/Bottom Deciles (10%)", metrics_deciles, signals_deciles),
@@ -373,8 +392,8 @@ def main():
     print("PERFORMANCE COMPARISON (ALL METHODS)")
     print("=" * 80)
     
-    print(f"\n{'Metric':<30} {'Top/Bottom 10':>20} {'Quintiles (20%)':>20} {'Deciles (10%)':>20}")
-    print("-" * 95)
+    print(f"\n{'Metric':<25} {'Top5':>15} {'Top10':>15} {'Quintiles':>15} {'Deciles':>15}")
+    print("-" * 90)
     
     metrics_list = [
         ("Total Return", "total_return", "%"),
@@ -388,28 +407,32 @@ def main():
     ]
     
     for label, key, fmt in metrics_list:
+        val0 = metrics_top5[key]
         val1 = metrics_top10[key]
         val2 = metrics_quintiles[key]
         val3 = metrics_deciles[key]
         
         if fmt == "%":
-            str1 = f"{val1*100:>19.2f}%"
-            str2 = f"{val2*100:>19.2f}%"
-            str3 = f"{val3*100:>19.2f}%"
+            str0 = f"{val0*100:>14.2f}%"
+            str1 = f"{val1*100:>14.2f}%"
+            str2 = f"{val2*100:>14.2f}%"
+            str3 = f"{val3*100:>14.2f}%"
         elif fmt == "$":
-            str1 = f"${val1:>18,.2f}"
-            str2 = f"${val2:>18,.2f}"
-            str3 = f"${val3:>18,.2f}"
+            str0 = f"${val0:>13,.2f}"
+            str1 = f"${val1:>13,.2f}"
+            str2 = f"${val2:>13,.2f}"
+            str3 = f"${val3:>13,.2f}"
         else:
-            str1 = f"{val1:>20.3f}"
-            str2 = f"{val2:>20.3f}"
-            str3 = f"{val3:>20.3f}"
+            str0 = f"{val0:>15.3f}"
+            str1 = f"{val1:>15.3f}"
+            str2 = f"{val2:>15.3f}"
+            str3 = f"{val3:>15.3f}"
         
-        print(f"{label:<30} {str1} {str2} {str3}")
+        print(f"{label:<25} {str0} {str1} {str2} {str3}")
     
     # Determine winner
-    sharpes = [metrics_top10['sharpe_ratio'], metrics_quintiles['sharpe_ratio'], metrics_deciles['sharpe_ratio']]
-    names = ["Top/Bottom 10", "Quintiles (20%)", "Deciles (10%)"]
+    sharpes = [metrics_top5['sharpe_ratio'], metrics_top10['sharpe_ratio'], metrics_quintiles['sharpe_ratio'], metrics_deciles['sharpe_ratio']]
+    names = ["Top/Bottom 5", "Top/Bottom 10", "Quintiles (20%)", "Deciles (10%)"]
     winner_idx = sharpes.index(max(sharpes))
     
     print("\n" + "=" * 80)
@@ -421,6 +444,11 @@ def main():
     os.makedirs(output_dir, exist_ok=True)
     
     comparison_df = pd.DataFrame([
+        {
+            "Method": "Top/Bottom 5 Coins (Risk Parity)",
+            "Description": "Fixed count: 5 longs, 5 shorts, risk parity weighting (most extreme)",
+            **{k: v for k, v in metrics_top5.items()}
+        },
         {
             "Method": "Top/Bottom 10 Coins (Risk Parity)",
             "Description": "Fixed count: 10 longs, 10 shorts, risk parity weighting",
@@ -443,11 +471,13 @@ def main():
     print(f"\n✓ Comparison saved to: {output_file}")
     
     # Save equity curves
+    results_top5['method'] = 'Top/Bottom 5'
     results_top10['method'] = 'Top/Bottom 10'
     results_quintiles['method'] = 'Top/Bottom Quintiles (20%)'
     results_deciles['method'] = 'Top/Bottom Deciles (10%)'
     
     equity_curves = pd.concat([
+        results_top5[['date', 'portfolio_value', 'method']],
         results_top10[['date', 'portfolio_value', 'method']],
         results_quintiles[['date', 'portfolio_value', 'method']],
         results_deciles[['date', 'portfolio_value', 'method']]
