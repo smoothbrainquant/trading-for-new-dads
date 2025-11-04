@@ -15,7 +15,7 @@ comparison = pd.read_csv('backtests/results/turnover_construction_comparison.csv
 
 # Create visualization
 fig, axes = plt.subplots(2, 2, figsize=(16, 10))
-fig.suptitle('Turnover Factor: Top/Bottom 10 vs Deciles Comparison (Risk Parity)', fontsize=16, fontweight='bold')
+fig.suptitle('Turnover Factor: Fixed Count vs Quintiles vs Deciles (Risk Parity)', fontsize=16, fontweight='bold')
 
 # Plot 1: Equity Curves
 ax = axes[0, 0]
@@ -116,14 +116,19 @@ print("\n" + "=" * 80)
 print("SUMMARY TABLE")
 print("=" * 80)
 print("\nKey Findings:")
-print(f"  • Top/Bottom 10 achieves Sharpe {comparison.iloc[0]['sharpe_ratio']:.3f}")
-print(f"  • Top/Bottom Deciles achieves Sharpe {comparison.iloc[1]['sharpe_ratio']:.3f}")
-print(f"  • Performance difference: {(comparison.iloc[0]['sharpe_ratio'] - comparison.iloc[1]['sharpe_ratio']):.3f} Sharpe")
-print(f"\n  • Top/Bottom 10 final value: ${comparison.iloc[0]['final_value']:,.2f}")
-print(f"  • Top/Bottom Deciles final value: ${comparison.iloc[1]['final_value']:,.2f}")
-print(f"  • Difference: ${comparison.iloc[0]['final_value'] - comparison.iloc[1]['final_value']:,.2f}")
-print(f"\n  • Top/Bottom 10 max drawdown: {comparison.iloc[0]['max_drawdown']*100:.2f}%")
-print(f"  • Top/Bottom Deciles max drawdown: {comparison.iloc[1]['max_drawdown']*100:.2f}%")
+for i, row in comparison.iterrows():
+    method_name = row['Method'].replace(' (Risk Parity)', '').replace(' (20%, Risk Parity)', '').replace(' (10%, Risk Parity)', '')
+    print(f"\n  • {method_name}:")
+    print(f"    - Sharpe: {row['sharpe_ratio']:.3f}")
+    print(f"    - Final value: ${row['final_value']:,.2f}")
+    print(f"    - Max drawdown: {row['max_drawdown']*100:.2f}%")
+    print(f"    - Annualized return: {row['annualized_return']*100:.2f}%")
+
+# Find best method
+best_idx = comparison['sharpe_ratio'].idxmax()
+best_method = comparison.iloc[best_idx]['Method']
+best_sharpe = comparison.iloc[best_idx]['sharpe_ratio']
+print(f"\n🏆 WINNER: {best_method} (Sharpe: {best_sharpe:.3f})")
 print("\n" + "=" * 80)
 
 print("\n📊 Visualization complete!")

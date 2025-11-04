@@ -279,7 +279,7 @@ def print_comparison(metrics1, metrics2, signals1, signals2, name1, name2):
 def main():
     """Main execution"""
     print("=" * 80)
-    print("TURNOVER FACTOR: TOP/BOTTOM N vs DECILES COMPARISON (RISK PARITY)")
+    print("TURNOVER FACTOR: TOP/BOTTOM N vs QUINTILES vs DECILES (RISK PARITY)")
     print("=" * 80)
     
     # Load data
@@ -306,9 +306,30 @@ def main():
     )
     metrics_top10 = calculate_metrics(results_top10, initial_capital)
     
-    # Method 2: Top/Bottom deciles (10%)
+    # Method 2: Top/Bottom quintiles (20%)
     print("\n" + "=" * 80)
-    print("METHOD 2: TOP/BOTTOM DECILES (10% EACH SIDE) - RISK PARITY")
+    print("METHOD 2: TOP/BOTTOM QUINTILES (20% EACH SIDE) - RISK PARITY")
+    print("=" * 80)
+    
+    signals_quintiles = generate_turnover_signals_vectorized(
+        price_data,
+        mcap_data,
+        strategy='long_short',
+        rebalance_days=rebalance_days,
+        long_percentile=20,  # Bottom 20% = low turnover = short
+        short_percentile=80,  # Top 20% = high turnover = long
+        num_quintiles=5,  # Use quintiles
+    )
+    
+    print(f"✓ Generated {len(signals_quintiles)} signals")
+    results_quintiles, signals_quintiles = backtest_strategy(
+        signals_quintiles, price_data, initial_capital, weighting_method='risk_parity'
+    )
+    metrics_quintiles = calculate_metrics(results_quintiles, initial_capital)
+    
+    # Method 3: Top/Bottom deciles (10%)
+    print("\n" + "=" * 80)
+    print("METHOD 3: TOP/BOTTOM DECILES (10% EACH SIDE) - RISK PARITY")
     print("=" * 80)
     
     signals_deciles = generate_turnover_signals_vectorized(
@@ -327,15 +348,73 @@ def main():
     )
     metrics_deciles = calculate_metrics(results_deciles, initial_capital)
     
-    # Print comparison
-    print_comparison(
-        metrics_top10, 
-        metrics_deciles, 
-        signals_top10, 
-        signals_deciles,
-        "Top/Bottom 10",
-        "Top/Bottom Deciles"
-    )
+    # Print all comparisons
+    print("\n" + "=" * 80)
+    print("THREE-WAY COMPARISON SUMMARY")
+    print("=" * 80)
+    
+    all_metrics = [
+        ("Top/Bottom 10", metrics_top10, signals_top10),
+        ("Top/Bottom Quintiles (20%)", metrics_quintiles, signals_quintiles),
+        ("Top/Bottom Deciles (10%)", metrics_deciles, signals_deciles),
+    ]
+    
+    # Print signal statistics
+    for name, metrics, signals in all_metrics:
+        print(f"\n{name}:")
+        print(f"  Total signals: {len(signals)}")
+        print(f"  Long positions: {(signals['signal'] == 1).sum()}")
+        print(f"  Short positions: {(signals['signal'] == -1).sum()}")
+        print(f"  Avg longs per rebalance: {(signals['signal'] == 1).sum() / signals['date'].nunique():.1f}")
+        print(f"  Avg shorts per rebalance: {(signals['signal'] == -1).sum() / signals['date'].nunique():.1f}")
+    
+    # Print performance table
+    print("\n" + "=" * 80)
+    print("PERFORMANCE COMPARISON (ALL METHODS)")
+    print("=" * 80)
+    
+    print(f"\n{'Metric':<30} {'Top/Bottom 10':>20} {'Quintiles (20%)':>20} {'Deciles (10%)':>20}")
+    print("-" * 95)
+    
+    metrics_list = [
+        ("Total Return", "total_return", "%"),
+        ("Annualized Return", "annualized_return", "%"),
+        ("Sharpe Ratio", "sharpe_ratio", ""),
+        ("Max Drawdown", "max_drawdown", "%"),
+        ("Volatility", "annualized_vol", "%"),
+        ("Win Rate", "win_rate", "%"),
+        ("Calmar Ratio", "calmar_ratio", ""),
+        ("Final Value", "final_value", "$"),
+    ]
+    
+    for label, key, fmt in metrics_list:
+        val1 = metrics_top10[key]
+        val2 = metrics_quintiles[key]
+        val3 = metrics_deciles[key]
+        
+        if fmt == "%":
+            str1 = f"{val1*100:>19.2f}%"
+            str2 = f"{val2*100:>19.2f}%"
+            str3 = f"{val3*100:>19.2f}%"
+        elif fmt == "$":
+            str1 = f"${val1:>18,.2f}"
+            str2 = f"${val2:>18,.2f}"
+            str3 = f"${val3:>18,.2f}"
+        else:
+            str1 = f"{val1:>20.3f}"
+            str2 = f"{val2:>20.3f}"
+            str3 = f"{val3:>20.3f}"
+        
+        print(f"{label:<30} {str1} {str2} {str3}")
+    
+    # Determine winner
+    sharpes = [metrics_top10['sharpe_ratio'], metrics_quintiles['sharpe_ratio'], metrics_deciles['sharpe_ratio']]
+    names = ["Top/Bottom 10", "Quintiles (20%)", "Deciles (10%)"]
+    winner_idx = sharpes.index(max(sharpes))
+    
+    print("\n" + "=" * 80)
+    print(f"🏆 WINNER: {names[winner_idx]} (Sharpe: {sharpes[winner_idx]:.3f})")
+    print("=" * 80)
     
     # Save results
     output_dir = "backtests/results"
@@ -348,7 +427,12 @@ def main():
             **{k: v for k, v in metrics_top10.items()}
         },
         {
-            "Method": "Top/Bottom Deciles (Risk Parity)",
+            "Method": "Top/Bottom Quintiles (20%, Risk Parity)",
+            "Description": "Top 20% and Bottom 20% by percentile, risk parity weighting",
+            **{k: v for k, v in metrics_quintiles.items()}
+        },
+        {
+            "Method": "Top/Bottom Deciles (10%, Risk Parity)",
             "Description": "Top 10% and Bottom 10% by percentile, risk parity weighting",
             **{k: v for k, v in metrics_deciles.items()}
         }
@@ -360,10 +444,12 @@ def main():
     
     # Save equity curves
     results_top10['method'] = 'Top/Bottom 10'
-    results_deciles['method'] = 'Top/Bottom Deciles'
+    results_quintiles['method'] = 'Top/Bottom Quintiles (20%)'
+    results_deciles['method'] = 'Top/Bottom Deciles (10%)'
     
     equity_curves = pd.concat([
         results_top10[['date', 'portfolio_value', 'method']],
+        results_quintiles[['date', 'portfolio_value', 'method']],
         results_deciles[['date', 'portfolio_value', 'method']]
     ])
     
