@@ -1,0 +1,2 @@
+Strategy,Description,Sharpe Ratio,Weight,Weight_Pct
+Size Factor,"LONG small caps, SHORT large caps, risk parity weighting, 10d rebal (VECTORIZED)",-0.312095825529289,1.0,100.0
