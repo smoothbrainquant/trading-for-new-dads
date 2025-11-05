@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/workspace/run_portfolio_size_comparison.py", line 17, in <module>
+    from backtests.scripts.backtest_beta_factor import backtest_beta_factor
+ImportError: cannot import name 'backtest_beta_factor' from 'backtests.scripts.backtest_beta_factor' (/workspace/backtests/scripts/backtest_beta_factor.py)
