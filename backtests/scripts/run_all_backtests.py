@@ -976,6 +976,138 @@ def run_leverage_inverted_backtest(leverage_data, price_data, **kwargs):
         return None
 
 
+def run_dilution_decile_equal_weighted_backtest(price_data, **kwargs):
+    """Run dilution decile analysis - Equal-weighted."""
+    print("\n" + "=" * 80)
+    print("Running Dilution Decile Analysis - EQUAL-WEIGHTED")
+    print("=" * 80)
+    
+    try:
+        # Import the backtest function from the dedicated script
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+        from backtest_dilution_decile_analysis import (
+            load_historical_price_data,
+            load_historical_dilution_snapshots,
+            calculate_rolling_dilution_signal,
+            backtest_decile_portfolios,
+            calculate_decile_metrics
+        )
+        
+        # Load dilution data
+        hist_df = load_historical_dilution_snapshots()
+        
+        # Calculate signals
+        signals_df = calculate_rolling_dilution_signal(hist_df, lookback_months=12)
+        
+        # Run backtest
+        decile_results, individual_returns_df = backtest_decile_portfolios(
+            signals_df, price_data, n_deciles=10
+        )
+        
+        # Calculate metrics - use D1 (low dilution) performance as the primary metric
+        metrics_df = calculate_decile_metrics(decile_results)
+        
+        if len(metrics_df) > 0:
+            # Get D1 metrics (lowest dilution decile)
+            d1_metrics = metrics_df[metrics_df['decile'] == 1].iloc[0]
+            
+            # Create portfolio values from D1
+            d1_portfolio = decile_results[1]['portfolio_values']
+            
+            # Calculate comprehensive metrics
+            metrics = calculate_comprehensive_metrics(
+                d1_portfolio, kwargs.get("initial_capital", 10000)
+            )
+            
+            # Extract daily returns
+            d1_portfolio['daily_return'] = d1_portfolio['return']
+            daily_returns = d1_portfolio[['date', 'daily_return']].copy()
+            daily_returns.columns = ["date", "Dilution Decile (Equal)"]
+            
+            return {
+                "strategy": "Dilution Decile (Equal)",
+                "description": "Decile 1 (Low Dilution), Equal-weighted, Monthly rebal",
+                "metrics": metrics,
+                "results": {"portfolio_values": d1_portfolio},
+                "daily_returns": daily_returns,
+            }
+        else:
+            print("No decile metrics calculated")
+            return None
+            
+    except Exception as e:
+        print(f"Error in Dilution Decile Equal-weighted backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
+def run_dilution_decile_risk_parity_backtest(price_data, **kwargs):
+    """Run dilution decile analysis - Risk Parity weighted."""
+    print("\n" + "=" * 80)
+    print("Running Dilution Decile Analysis - RISK PARITY")
+    print("=" * 80)
+    
+    try:
+        # Import the backtest function from the dedicated script
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__)))
+        from backtest_dilution_decile_risk_parity import (
+            load_historical_price_data,
+            load_historical_dilution_snapshots,
+            calculate_rolling_dilution_signal,
+            backtest_risk_parity_deciles,
+            calculate_decile_metrics
+        )
+        
+        # Load dilution data
+        hist_df = load_historical_dilution_snapshots()
+        
+        # Calculate signals
+        signals_df = calculate_rolling_dilution_signal(hist_df, lookback_months=12)
+        
+        # Run backtest
+        decile_results, individual_returns_df = backtest_risk_parity_deciles(
+            signals_df, price_data, n_deciles=10
+        )
+        
+        # Calculate metrics - use D1 (low dilution) performance as the primary metric
+        metrics_df = calculate_decile_metrics(decile_results)
+        
+        if len(metrics_df) > 0:
+            # Get D1 metrics (lowest dilution decile)
+            d1_metrics = metrics_df[metrics_df['decile'] == 1].iloc[0]
+            
+            # Create portfolio values from D1
+            d1_portfolio = decile_results[1]['portfolio_values']
+            
+            # Calculate comprehensive metrics
+            metrics = calculate_comprehensive_metrics(
+                d1_portfolio, kwargs.get("initial_capital", 10000)
+            )
+            
+            # Extract daily returns
+            d1_portfolio['daily_return'] = d1_portfolio['portfolio_value'].pct_change()
+            daily_returns = d1_portfolio[['date', 'daily_return']].copy()
+            daily_returns.columns = ["date", "Dilution Decile (RP)"]
+            
+            return {
+                "strategy": "Dilution Decile (RP)",
+                "description": "Decile 1 (Low Dilution), Risk Parity, Monthly rebal",
+                "metrics": metrics,
+                "results": {"portfolio_values": d1_portfolio},
+                "daily_returns": daily_returns,
+            }
+        else:
+            print("No decile metrics calculated")
+            return None
+            
+    except Exception as e:
+        print(f"Error in Dilution Decile Risk Parity backtest: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+
 def run_dilution_factor_backtest(price_data, **kwargs):
     """Run dilution factor backtest - Long low dilution, Short high dilution."""
     print("\n" + "=" * 80)
@@ -1827,6 +1959,22 @@ def main():
         help="Dilution factor rebalance frequency in days (default: 7, optimal per backtest)"
     )
     parser.add_argument(
+        "--run-dilution-decile-eq",
+        nargs='?',
+        const=True,
+        default=None,
+        type=lambda x: x.lower() in ['true', '1', 'yes'],
+        help="Run dilution decile analysis (equal-weighted) - shows all 10 deciles"
+    )
+    parser.add_argument(
+        "--run-dilution-decile-rp",
+        nargs='?',
+        const=True,
+        default=None,
+        type=lambda x: x.lower() in ['true', '1', 'yes'],
+        help="Run dilution decile analysis (risk parity) - shows all 10 deciles"
+    )
+    parser.add_argument(
         "--run-turnover",
         nargs='?',
         const=True,
@@ -1864,6 +2012,8 @@ def main():
         'adf': args.run_adf,
         'leverage_inverted': args.run_leverage_inverted,
         'dilution': args.run_dilution,
+        'dilution_decile_eq': args.run_dilution_decile_eq,
+        'dilution_decile_rp': args.run_dilution_decile_rp,
         'turnover': args.run_turnover,
     }
 
@@ -1907,6 +2057,8 @@ def main():
     args.run_adf = run_flags['adf']
     args.run_leverage_inverted = run_flags['leverage_inverted']
     args.run_dilution = run_flags['dilution']
+    args.run_dilution_decile_eq = run_flags['dilution_decile_eq']
+    args.run_dilution_decile_rp = run_flags['dilution_decile_rp']
     args.run_turnover = run_flags['turnover']
 
     print("=" * 120)
@@ -2133,6 +2285,30 @@ def main():
                 all_results.append(result)
         else:
             print("? Skipping Dilution Factor backtest: price data not available")
+    
+    # 11a. Dilution Decile Analysis - Equal-Weighted
+    if args.run_dilution_decile_eq:
+        if loaded_data["price_data"] is not None:
+            result = run_dilution_decile_equal_weighted_backtest(
+                loaded_data["price_data"],
+                **common_params,
+            )
+            if result:
+                all_results.append(result)
+        else:
+            print("? Skipping Dilution Decile Equal-weighted backtest: price data not available")
+    
+    # 11b. Dilution Decile Analysis - Risk Parity
+    if args.run_dilution_decile_rp:
+        if loaded_data["price_data"] is not None:
+            result = run_dilution_decile_risk_parity_backtest(
+                loaded_data["price_data"],
+                **common_params,
+            )
+            if result:
+                all_results.append(result)
+        else:
+            print("? Skipping Dilution Decile Risk Parity backtest: price data not available")
 
     # 12. Turnover Factor (24h Volume / Market Cap)
     if args.run_turnover:
