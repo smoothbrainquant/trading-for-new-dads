@@ -284,6 +284,140 @@ def run_portfolio_size_comparison(price_data, marketcap_data, funding_data):
         except Exception as e:
             print(f"✗ Failed: {e}")
     
+    # Run Breakout Signal with different portfolio sizes
+    print("\n\n" + "#" * 120)
+    print("# BREAKOUT SIGNAL (50d Entry, 70d Exit)")
+    print("#" * 120)
+    
+    for size_name, size_params in size_configs:
+        print(f"\n{'=' * 100}")
+        print(f"Running: Breakout Signal - {size_name} (Risk Parity)")
+        print(f"{'=' * 100}")
+        
+        try:
+            results = backtest_factor_vectorized(
+                price_data=price_data,
+                factor_type='breakout',
+                strategy='breakout',
+                entry_window=50,
+                exit_window=70,
+                rebalance_days=1,  # Daily rebalancing
+                weighting_method='risk_parity',
+                initial_capital=common_params["initial_capital"],
+                start_date=common_params["start_date"],
+                end_date=common_params["end_date"],
+                leverage=common_params["leverage"],
+                long_allocation=common_params["long_allocation"],
+                short_allocation=common_params["short_allocation"],
+                volatility_window=common_params["volatility_window"],
+            )
+            
+            metrics = calculate_comprehensive_metrics(
+                results["portfolio_values"], common_params["initial_capital"]
+            )
+            
+            all_results.append({
+                "Strategy": f"Breakout Signal - {size_name}",
+                "Portfolio Size": size_name,
+                "Factor": "Breakout",
+                "Weighting": "Risk Parity",
+                **metrics
+            })
+            
+            print(f"✓ Completed: Sharpe {metrics['sharpe_ratio']:.3f}, Return {metrics['annualized_return']:.2%}")
+        except Exception as e:
+            print(f"✗ Failed: {e}")
+    
+    # Run Mean Reversion with different portfolio sizes
+    print("\n\n" + "#" * 120)
+    print("# MEAN REVERSION (Z-score threshold: 1.5)")
+    print("#" * 120)
+    
+    for size_name, size_params in size_configs:
+        print(f"\n{'=' * 100}")
+        print(f"Running: Mean Reversion - {size_name} (Risk Parity)")
+        print(f"{'=' * 100}")
+        
+        try:
+            results = backtest_factor_vectorized(
+                price_data=price_data,
+                factor_type='mean_reversion',
+                strategy='long_only',
+                zscore_threshold=1.5,
+                volume_threshold=1.0,
+                lookback_window=30,
+                long_only=True,
+                rebalance_days=2,
+                weighting_method='risk_parity',
+                initial_capital=common_params["initial_capital"],
+                start_date=common_params["start_date"],
+                end_date=common_params["end_date"],
+                leverage=common_params["leverage"],
+                long_allocation=1.0,
+                short_allocation=0.0,
+                volatility_window=common_params["volatility_window"],
+            )
+            
+            metrics = calculate_comprehensive_metrics(
+                results["portfolio_values"], common_params["initial_capital"]
+            )
+            
+            all_results.append({
+                "Strategy": f"Mean Reversion - {size_name}",
+                "Portfolio Size": size_name,
+                "Factor": "Mean Reversion",
+                "Weighting": "Risk Parity",
+                **metrics
+            })
+            
+            print(f"✓ Completed: Sharpe {metrics['sharpe_ratio']:.3f}, Return {metrics['annualized_return']:.2%}")
+        except Exception as e:
+            print(f"✗ Failed: {e}")
+    
+    # Run Days from High with different portfolio sizes
+    print("\n\n" + "#" * 120)
+    print("# DAYS FROM HIGH (Max 20 days from 200d high)")
+    print("#" * 120)
+    
+    for size_name, size_params in size_configs:
+        print(f"\n{'=' * 100}")
+        print(f"Running: Days from High - {size_name} (Risk Parity)")
+        print(f"{'=' * 100}")
+        
+        try:
+            results = backtest_factor_vectorized(
+                price_data=price_data,
+                factor_type='days_from_high',
+                strategy='long_only',
+                max_days=20,
+                lookback_window=200,
+                rebalance_days=1,
+                weighting_method='risk_parity',
+                initial_capital=common_params["initial_capital"],
+                start_date=common_params["start_date"],
+                end_date=common_params["end_date"],
+                leverage=common_params["leverage"],
+                long_allocation=1.0,
+                short_allocation=0.0,
+                volatility_window=common_params["volatility_window"],
+            )
+            
+            metrics = calculate_comprehensive_metrics(
+                results["portfolio_values"], common_params["initial_capital"]
+            )
+            
+            all_results.append({
+                "Strategy": f"Days from High - {size_name}",
+                "Portfolio Size": size_name,
+                "Factor": "Days from High",
+                "Weighting": "Risk Parity",
+                **metrics
+            })
+            
+            print(f"✓ Completed: Sharpe {metrics['sharpe_ratio']:.3f}, Return {metrics['annualized_return']:.2%}")
+        except Exception as e:
+            print(f"✗ Failed: {e}")
+    
     return pd.DataFrame(all_results)
 
 
