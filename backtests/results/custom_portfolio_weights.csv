@@ -1,0 +1,10 @@
+Strategy,Weight
+Leverage Inverted,0.2
+Dilution Factor,0.2
+Breakout Signal,0.2
+Volatility Factor,0.15
+ADF (Blended),0.05
+Beta Factor (BAB),0.05
+Mean Reversion,0.05
+Kurtosis Factor,0.05
+Carry Factor,0.05

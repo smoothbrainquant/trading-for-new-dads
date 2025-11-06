@@ -1,0 +1,2 @@
+Strategy,Description,Avg Return,Avg Drawdown,Stdev Return,Stdev Downside Return,Sharpe Ratio,Sortino Ratio,Information Coefficient,Max Drawdown,Win Rate,Calmar Ratio,Total Return,Final Value,Num Days
+Size Factor,"LONG small caps, SHORT large caps, risk parity weighting, 10d rebal (VECTORIZED)",-0.05132238253360755,-0.33777489187031967,0.3375259066912839,0.3159129769726537,-0.312095825529289,-0.33344760793241035,0.05560807035845482,-0.6576059680610183,0.5110481586402267,-0.16018775923968442,-0.41620095821281555,5837.990417871844,1766
