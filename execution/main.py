@@ -871,12 +871,11 @@ def load_signal_config(config_path):
             
             # Apply strategy caps (safety measure)
             # Cap Mean Reversion at 5% due to extreme volatility (76.9%) and regime dependence
-            # Cap Leverage Inverted at 5% (testing)
-            # Cap Dilution at 5% - testing new strategy
+            # Leverage Inverted and Dilution can now go up to 20% (promoted from testing)
             strategy_caps = {
                 "mean_reversion": 0.05,
-                "leverage_inverted": 0.05,  # testing
-                "dilution": 0.05,  # testing
+                "leverage_inverted": 0.20,  # promoted to primary strategy
+                "dilution": 0.20,  # promoted to primary strategy
             }
             
             capped_strategies = []
