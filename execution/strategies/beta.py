@@ -22,8 +22,8 @@ def strategy_beta(
     beta_window=90,
     volatility_window=30,
     rebalance_days=5,
-    long_percentile=20,
-    short_percentile=80,
+    top_n=10,
+    bottom_n=10,
     weighting_method="equal_weight",
     long_allocation=0.5,
     short_allocation=0.5,
@@ -38,8 +38,8 @@ def strategy_beta(
         beta_window (int): Window for beta calculation (default: 90 days)
         volatility_window (int): Window for volatility calculation (default: 30 days)
         rebalance_days (int): Rebalancing frequency in days (default: 5, optimal per backtest)
-        long_percentile (int): Percentile threshold for long positions (default: 20)
-        short_percentile (int): Percentile threshold for short positions (default: 80)
+        top_n (int): Number of positions for long side (default: 10)
+        bottom_n (int): Number of positions for short side (default: 10)
         weighting_method (str): Weighting method ('equal_weight' or 'risk_parity')
         long_allocation (float): Allocation to long side (default: 0.5)
         short_allocation (float): Allocation to short side (default: 0.5)
@@ -53,8 +53,8 @@ def strategy_beta(
     print(f"  Beta window: {beta_window} days")
     print(f"  Volatility window: {volatility_window} days")
     print(f"  Rebalance frequency: {rebalance_days} days (optimal)")
-    print(f"  Long percentile: {long_percentile}%")
-    print(f"  Short percentile: {short_percentile}%")
+    print(f"  Top N (long): {top_n} positions")
+    print(f"  Bottom N (short): {bottom_n} positions")
     print(f"  Weighting: {weighting_method}")
     print(f"  Long allocation: {long_allocation*100:.1f}%")
     print(f"  Short allocation: {short_allocation*100:.1f}%")
@@ -151,14 +151,14 @@ def strategy_beta(
         print(f"  Beta mean: {beta_df['beta'].mean():.2f}")
         print(f"  Beta median: {beta_df['beta'].median():.2f}")
         
-        # Step 3: Rank by beta and select long/short
-        beta_df["percentile"] = beta_df["beta"].rank(pct=True) * 100
+        # Step 3: Rank by beta and select top N and bottom N
+        beta_df = beta_df.sort_values("beta")
         
-        # Long: Low beta (defensive)
-        long_df = beta_df[beta_df["percentile"] <= long_percentile].copy()
+        # Long: Bottom N (lowest beta - defensive)
+        long_df = beta_df.head(top_n).copy()
         
-        # Short: High beta (aggressive)
-        short_df = beta_df[beta_df["percentile"] >= short_percentile].copy()
+        # Short: Top N (highest beta - aggressive)
+        short_df = beta_df.tail(bottom_n).copy()
         
         print(f"\n  Selected {len(long_df)} long positions (low beta)")
         print(f"  Selected {len(short_df)} short positions (high beta)")

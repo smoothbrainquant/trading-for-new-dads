@@ -124,14 +124,12 @@ def calculate_adf_signals(
     adf_window=60,
     regression="ct",
     volatility_window=30,
-    long_percentile=20,
-    short_percentile=80,
 ):
     """
     Calculate ADF signals for all symbols.
     
     Returns:
-        DataFrame with columns: symbol, adf_stat, adf_pvalue, volatility, percentile
+        DataFrame with columns: symbol, adf_stat, adf_pvalue, volatility
     """
     if adfuller is None:
         return pd.DataFrame()
@@ -192,7 +190,6 @@ def calculate_adf_signals(
         return pd.DataFrame()
     
     adf_df = pd.DataFrame(adf_results)
-    adf_df["percentile"] = adf_df["adf_stat"].rank(pct=True) * 100
     
     return adf_df
 
@@ -200,8 +197,8 @@ def calculate_adf_signals(
 def select_positions(
     adf_df,
     strategy_type,
-    long_percentile=20,
-    short_percentile=80,
+    top_n=10,
+    bottom_n=10,
 ):
     """
     Select long and short positions based on ADF rankings and strategy type.
@@ -209,14 +206,17 @@ def select_positions(
     Returns:
         tuple: (long_df, short_df) DataFrames with selected positions
     """
+    # Sort by ADF stat (ascending: stationary to trending)
+    adf_df = adf_df.sort_values("adf_stat")
+    
     if strategy_type == "trend_following":
-        # Trend Following: Long trending (high ADF), Short stationary (low ADF)
-        long_df = adf_df[adf_df["percentile"] >= short_percentile].copy()
-        short_df = adf_df[adf_df["percentile"] <= long_percentile].copy()
+        # Trend Following: Long top N trending (high ADF), Short bottom N stationary (low ADF)
+        long_df = adf_df.tail(top_n).copy()
+        short_df = adf_df.head(bottom_n).copy()
     elif strategy_type == "mean_reversion":
-        # Mean Reversion: Long stationary (low ADF), Short trending (high ADF)
-        long_df = adf_df[adf_df["percentile"] <= long_percentile].copy()
-        short_df = adf_df[adf_df["percentile"] >= short_percentile].copy()
+        # Mean Reversion: Long bottom N stationary (low ADF), Short top N trending (high ADF)
+        long_df = adf_df.head(top_n).copy()
+        short_df = adf_df.tail(bottom_n).copy()
     else:
         return pd.DataFrame(), pd.DataFrame()
     
@@ -285,8 +285,8 @@ def strategy_adf(
     regression="ct",
     volatility_window=30,
     regime_lookback=5,
-    long_percentile=20,
-    short_percentile=80,
+    top_n=10,
+    bottom_n=10,
     weighting_method="risk_parity",
     # Legacy parameters for backward compatibility (ignored)
     rebalance_days=7,
@@ -315,8 +315,8 @@ def strategy_adf(
         regression (str): ADF regression type (default: 'ct')
         volatility_window (int): Window for volatility calculation (default: 30 days)
         regime_lookback (int): Lookback period for regime detection (default: 5 days)
-        long_percentile (int): Percentile threshold for long positions (default: 20)
-        short_percentile (int): Percentile threshold for short positions (default: 80)
+        top_n (int): Number of positions for long side (default: 10)
+        bottom_n (int): Number of positions for short side (default: 10)
         weighting_method (str): Weighting method ('equal_weight' or 'risk_parity')
         rebalance_days (int): DEPRECATED - kept for backward compatibility, ignored
         strategy_type (str): DEPRECATED - regime determines strategy automatically
@@ -403,16 +403,16 @@ def strategy_adf(
         long_df, short_df = select_positions(
             adf_df,
             active_strategy,
-            long_percentile=long_percentile,
-            short_percentile=short_percentile,
+            top_n=top_n,
+            bottom_n=bottom_n,
         )
         
         if active_strategy == "trend_following":
-            print(f"     Long:  {len(long_df)} trending coins (high ADF, top {100-short_percentile}%)")
-            print(f"     Short: {len(short_df)} stationary coins (low ADF, bottom {long_percentile}%)")
+            print(f"     Long:  {len(long_df)} trending coins (high ADF, top {top_n} positions)")
+            print(f"     Short: {len(short_df)} stationary coins (low ADF, bottom {bottom_n} positions)")
         else:
-            print(f"     Long:  {len(long_df)} stationary coins (low ADF, bottom {long_percentile}%)")
-            print(f"     Short: {len(short_df)} trending coins (high ADF, top {100-short_percentile}%)")
+            print(f"     Long:  {len(long_df)} stationary coins (low ADF, bottom {top_n} positions)")
+            print(f"     Short: {len(short_df)} trending coins (high ADF, top {bottom_n} positions)")
         
         # Step 4: Calculate position sizes with regime-adjusted allocation
         positions = calculate_position_sizes(

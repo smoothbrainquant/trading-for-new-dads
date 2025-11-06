@@ -45,15 +45,14 @@ def strategy_kurtosis(
     kurtosis_window=30,
     volatility_window=30,
     rebalance_days=14,
-    long_percentile=20,
-    short_percentile=80,
+    top_n=10,
+    bottom_n=10,
     strategy_type="mean_reversion",  # Changed default to mean_reversion
     weighting_method="risk_parity",
     long_allocation=0.5,
     short_allocation=0.5,
-    max_positions=10,
-    regime_filter="bear_only",  # NEW: regime filter (bear_only, bull_only, always)
-    reference_symbol="BTC/USD",  # NEW: symbol for regime detection
+    regime_filter="bear_only",  # regime filter (bear_only, bull_only, always)
+    reference_symbol="BTC/USD",  # symbol for regime detection
 ):
     """
     Kurtosis factor strategy with regime-based activation.
@@ -65,15 +64,14 @@ def strategy_kurtosis(
         kurtosis_window (int): Window for kurtosis calculation (default: 30 days)
         volatility_window (int): Window for volatility calculation (default: 30 days)
         rebalance_days (int): Rebalancing frequency in days (default: 14, optimal per backtest)
-        long_percentile (int): Percentile threshold for long positions (default: 20)
-        short_percentile (int): Percentile threshold for short positions (default: 80)
+        top_n (int): Number of positions for long side (default: 10)
+        bottom_n (int): Number of positions for short side (default: 10)
         strategy_type (str): Strategy type:
             - 'mean_reversion': Long low kurtosis, Short high kurtosis (BEAR MARKET ONLY)
             - 'momentum': Long high kurtosis, Short low kurtosis
         weighting_method (str): Weighting method ('equal_weight' or 'risk_parity')
         long_allocation (float): Allocation to long side (default: 0.5)
         short_allocation (float): Allocation to short side (default: 0.5)
-        max_positions (int): Maximum positions per side (default: 10)
         regime_filter (str): Regime activation filter:
             - 'bear_only': Only activate in bear markets (RECOMMENDED for mean_reversion)
             - 'bull_only': Only activate in bull markets
@@ -92,12 +90,11 @@ def strategy_kurtosis(
     print(f"  Kurtosis window: {kurtosis_window} days")
     print(f"  Volatility window: {volatility_window} days")
     print(f"  Rebalance frequency: {rebalance_days} days")
-    print(f"  Long percentile: {long_percentile}%")
-    print(f"  Short percentile: {short_percentile}%")
+    print(f"  Top N (long): {top_n} positions")
+    print(f"  Bottom N (short): {bottom_n} positions")
     print(f"  Weighting: {weighting_method}")
     print(f"  Long allocation: {long_allocation*100:.1f}%")
     print(f"  Short allocation: {short_allocation*100:.1f}%")
-    print(f"  Max positions per side: {max_positions}")
     
     # Warning for risky configurations
     if strategy_type == "mean_reversion" and regime_filter == "always":
@@ -196,30 +193,18 @@ def strategy_kurtosis(
         print(f"  Kurtosis mean: {kurtosis_df['kurtosis'].mean():.2f}")
         print(f"  Kurtosis median: {kurtosis_df['kurtosis'].median():.2f}")
         
-        # Step 2: Rank by kurtosis and select long/short
-        kurtosis_df["percentile"] = kurtosis_df["kurtosis"].rank(pct=True) * 100
+        # Step 2: Sort by kurtosis and select top N and bottom N
+        kurtosis_df = kurtosis_df.sort_values("kurtosis")
         
         if strategy_type == "mean_reversion":
-            # Mean Reversion: Long low kurtosis (stable), Short high kurtosis (unstable)
-            long_df = kurtosis_df[kurtosis_df["percentile"] <= long_percentile].copy()
-            short_df = kurtosis_df[kurtosis_df["percentile"] >= short_percentile].copy()
-            
-            # Limit positions - take most extreme
-            if len(long_df) > max_positions:
-                long_df = long_df.nsmallest(max_positions, "kurtosis")
-            if len(short_df) > max_positions:
-                short_df = short_df.nlargest(max_positions, "kurtosis")
+            # Mean Reversion: Long bottom N (low kurtosis - stable), Short top N (high kurtosis - unstable)
+            long_df = kurtosis_df.head(top_n).copy()
+            short_df = kurtosis_df.tail(bottom_n).copy()
         
         elif strategy_type == "momentum":
-            # Momentum: Long high kurtosis (volatile), Short low kurtosis (stable)
-            long_df = kurtosis_df[kurtosis_df["percentile"] >= short_percentile].copy()
-            short_df = kurtosis_df[kurtosis_df["percentile"] <= long_percentile].copy()
-            
-            # Limit positions - take most extreme
-            if len(long_df) > max_positions:
-                long_df = long_df.nlargest(max_positions, "kurtosis")
-            if len(short_df) > max_positions:
-                short_df = short_df.nsmallest(max_positions, "kurtosis")
+            # Momentum: Long top N (high kurtosis - volatile), Short bottom N (low kurtosis - stable)
+            long_df = kurtosis_df.tail(top_n).copy()
+            short_df = kurtosis_df.head(bottom_n).copy()
         
         else:
             raise ValueError(f"Unknown strategy type: {strategy_type}")
