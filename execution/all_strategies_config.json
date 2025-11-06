@@ -1,18 +1,18 @@
 {
   "strategy_weights": {
-    "size": 0.0500,
+    "size": 0.0,
     "breakout": 0.0911,
     "beta": 0.0825,
-    "mean_reversion": 0.0500,
-    "carry": 0.0500,
+    "mean_reversion": 0.05,
+    "carry": 0.05,
     "volatility": 0.1436,
-    "kurtosis": 0.0500,
-    "days_from_high": 0.0500,
-    "adf": 0.0500,
+    "kurtosis": 0.05,
+    "days_from_high": 0.0,
+    "adf": 0.05,
     "trendline_breakout": 0.0,
     "leverage_inverted": 0.3328,
-    "dilution": 0.0500,
-    "turnover": 0.1000
+    "dilution": 0.05,
+    "turnover": 0.1
   },
   "_weights_note": {
     "_comment": "ENSEMBLE METHOD: Robust portfolio weights optimized using ensemble averaging (Regularized MVO + Risk Parity + Max Diversification). 30% more stable than standard MVO.",
@@ -195,10 +195,10 @@
       "max_pvalue": 0.05,
       "max_positions": 10,
       "rebalance_days": 1,
-      "weighting_method": "equal_weight",
+      "weighting_method": "risk_parity",
       "long_allocation": 0.5,
       "short_allocation": 0.5,
-      "_comment": "Optimal params from backtest (2020-2025): rebalance_days=1 (daily), holding_period=5 days, Total Return: +93.44%, Sharpe: 0.36. Momentum continuation strategy: long uptrend breakouts, short downtrend breakouts."
+      "_comment": "Optimal params from backtest (2020-2025): rebalance_days=1 (daily), holding_period=5 days, Total Return: +93.44%, Sharpe: 0.36. Uses top/bottom 10 positions (max_positions=10) with risk parity weighting. Momentum continuation strategy: long uptrend breakouts, short downtrend breakouts."
     },
     "volatility": {
       "volatility_window": 30,
@@ -214,15 +214,15 @@
     "kurtosis": {
       "kurtosis_window": 30,
       "rebalance_days": 14,
-      "long_percentile": 20,
-      "short_percentile": 80,
+      "long_percentile": 10,
+      "short_percentile": 90,
       "weighting_method": "risk_parity",
       "long_allocation": 0.5,
       "short_allocation": 0.5,
       "strategy_type": "mean_reversion",
       "regime_filter": "bear_only",
       "reference_symbol": "BTC/USD",
-      "_comment": "REGIME-FILTERED STRATEGY - Only activates in BEAR MARKETS. Mean reversion: long low kurtosis (stable), short high kurtosis (volatile). Performance by regime: Bear/Low-Vol: +28% to +50% annualized (Sharpe 1.79), Bull markets: -25% to -90% annualized (TOXIC). Regime filter prevents activation in bull markets based on 50MA < 200MA on BTC. When inactive, the allocated capital (5%) is automatically redistributed to other flexible strategies (Size, ADF, Beta, Volatility, Mean Reversion). See docs/KURTOSIS_REGIME_ANALYSIS.md for full analysis."
+      "_comment": "REGIME-FILTERED STRATEGY - Only activates in BEAR MARKETS. Mean reversion: long low kurtosis (stable), short high kurtosis (volatile). Uses DECILE (top/bottom 10%) with risk parity weighting. Performance by regime: Bear/Low-Vol: +28% to +50% annualized (Sharpe 1.79), Bull markets: -25% to -90% annualized (TOXIC). Regime filter prevents activation in bull markets based on 50MA < 200MA on BTC. When inactive, the allocated capital is automatically redistributed to other flexible strategies. See docs/KURTOSIS_REGIME_ANALYSIS.md for full analysis."
     },
     "adf": {
       "_status": "ACTIVE - Available for use (set weight > 0 to enable)",
@@ -230,13 +230,13 @@
       "regression": "ct",
       "volatility_window": 30,
       "rebalance_days": 7,
-      "long_percentile": 20,
-      "short_percentile": 80,
+      "long_percentile": 10,
+      "short_percentile": 90,
       "strategy_type": "trend_following_premium",
       "weighting_method": "risk_parity",
       "long_allocation": 0.5,
       "short_allocation": 0.5,
-      "_comment": "Optimal params from backtest (2021-2025): Total Return: +126.29%, Sharpe: 0.49, Max DD: -50.60%. Risk parity weighting beat equal weight. Trend Following Premium: long trending coins (high ADF), short stationary coins (low ADF). Currently active with weight=0. Set weight > 0 to enable in portfolio.",
+      "_comment": "Optimal params from backtest (2021-2025): Total Return: +126.29%, Sharpe: 0.49, Max DD: -50.60%. Uses DECILE (top/bottom 10%) with risk parity weighting. Trend Following Premium: long trending coins (high ADF), short stationary coins (low ADF).",
       "_backtest_results": {
         "trend_following_risk_parity": {
           "return": "126.29%",
@@ -276,12 +276,12 @@
     "turnover": {
       "_status": "ACTIVE - Exceptional backtest performance (Sharpe: 2.17)",
       "rebalance_days": 30,
-      "long_percentile": 20,
-      "short_percentile": 80,
-      "weighting_method": "equal_weight",
+      "long_percentile": 10,
+      "short_percentile": 90,
+      "weighting_method": "risk_parity",
       "long_allocation": 0.5,
       "short_allocation": 0.5,
-      "_comment": "Turnover Factor (24h Volume / Market Cap). Long high turnover (liquid), short low turnover (illiquid). Backtest (2020-2025): Total Return: 118.61%, Sharpe: 2.17, Max DD: -11.69%, Win Rate: 66.67%. Excellent liquidity-based factor with institutional-grade Sharpe ratio."
+      "_comment": "Turnover Factor (24h Volume / Market Cap). Long high turnover (liquid), short low turnover (illiquid). Uses DECILE (top/bottom 10%) with risk parity weighting. Backtest (2020-2025): Total Return: 118.61%, Sharpe: 2.17, Max DD: -11.69%, Win Rate: 66.67%. Excellent liquidity-based factor with institutional-grade Sharpe ratio."
     }
   }
 }
