@@ -25,6 +25,7 @@ def strategy_dilution(
     rebalance_days=7,
     lookback_months=12,
     top_n=10,
+    bottom_n=10,
     volatility_window=90,
     long_allocation=0.5,
     short_allocation=0.5,
@@ -40,7 +41,8 @@ def strategy_dilution(
         notional (float): Total notional to allocate
         rebalance_days (int): Rebalancing frequency in days (default: 7, optimal per analysis)
         lookback_months (int): Months to lookback for dilution calculation (default: 12)
-        top_n (int): Number of long and short positions (default: 10)
+        top_n (int): Number of long positions (default: 10)
+        bottom_n (int): Number of short positions (default: 10)
         volatility_window (int): Days for volatility calculation (default: 90)
         long_allocation (float): Allocation to long side (default: 0.5)
         short_allocation (float): Allocation to short side (default: 0.5)
@@ -51,7 +53,7 @@ def strategy_dilution(
     print("\n" + "=" * 80)
     print("DILUTION FACTOR STRATEGY")
     print("=" * 80)
-    print(f"Parameters: top_n={top_n}, lookback={lookback_months}m, rebalance={rebalance_days}d")
+    print(f"Parameters: top_n={top_n}, bottom_n={bottom_n}, lookback={lookback_months}m, rebalance={rebalance_days}d")
     print("# testing new dilution factor")
     
     # Load historical dilution data
@@ -119,13 +121,13 @@ def strategy_dilution(
     
     # Select long (low dilution) and short (high dilution) candidates
     long_candidates = sorted_coins[:top_n]
-    short_candidates = sorted_coins[-top_n:]
+    short_candidates = sorted_coins[-bottom_n:]
     
     print(f"\n?? TOP {top_n} LOW DILUTION (LONG):")
     for i, (symbol, data) in enumerate(long_candidates[:5], 1):
         print(f"  {i}. {symbol:8s}: {data['velocity']:>6.2f}% per year, {data['circ_pct']:>6.1f}% circulating")
     
-    print(f"\n?? TOP {top_n} HIGH DILUTION (SHORT):")
+    print(f"\n?? TOP {bottom_n} HIGH DILUTION (SHORT):")
     for i, (symbol, data) in enumerate(reversed(short_candidates[-5:]), 1):
         print(f"  {i}. {symbol:8s}: {data['velocity']:>6.2f}% per year, {data['circ_pct']:>6.1f}% circulating")
     

@@ -209,8 +209,8 @@ def _build_strategy_params(
         beta_window = int(p.get("beta_window", 90)) if isinstance(p, dict) else 90
         volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
         rebalance_days = int(p.get("rebalance_days", 5)) if isinstance(p, dict) else 5
-        long_percentile = int(p.get("long_percentile", 10)) if isinstance(p, dict) else 10  # DECILE: Bottom 10%
-        short_percentile = int(p.get("short_percentile", 90)) if isinstance(p, dict) else 90  # DECILE: Top 10%
+        top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
+        bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
         weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"  # Risk parity default
         long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
         short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
@@ -218,8 +218,8 @@ def _build_strategy_params(
             "beta_window": beta_window,
             "volatility_window": volatility_window,
             "rebalance_days": rebalance_days,
-            "long_percentile": long_percentile,
-            "short_percentile": short_percentile,
+            "top_n": top_n,
+            "bottom_n": bottom_n,
             "weighting_method": weighting_method,
             "long_allocation": long_allocation,
             "short_allocation": short_allocation,
@@ -253,26 +253,24 @@ def _build_strategy_params(
         kurtosis_window = int(p.get("kurtosis_window", 30)) if isinstance(p, dict) else 30
         volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
         rebalance_days = int(p.get("rebalance_days", 14)) if isinstance(p, dict) else 14
-        long_percentile = int(p.get("long_percentile", 20)) if isinstance(p, dict) else 20
-        short_percentile = int(p.get("short_percentile", 80)) if isinstance(p, dict) else 80
+        top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
+        bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
         strategy_type = p.get("strategy_type", "mean_reversion") if isinstance(p, dict) else "mean_reversion"
         weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"
         long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
         short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
-        max_positions = int(p.get("max_positions", 10)) if isinstance(p, dict) else 10
         regime_filter = p.get("regime_filter", "bear_only") if isinstance(p, dict) else "bear_only"
         reference_symbol = p.get("reference_symbol", "BTC/USD") if isinstance(p, dict) else "BTC/USD"
         return (historical_data, list(historical_data.keys()), strategy_notional), {
             "kurtosis_window": kurtosis_window,
             "volatility_window": volatility_window,
             "rebalance_days": rebalance_days,
-            "long_percentile": long_percentile,
-            "short_percentile": short_percentile,
+            "top_n": top_n,
+            "bottom_n": bottom_n,
             "strategy_type": strategy_type,
             "weighting_method": weighting_method,
             "long_allocation": long_allocation,
             "short_allocation": short_allocation,
-            "max_positions": max_positions,
             "regime_filter": regime_filter,
             "reference_symbol": reference_symbol,
         }
@@ -280,7 +278,8 @@ def _build_strategy_params(
     elif strategy_name == "volatility":
         volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
         rebalance_days = int(p.get("rebalance_days", 3)) if isinstance(p, dict) else 3
-        num_quintiles = int(p.get("num_quintiles", 10)) if isinstance(p, dict) else 10  # DECILE: 10 buckets
+        top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
+        bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
         strategy_type = p.get("strategy_type", "long_low_short_high") if isinstance(p, dict) else "long_low_short_high"
         weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"  # Risk parity default
         long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
@@ -288,7 +287,8 @@ def _build_strategy_params(
         return (historical_data, list(historical_data.keys()), strategy_notional), {
             "volatility_window": volatility_window,
             "rebalance_days": rebalance_days,
-            "num_quintiles": num_quintiles,
+            "top_n": top_n,
+            "bottom_n": bottom_n,
             "strategy_type": strategy_type,
             "weighting_method": weighting_method,
             "long_allocation": long_allocation,
@@ -301,8 +301,8 @@ def _build_strategy_params(
         regression = p.get("regression", "ct") if isinstance(p, dict) else "ct"
         volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
         regime_lookback = int(p.get("regime_lookback", 5)) if isinstance(p, dict) else 5
-        long_percentile = int(p.get("long_percentile", 20)) if isinstance(p, dict) else 20
-        short_percentile = int(p.get("short_percentile", 80)) if isinstance(p, dict) else 80
+        top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
+        bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
         weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"
         # Legacy parameters for backward compatibility
         rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
@@ -315,8 +315,8 @@ def _build_strategy_params(
             "regression": regression,
             "volatility_window": volatility_window,
             "regime_lookback": regime_lookback,
-            "long_percentile": long_percentile,
-            "short_percentile": short_percentile,
+            "top_n": top_n,
+            "bottom_n": bottom_n,
             "weighting_method": weighting_method,
             "rebalance_days": rebalance_days,
             "strategy_type": strategy_type,
@@ -339,6 +339,7 @@ def _build_strategy_params(
         rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
         lookback_months = int(p.get("lookback_months", 12)) if isinstance(p, dict) else 12
         top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
+        bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
         volatility_window = int(p.get("volatility_window", 90)) if isinstance(p, dict) else 90
         long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
         short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
@@ -346,6 +347,7 @@ def _build_strategy_params(
             "rebalance_days": rebalance_days,
             "lookback_months": lookback_months,
             "top_n": top_n,
+            "bottom_n": bottom_n,
             "volatility_window": volatility_window,
             "long_allocation": long_allocation,
             "short_allocation": short_allocation,

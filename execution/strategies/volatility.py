@@ -23,7 +23,8 @@ def strategy_volatility(
     strategy_notional,
     volatility_window=30,
     rebalance_days=3,
-    num_quintiles=5,
+    top_n=10,
+    bottom_n=10,
     strategy_type="long_low_short_high",
     weighting_method="equal_weight",
     long_allocation=0.5,
@@ -38,7 +39,8 @@ def strategy_volatility(
         strategy_notional (float): Total notional to allocate
         volatility_window (int): Window for volatility calculation (default: 30 days)
         rebalance_days (int): Rebalancing frequency in days (default: 3, optimal per backtest)
-        num_quintiles (int): Number of quintiles for ranking (default: 5)
+        top_n (int): Number of positions for long side (default: 10)
+        bottom_n (int): Number of positions for short side (default: 10)
         strategy_type (str): Strategy type ('long_low_short_high', 'long_low_vol', 'long_high_vol')
         weighting_method (str): Weighting method ('equal_weight' or 'risk_parity')
         long_allocation (float): Allocation to long side (default: 0.5)
@@ -53,7 +55,8 @@ def strategy_volatility(
     print(f"  Volatility window: {volatility_window} days")
     print(f"  Rebalance frequency: {rebalance_days} days (optimal per backtest)")
     print(f"  Strategy type: {strategy_type}")
-    print(f"  Number of quintiles: {num_quintiles}")
+    print(f"  Top N (long): {top_n} positions")
+    print(f"  Bottom N (short): {bottom_n} positions")
     print(f"  Weighting: {weighting_method}")
     print(f"  Long allocation: {long_allocation*100:.1f}%")
     print(f"  Short allocation: {short_allocation*100:.1f}%")
@@ -106,57 +109,37 @@ def strategy_volatility(
         print(f"  Volatility mean: {vol_df['volatility'].mean()*100:.1f}%")
         print(f"  Volatility median: {vol_df['volatility'].median()*100:.1f}%")
         
-        # Step 2: Rank by volatility and assign to quintiles
-        if len(vol_df) < num_quintiles:
-            print(f"  ⚠️  Insufficient symbols ({len(vol_df)}) for {num_quintiles} quintiles")
-            return {}
-        
-        # Sort by volatility (ascending: low to high)
+        # Step 2: Sort by volatility (ascending: low to high)
         vol_df = vol_df.sort_values("volatility")
         
-        # Assign quintiles (1 = lowest vol, num_quintiles = highest vol)
-        try:
-            vol_df["quintile"] = pd.qcut(
-                vol_df["volatility"],
-                q=num_quintiles,
-                labels=range(1, num_quintiles + 1),
-                duplicates="drop",
-            )
-        except ValueError:
-            # If qcut fails due to duplicate bin edges, use rank-based approach
-            vol_df["quintile"] = pd.cut(
-                vol_df["volatility"].rank(method="first"),
-                bins=num_quintiles,
-                labels=range(1, num_quintiles + 1),
-            )
-        
-        # Step 3: Select symbols based on strategy type
+        # Step 3: Select top N and bottom N based on strategy type
         if strategy_type == "long_low_short_high":
-            # Long lowest vol quintile (1), short highest vol quintile (num_quintiles)
-            long_df = vol_df[vol_df["quintile"] == 1].copy()
-            short_df = vol_df[vol_df["quintile"] == num_quintiles].copy()
+            # Long: Bottom N (lowest volatility)
+            long_df = vol_df.head(top_n).copy()
+            # Short: Top N (highest volatility)
+            short_df = vol_df.tail(bottom_n).copy()
         
         elif strategy_type == "long_low_vol":
-            # Long lowest vol quintile only
-            long_df = vol_df[vol_df["quintile"] == 1].copy()
+            # Long: Bottom N (lowest volatility) only
+            long_df = vol_df.head(top_n).copy()
             short_df = pd.DataFrame()
         
         elif strategy_type == "long_high_vol":
-            # Long highest vol quintile only
-            long_df = vol_df[vol_df["quintile"] == num_quintiles].copy()
+            # Long: Top N (highest volatility) only
+            long_df = vol_df.tail(top_n).copy()
             short_df = pd.DataFrame()
         
         elif strategy_type == "long_high_short_low":
-            # Long highest vol quintile, short lowest vol quintile (contrarian)
-            long_df = vol_df[vol_df["quintile"] == num_quintiles].copy()
-            short_df = vol_df[vol_df["quintile"] == 1].copy()
+            # Long: Top N (highest volatility), Short: Bottom N (lowest volatility) - contrarian
+            long_df = vol_df.tail(top_n).copy()
+            short_df = vol_df.head(bottom_n).copy()
         
         else:
             print(f"  ⚠️  Unknown strategy type: {strategy_type}")
             return {}
         
-        print(f"\n  Selected {len(long_df)} long positions (quintile {1 if 'low' in strategy_type and not 'high_short_low' in strategy_type else num_quintiles})")
-        print(f"  Selected {len(short_df)} short positions (quintile {num_quintiles if 'low_short_high' in strategy_type else 1 if short_df is not None and len(short_df) > 0 else 'N/A'})")
+        print(f"\n  Selected {len(long_df)} long positions ({strategy_type.split('_')[1]} volatility)")
+        print(f"  Selected {len(short_df)} short positions ({strategy_type.split('_')[-1] if len(strategy_type.split('_')) > 2 else 'N/A'} volatility)" if len(short_df) > 0 else "  No short positions")
         
         if len(long_df) == 0 and len(short_df) == 0:
             print("  ⚠️  No positions selected")
