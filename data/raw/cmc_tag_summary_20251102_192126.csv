@@ -1,0 +1,245 @@
+tag,tag_name,tag_group,num_coins,sample_coins
+binance-listing,Binance Listing,CATEGORY,90,"1INCH,AAVE,ADA,AERO,AKT,ALGO,ALICE,AMP,ANKR,APE"
+binance-ecosystem,Binance Ecosystem,CATEGORY,90,"1INCH,AAVE,ADA,AERO,AKT,ALGO,ALICE,AMP,ANKR,APE"
+ethereum-ecosystem,Ethereum Ecosystem,PLATFORM,63,"1INCH,AAVE,ALICE,AMP,ANKR,APE,API3,ARB,ARKM,ATH"
+defi,DeFi,CATEGORY,39,"1INCH,AAVE,AERO,ALICE,ANKR,API3,ARKM,ATOM,AXL,BAL"
+made-in-america,Made in America,CATEGORY,34,"AAVE,ADA,AERO,AKT,ALGO,AMP,ANKR,APT,ARKM,AUDIO"
+solana-ecosystem,Solana Ecosystem,PLATFORM,32,"1INCH,AAVE,ALICE,ANKR,ATH,AUDIO,AXS,BAND,BAT,BIO"
+arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM,25,"AAVE,ANKR,ARB,ATH,AXL,BAL,BICO,BNT,BONK,CAKE"
+web3,Web3,INDUSTRY,24,"AIOZ,AKT,API3,AUDIO,BAND,BAT,BTRST,CVC,DIA,DOT"
+layer-1,Layer 1,CATEGORY,22,"ADA,AIOZ,ALGO,APT,AVAX,BCH,BNB,BTC,CHZ,CRO"
+polygon-ecosystem,Polygon Ecosystem,PLATFORM,21,"AAVE,ANKR,API3,ATOM,AXL,BAL,BAND,BICO,BONK,CRV"
+pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY,19,"AAVE,ANKR,API3,ARB,AUDIO,BAL,BAT,BTC,CELR,COMP"
+platform,Platform,CATEGORY,19,"ADA,AIOZ,ALGO,ANKR,ATOM,BICO,CELR,CTSI,DIA,ELA"
+smart-contracts,Smart Contracts,CATEGORY,18,"ADA,AIOZ,ALGO,AVAX,BAT,BNB,CAKE,CELO,CTSI,DIA"
+dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY,16,"AIOZ,ALGO,BICO,BONK,CELO,COTI,CRV,EGLD,EOS,FET"
+ai-big-data,AI & Big Data,INDUSTRY,16,"AIOZ,AKT,ARKM,ATH,BAT,DIA,FET,FIL,GLM,GRT"
+binance-labs-portfolio,YZi Labs Portfolio,CATEGORY,15,"1INCH,APT,ARKM,AUDIO,AXL,BAND,BICO,BIO,BTC,CTSI"
+collectibles-nfts,Collectibles & NFTs,CATEGORY,15,"ALICE,APE,AXS,BLUR,CAKE,CHZ,FET,FLOW,GMT,ILV"
+dao,DAO,CATEGORY,15,"AAVE,APE,ARB,AUDIO,BAL,BIO,COMP,CRV,DASH,ENS"
+bnb-chain-ecosystem,BNB Chain Ecosystem,PLATFORM,14,"1INCH,ALICE,AUDIO,AXL,BICO,BIO,BNB,CAKE,FLOKI,KNC"
+base-ecosystem,Base Ecosystem,PLATFORM,14,"AERO,AXL,BAL,BICO,BONK,BTRST,CAKE,CRV,CTSI,DOT"
+depin,DePIN,INDUSTRY,14,"AIOZ,AKT,ANKR,ATH,CELR,EGLD,ELA,FIL,GLM,HNT"
+polychain-capital-portfolio,Polychain Capital Portfolio,CATEGORY,14,"ARB,ATOM,AVAX,AXL,BTC,CELO,COMP,DOT,DRIFT,ETH"
+avalanche-ecosystem,Avalanche Ecosystem,PLATFORM,13,"1INCH,AAVE,ANKR,AVAX,AXL,BAT,BICO,COMP,CTSI,DIA"
+distributed-computing,Distributed Computing,INDUSTRY,12,"AIOZ,AKT,ANKR,ATH,EGLD,ELA,FIL,GLM,HNT,IO"
+alleged-sec-securities,Alleged SEC Securities,CATEGORY,12,"ADA,ALGO,AMP,ATOM,AXS,BNB,CHZ,DASH,FIL,FLOW"
+coinbase-ventures-portfolio,Coinbase Ventures Portfolio,CATEGORY,12,"AUDIO,AXL,BICO,BTC,BTRST,CELO,COMP,ETH,FLOW,GRT"
+payments,Payments,INDUSTRY,12,"BAT,BCH,BNB,BNT,CELO,CHZ,CRO,DOGE,EGLD,GLM"
+dcg-portfolio,DCG Portfolio,CATEGORY,12,"API3,BAT,BTC,CVC,ETC,ETH,FIL,FLOW,GRT,HBAR"
+gnosis-chain-ecosystem,Gnosis Chain Ecosystem,PLATFORM,12,"AAVE,AUDIO,BAL,BAND,BAT,BNT,COMP,CRV,DOT,GNO"
+governance,Governance,CATEGORY,12,"AAVE,APE,ARKM,BAL,BAT,CAKE,CRV,DASH,DRIFT,ENS"
+gaming,Gaming,INDUSTRY,11,"ALICE,APE,AXS,EGLD,FLOKI,GMT,ILV,IMX,MAGIC,MANA"
+optimism-ecosystem,Optimism Ecosystem,PLATFORM,11,"AAVE,ANKR,AXL,BAL,BICO,CRV,CTSI,DOT,KNC,LDO"
+injective-ecosystem,Injective Ecosystem,PLATFORM,11,"AKT,API3,ATOM,BAND,BONK,DIA,FET,GRT,INJ,LINK"
+binance-launchpad,Binance Launchpad,CATEGORY,10,"ARKM,AXS,BAND,CELR,CTSI,EGLD,FET,GMT,INJ,KAVA"
+multicoin-capital-portfolio,Multicoin Capital Portfolio,CATEGORY,10,"ALGO,AUDIO,BNB,BTC,DRIFT,ETH,GRT,HNT,ICP,LPT"
+three-arrows-capital-portfolio,Three Arrows Capital Portfolio,CATEGORY,10,"AAVE,AVAX,BAL,BTC,COMP,DOT,ETH,KNC,LDO,MINA"
+kenetic-capital-portfolio,Kenetic Capital Portfolio,CATEGORY,10,"ALGO,BNT,DOT,ETH,GNO,IOTX,KNC,KSM,MANA,MLN"
+near-protocol-ecosystem,Near Protocol Ecosystem,PLATFORM,10,"AAVE,BAL,BAND,BAT,CELO,COMP,DIA,GRT,LINK,MKR"
+fantom-ecosystem,Fantom Ecosystem,PLATFORM,9,"AAVE,ANKR,API3,AXL,BAND,CRV,DIA,GRT,LINK"
+decentralized-exchange-dex-token,Decentralized Exchange (DEX) Token,CATEGORY,9,"1INCH,BAL,BNT,CAKE,CRV,DRIFT,GNO,KNC,LRC"
+alameda-research-portfolio,Alameda Research Portfolio,CATEGORY,9,"1INCH,AAVE,BAL,BNB,BTC,COMP,CRV,ETH,IMX"
+enterprise-solutions,Enterprise Solutions,INDUSTRY,9,"ANKR,BCH,CELR,CVC,EGLD,EOS,GRT,HBAR,HNT"
+mineable,Mineable,OTHERS,9,"BCH,BTC,DASH,DOGE,ELA,ETC,FIL,HNT,LTC"
+metaverse,Metaverse,CATEGORY,9,"ALICE,APE,AXS,EGLD,FLOKI,ILV,MAGIC,MANA,MASK"
+real-world-assets-protocols,Real World Assets Protocols,CATEGORY,9,"ALGO,AVAX,AXL,CFG,DIA,HBAR,INJ,LINK,MKR"
+a16z-portfolio,a16z Portfolio,CATEGORY,8,"BTC,CELO,COMP,ETH,FIL,FLOW,ICP,MKR"
+staking,Staking,CATEGORY,8,"ADA,ANKR,BAT,CTSI,ETHFI,FLOW,JTO,MINA"
+pos,PoS,ALGORITHM,8,"ADA,ALGO,CELO,CTSI,EGLD,ETH,INJ,MINA"
+scaling,Scaling,CATEGORY,8,"ARB,BNT,CELR,CTSI,EGLD,IMX,LRC,METIS"
+2017-2018-alt-season,2017/18 Alt season,CATEGORY,8,"ADA,BCH,BTC,DASH,EOS,ETC,FIL,LTC"
+dragonfly-capital-portfolio,DragonFly Capital Portfolio,CATEGORY,8,"1INCH,ATOM,AVAX,BTC,CELO,COMP,ETH,MKR"
+amm,AMM,CATEGORY,8,"1INCH,AERO,BAL,BNT,CAKE,CRV,KNC,LRC"
+layer-2,Layer 2,CATEGORY,8,"ARB,CELO,COTI,CTSI,IMX,LRC,MAGIC,METIS"
+marketplace,Marketplace,INDUSTRY,8,"ARKM,BCH,BNB,BNT,HBAR,KNC,LRC,ME"
+cmc-crypto-yearbook-2024-2025,CMC Crypto Yearbook 2024-25,CATEGORY,7,"ARKM,ATH,EIGEN,ENA,ETHFI,JTO,LDO"
+1confirmation-portfolio,1Confirmation Portfolio,CATEGORY,7,"ATOM,BAT,BTC,DOT,ETH,KSM,MKR"
+framework-ventures-portfolio,Framework Ventures Portfolio,CATEGORY,7,"AAVE,BTC,CRV,ETH,GRT,KAVA,LINK"
+placeholder-ventures-portfolio,Placeholder Ventures Portfolio,CATEGORY,7,"API3,BAL,BTC,DOT,ETH,MKR,MLN"
+memes,Memes,INDUSTRY,7,"APE,BONK,DOGE,FARTCOIN,FLOKI,GIGA,MOG"
+osmosis-ecosystem,Osmosis Ecosystem,PLATFORM,7,"AKT,ARB,ATOM,AXL,DOGE,DOT,FET"
+exnetwork-capital-portfolio,Exnetwork Capital Portfolio,CATEGORY,7,"ALGO,ALICE,ATOM,DIA,DOT,EGLD,ICP"
+hashkey-capital-portfolio,Hashkey Capital Portfolio,CATEGORY,7,"ATOM,DOT,ETH,FIL,ICP,IOTX,KAVA"
+paradigm-portfolio,Paradigm Portfolio,CATEGORY,6,"ATOM,BTC,COMP,ETH,LDO,MKR"
+polkadot,Polkadot,PLATFORM,6,"ANKR,CELR,DIA,DOT,KSM,LINK"
+world-liberty-financial-portfolio,World Liberty Financial Portfolio,CATEGORY,6,"AAVE,AVAX,ENA,EOS,ETH,LINK"
+medium-of-exchange,Medium of Exchange,INDUSTRY,6,"BCH,CRO,DASH,DOGE,EOS,LTC"
+interoperability,Interoperability,CATEGORY,6,"ATOM,AXL,BAT,BICO,CELR,LINK"
+coinfund-portfolio,Coinfund Portfolio,CATEGORY,6,"API3,BAL,DOT,FLOW,GRT,LPT"
+electric-capital-portfolio,Electric Capital Portfolio,CATEGORY,6,"BTC,CELO,EGLD,ETH,ICP,MKR"
+fabric-ventures-portfolio,Fabric Ventures Portfolio,CATEGORY,6,"1INCH,BTC,DOT,ETH,GRT,MANA"
+fenbushi-capital-portfolio,Fenbushi Capital Portfolio,CATEGORY,6,"BICO,DOT,EOS,ICP,LA,MORPHO"
+heco-ecosystem,HECO Ecosystem,PLATFORM,6,"AAVE,BAL,DOT,ELA,EOS,LINK"
+cms-holdings-portfolio,CMS Holdings Portfolio,CATEGORY,6,"AVAX,BTC,DOT,ETH,INJ,KSM"
+blockchain-capital-portfolio,Blockchain Capital Portfolio,CATEGORY,6,"1INCH,AAVE,BTC,DOT,ETH,FIL"
+zero-knowledge-proofs,Zero Knowledge Proofs,CATEGORY,6,"CELO,CELR,IMX,LRC,METIS,MINA"
+cosmos-ecosystem,Cosmos Ecosystem,PLATFORM,5,"AKT,ATOM,BAND,FET,LINK"
+rollups,Rollups,CATEGORY,5,"ARB,CTSI,IMX,LRC,METIS"
+spartan-group,Spartan Group,CATEGORY,5,"1INCH,BAND,DOT,GRT,MKR"
+substrate,Substrate,CATEGORY,5,"ANKR,CELR,DIA,DOT,KSM"
+yield-farming,Yield Farming,CATEGORY,5,"AAVE,BAL,CAKE,COMP,CRV"
+play-to-earn,Play To Earn,CATEGORY,5,"ALICE,AXS,FLOKI,ILV,MANA"
+pow,PoW,ALGORITHM,5,"BCH,BTC,DOGE,ETC,LTC"
+lending-borowing,Lending & Borrowing,CATEGORY,5,"AAVE,COMP,KAVA,MKR,MORPHO"
+modular-blockchain,Modular Blockchain,CATEGORY,5,"ARB,CTSI,IMX,LRC,METIS"
+boostvc-portfolio,BoostVC Portfolio,CATEGORY,5,"BTC,DOT,ETH,FIL,MANA"
+communications-social-media,Communications & Social Media,INDUSTRY,5,"APE,ATOM,BAT,CHZ,MASK"
+arrington-xrp-capital-portfolio,Arrington XRP Capital Portfolio,CATEGORY,5,"ALGO,CELR,DOT,IMX,KAVA"
+binance-alpha,Binance Alpha,CATEGORY,5,"AERO,ATH,DRIFT,FARTCOIN,MOG"
+content-creation,Content Creation,INDUSTRY,5,"APE,ATOM,BAT,CHZ,MASK"
+standard-crypto-portfolio,Standard Crypto Portfolio,CATEGORY,4,"AAVE,AUDIO,LDO,MKR"
+privacy,Privacy,CATEGORY,4,"CELO,COTI,DASH,MINA"
+sora-ecosystem,Sora Ecosystem,PLATFORM,4,"AAVE,COMP,ETH,GRT"
+generative-ai,Generative AI,CATEGORY,4,"AIOZ,AKT,FET,LPT"
+move-vm,MoveVM (MVM),CATEGORY,4,"APT,BONK,CAKE,LINK"
+iot,IoT,INDUSTRY,4,"FET,HNT,IOTX,JASMY"
+oracles,Oracles,CATEGORY,4,"API3,BAND,DIA,LINK"
+ftx-bankruptcy-estate,FTX Bankruptcy Estate ,CATEGORY,4,"APT,BTC,DOGE,ETH"
+bitcoin-ecosystem,Bitcoin Ecosystem,PLATFORM,4,"BTC,LINK,ME,MKR"
+animoca-brands-portfolio,Animoca Brands Portfolio,CATEGORY,4,"APE,AXS,FLOW,MASK"
+parafi-capital,ParaFi Capital,CATEGORY,4,"1INCH,AAVE,GRT,KNC"
+usv-portfolio,USV Portfolio,CATEGORY,4,"ALGO,BTC,ETH,HNT"
+animal-memes,Animal Memes,CATEGORY,4,"BONK,DOGE,FLOKI,MOG"
+binance-smart-chain,[Deprecated] BNB Smart Chain -> BNB Chain Eco,PLATFORM,3,"CTSI,GMT,INJ"
+filesharing,Filesharing,INDUSTRY,3,"ANKR,ELA,FIL"
+galaxy-digital-portfolio,Galaxy Digital Portfolio,CATEGORY,3,"AXL,BTC,EOS"
+egirl-capital-portfolio,eGirl Capital Portfolio,CATEGORY,3,"ARB,BLUR,LDO"
+doggone-doggerel,Doggone Doggerel,CATEGORY,3,"BONK,DOGE,FLOKI"
+cardano-ecosystem,Cardano Ecosystem,PLATFORM,3,"ADA,API3,LINK"
+binance-launchpool,Binance Launchpool,CATEGORY,3,"ALICE,ETHFI,IO"
+cardano,Cardano,PLATFORM,3,"ADA,API3,LINK"
+dapp,DApp,CATEGORY,3,"ARB,CTSI,ME"
+sha-256,SHA-256,ALGORITHM,3,"BCH,BTC,ELA"
+linea-ecosystem,Linea Ecosystem,PLATFORM,3,"AXL,CAKE,LINK"
+polkadot-ecosystem,Polkadot Ecosystem,PLATFORM,3,"DOT,KSM,LINK"
+liquid-staking-derivatives,Liquid Staking Derivatives,CATEGORY,3,"ANKR,JTO,LDO"
+aptos-ecosystem,Aptos Ecosystem,PLATFORM,3,"BONK,CAKE,LINK"
+us-strategic-crypto-reserve,US Strategic Crypto Reserve,CATEGORY,3,"ADA,BTC,ETH"
+winklevoss-capital-portfolio,Winklevoss Capital Portfolio,CATEGORY,3,"BTC,ETH,FIL"
+wallet,Wallet,CATEGORY,3,"1INCH,LRC,ME"
+sei-ecosystem,Sei Ecosystem,PLATFORM,3,"AXL,CELR,LINK"
+store-of-value,Store Of Value,CATEGORY,3,"BCH,BTC,MKR"
+state-channel,State Channel,CATEGORY,3,"BTC,CELR,ELA"
+research,Research,INDUSTRY,3,"ADA,ALGO,ARKM"
+robotics,Robotics,CATEGORY,3,"HNT,IOTX,JASMY"
+metisdao-ecosystem,MetisDAO Ecosystem,PLATFORM,2,"LINK,METIS"
+metis-andromeda-ecosystem,Metis Andromeda Ecosystem,PLATFORM,2,"CELR,METIS"
+sidechain,Sidechain,CATEGORY,2,"CTSI,ELA"
+zksync-era-ecosystem,zkSync Era Ecosystem,PLATFORM,2,"CAKE,LINK"
+identity,Identity,INDUSTRY,2,"CVC,EGLD"
+blast-ecosystem,Blast Ecosystem,CATEGORY,2,"ANKR,LINK"
+dex,DEX,CATEGORY,2,"CAKE,LRC"
+cross-chain,Cross-Chain,CATEGORY,2,"CELR,LINK"
+harmony-ecosystem,Harmony Ecosystem,PLATFORM,2,"AXS,LPT"
+entertainment,Entertainment,INDUSTRY,2,"ALICE,APE"
+derivatives,Derivatives,CATEGORY,2,"ARKM,DRIFT"
+defiance-capital-portfolio,DeFiance Capital Portfolio,CATEGORY,2,"AAVE,AXS"
+huobi-capital-portfolio,Huobi Capital Portfolio,CATEGORY,2,"BTC,ETH"
+ledgerprime-portfolio,LedgerPrime Portfolio,CATEGORY,2,"FLOW,GRT"
+mobile,Mobile,INDUSTRY,2,"CELO,CRO"
+media,Media,INDUSTRY,2,"AIOZ,LPT"
+video,Video,INDUSTRY,2,"AIOZ,LPT"
+storage,Storage,CATEGORY,2,"AIOZ,FIL"
+terra-ecosystem,Terra Ecosystem,PLATFORM,2,"LDO,LINK"
+scrypt,Scrypt,ALGORITHM,2,"DOGE,LTC"
+analytics,Analytics,CATEGORY,2,"ARKM,GRT"
+okx-ventures-portfolio,OKX Ventures Portfolio,CATEGORY,2,"ENA,METIS"
+polygon-zkevm-ecosystem,Polygon zkEVM Ecosystem,PLATFORM,2,"ANKR,CAKE"
+oasis-ecosystem,Oasis Ecosystem,PLATFORM,2,"CELR,LINK"
+centralized-exchange,Centralized Exchange (CEX) Token,CATEGORY,2,"BNB,CRO"
+cronos-ecosystem,Cronos Ecosystem,PLATFORM,2,"ATOM,LINK"
+celsius-bankruptcy-estate,Celsius Bankruptcy Estate,CATEGORY,2,"1INCH,BNB"
+asset-management,Asset Management,INDUSTRY,1,MLN
+bera-chain-ecosystem,Bera Chain Ecosystem,PLATFORM,1,LINK
+astar-ecosystem,Astar Ecosystem,PLATFORM,1,LINK
+account-abstraction,Account Abstraction,CATEGORY,1,BICO
+ai-agents,AI Agents,CATEGORY,1,FET
+ai-memes,AI Memes,CATEGORY,1,FARTCOIN
+asset-backed-stablecoin,Asset-Backed Stablecoin,CATEGORY,1,DAI
+ai-agent-launchpad,AI Agent Launchpad,CATEGORY,1,MAGIC
+algorand-ecosystem,Algorand Ecosystem,PLATFORM,1,ALGO
+ethereum-classic-ecosystem,Ethereum Classic Ecosystem,PLATFORM,1,ETC
+defi-2,DeFi 2.0,CATEGORY,1,LINK
+dpos,DPoS,ALGORITHM,1,ADA
+eigenlayer-ecosystem,EigenLayer Ecosystem,PLATFORM,1,ETHFI
+dao-maker,DAO Maker,CATEGORY,1,ALICE
+dag,DAG,ALGORITHM,1,HBAR
+corn-ecosystem,Corn Ecosystem,CATEGORY,1,LINK
+cosmos,Cosmos,PLATFORM,1,INJ
+desci,DeSci,INDUSTRY,1,BIO
+core-ecosystem,Core Ecosystem,PLATFORM,1,LINK
+binance-alpha-airdrops,Binance Alpha Airdrops,CATEGORY,1,LA
+binance-chain,Binance Chain,PLATFORM,1,BAND
+binance-hodler-airdrops,Binance HODLer Airdrops,CATEGORY,1,LA
+cat-themed,Cat-Themed,CATEGORY,1,MOG
+btcfi,BTCfi,CATEGORY,1,LINK
+canto-ecosystem,Canto Ecosystem,PLATFORM,1,ATOM
+chromia-ecosystem,Chromia Ecosystem,PLATFORM,1,ALICE
+celo-ecosystem,Celo Ecosystem,PLATFORM,1,CELO
+cmc-crypto-awards-2024,CMC Crypto Awards 2024,CATEGORY,1,BONK
+circle-ventures-portfolio,Circle Ventures Portfolio,CATEGORY,1,APT
+icp-ecosystem,[Deprecated] ICP Ecosystem,PLATFORM,1,ICP
+hyperliquid-ecosystem,Hyperliquid Ecosystem,CATEGORY,1,LINK
+hyperevm-ecosystem,HyperEVM Ecosystem,PLATFORM,1,LINK
+hybrid-pow-pos,Hybrid - PoW & PoS,ALGORITHM,1,DASH
+hedera-hashgraph-ecosystem,Hedera Hashgraph Ecosystem,PLATFORM,1,HBAR
+fusion-network-ecosystem,Fusion Network Ecosystem,PLATFORM,1,MANA
+filecoin-ecosystem,Filecoin Ecosystem,PLATFORM,1,FIL
+flow-ecosystem,Flow Ecosystem,PLATFORM,1,FLOW
+elrond-ecosystem,Elrond Ecosystem,PLATFORM,1,EGLD
+ethereum-pow-ecosystem,Ethereum PoW Ecosystem,PLATFORM,1,ETH
+ethash,Ethash,ALGORITHM,1,ETC
+eos-ecosystem,EOS Ecosystem,PLATFORM,1,EOS
+prediction-markets,Prediction Markets,CATEGORY,1,GNO
+plasma-ecosystem,Plasma Ecosystem,PLATFORM,1,LINK
+perp-dex-coins,Perp dex coins,CATEGORY,1,ARKM
+moonbeam-ecosystem,Moonbeam Ecosystem,PLATFORM,1,CELR
+loyalty,Loyalty,INDUSTRY,1,EGLD
+iotex-ecosystem,IoTeX Ecosystem,PLATFORM,1,IOTX
+internet-computer-ecosystem,Internet Computer Ecosystem,PLATFORM,1,ICP
+jump-crypto,Jump Crypto,CATEGORY,1,DRIFT
+move-to-earn,Move To Earn,CATEGORY,1,GMT
+music,Music,INDUSTRY,1,AUDIO
+opbnb-ecosystem,opBNB Ecosystem,PLATFORM,1,CAKE
+paal-ecosystem,Paal Ecosystem,PLATFORM,1,FLOKI
+multiversx-ecosystem,MultiversX Ecosystem,PLATFORM,1,EGLD
+mvb,MVB,CATEGORY,1,BICO
+ip-memes,IP Memes,CATEGORY,1,APE
+marketing,Marketing,INDUSTRY,1,BAT
+masternodes,Masternodes,CATEGORY,1,DASH
+made-in-china,Made in China,CATEGORY,1,BNB
+mantle-ecosystem,Mantle Ecosystem,PLATFORM,1,AXL
+mobile-payment,Mobile Payment,CATEGORY,1,EGLD
+sports,Sports,INDUSTRY,1,CHZ
+stablecoin,Stablecoin,CATEGORY,1,DAI
+sonic-ecosystem,Sonic Ecosystem,CATEGORY,1,LINK
+sophon-ecosystem,Sophon Ecosystem,PLATFORM,1,ETH
+services,Services,INDUSTRY,1,GNO
+software,Software,INDUSTRY,1,EGLD
+ronin-ecosystem,Ronin Ecosystem,PLATFORM,1,AXS
+scroll-ecosystem,Scroll Ecosystem,PLATFORM,1,AXL
+restaking,Restaking,CATEGORY,1,EIGEN
+red-packets,Red Packets ,CATEGORY,1,LRC
+pump-fun-ecosystem,Pump Fun Ecosystem,CATEGORY,1,FARTCOIN
+rollups-as-a-service,Rollups-as-a-Service (RaaS),CATEGORY,1,ANKR
+runes,Runes,CATEGORY,1,ME
+rsk-rbtc-ecosystem,RSK RBTC Ecosystem,PLATFORM,1,ETH
+terminal-of-truths,Terminal of Truths,CATEGORY,1,FARTCOIN
+sui-ecosystem,Sui Ecosystem,PLATFORM,1,LINK
+usd-stablecoin,USD Stablecoin,CATEGORY,1,DAI
+unichain-ecosystem,Unichain Ecosystem,PLATFORM,1,LINK
+trading-card-game,Trading Card Game (TCG),CATEGORY,1,AXS
+tron-ecosystem,TRON Ecosystem,PLATFORM,1,LINK
+tokenized-stock,Tokenized Stock,CATEGORY,1,LINK
+tokenized-assets,Tokenized Assets,CATEGORY,1,LINK
+token,Token,CATEGORY,1,LRC
+tokenfi-launchpad,TokenFi Launchpad,CATEGORY,1,FLOKI
+x-layer-ecosystem,X Layer Ecosystem,PLATFORM,1,LINK
+wlfi-ecosystem,WLFI Ecosystem,CATEGORY,1,LINK
+vbc-ventures-portfolio,VBC Ventures Portfolio,CATEGORY,1,KSM
+x11,X11,ALGORITHM,1,DASH
+xstocks-ecosystem,xStocks Ecosystem,CATEGORY,1,LINK
+xlayer-ecosystem,Xlayer Ecosystem,CATEGORY,1,DAI
+x402-ecosystem,x402 Ecosystem,CATEGORY,1,EIGEN
+yield-aggregator,Yield Aggregator,CATEGORY,1,CVX

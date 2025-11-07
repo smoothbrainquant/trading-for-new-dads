@@ -1,0 +1,1414 @@
+symbol,tag,tag_name,tag_group
+1INCH,decentralized-exchange-dex-token,Decentralized Exchange (DEX) Token,CATEGORY
+1INCH,defi,DeFi,CATEGORY
+1INCH,wallet,Wallet,CATEGORY
+1INCH,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+1INCH,amm,AMM,CATEGORY
+1INCH,binance-labs-portfolio,YZi Labs Portfolio,CATEGORY
+1INCH,avalanche-ecosystem,Avalanche Ecosystem,PLATFORM
+1INCH,solana-ecosystem,Solana Ecosystem,PLATFORM
+1INCH,blockchain-capital-portfolio,Blockchain Capital Portfolio,CATEGORY
+1INCH,dragonfly-capital-portfolio,DragonFly Capital Portfolio,CATEGORY
+1INCH,fabric-ventures-portfolio,Fabric Ventures Portfolio,CATEGORY
+1INCH,alameda-research-portfolio,Alameda Research Portfolio,CATEGORY
+1INCH,parafi-capital,ParaFi Capital,CATEGORY
+1INCH,spartan-group,Spartan Group,CATEGORY
+1INCH,bnb-chain-ecosystem,BNB Chain Ecosystem,PLATFORM
+1INCH,celsius-bankruptcy-estate,Celsius Bankruptcy Estate,CATEGORY
+1INCH,binance-ecosystem,Binance Ecosystem,CATEGORY
+1INCH,binance-listing,Binance Listing,CATEGORY
+AAVE,defi,DeFi,CATEGORY
+AAVE,dao,DAO,CATEGORY
+AAVE,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+AAVE,yield-farming,Yield Farming,CATEGORY
+AAVE,three-arrows-capital-portfolio,Three Arrows Capital Portfolio,CATEGORY
+AAVE,governance,Governance,CATEGORY
+AAVE,heco-ecosystem,HECO Ecosystem,PLATFORM
+AAVE,avalanche-ecosystem,Avalanche Ecosystem,PLATFORM
+AAVE,solana-ecosystem,Solana Ecosystem,PLATFORM
+AAVE,lending-borowing,Lending & Borrowing,CATEGORY
+AAVE,blockchain-capital-portfolio,Blockchain Capital Portfolio,CATEGORY
+AAVE,defiance-capital-portfolio,DeFiance Capital Portfolio,CATEGORY
+AAVE,framework-ventures-portfolio,Framework Ventures Portfolio,CATEGORY
+AAVE,alameda-research-portfolio,Alameda Research Portfolio,CATEGORY
+AAVE,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+AAVE,parafi-capital,ParaFi Capital,CATEGORY
+AAVE,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+AAVE,fantom-ecosystem,Fantom Ecosystem,PLATFORM
+AAVE,near-protocol-ecosystem,Near Protocol Ecosystem,PLATFORM
+AAVE,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+AAVE,optimism-ecosystem,Optimism Ecosystem,PLATFORM
+AAVE,standard-crypto-portfolio,Standard Crypto Portfolio,CATEGORY
+AAVE,gnosis-chain-ecosystem,Gnosis Chain Ecosystem,PLATFORM
+AAVE,sora-ecosystem,Sora Ecosystem,PLATFORM
+AAVE,made-in-america,Made in America,CATEGORY
+AAVE,world-liberty-financial-portfolio,World Liberty Financial Portfolio,CATEGORY
+AAVE,binance-ecosystem,Binance Ecosystem,CATEGORY
+AAVE,binance-listing,Binance Listing,CATEGORY
+ADA,dpos,DPoS,ALGORITHM
+ADA,pos,PoS,ALGORITHM
+ADA,platform,Platform,CATEGORY
+ADA,research,Research,INDUSTRY
+ADA,smart-contracts,Smart Contracts,CATEGORY
+ADA,staking,Staking,CATEGORY
+ADA,cardano-ecosystem,Cardano Ecosystem,PLATFORM
+ADA,cardano,Cardano,PLATFORM
+ADA,layer-1,Layer 1,CATEGORY
+ADA,alleged-sec-securities,Alleged SEC Securities,CATEGORY
+ADA,2017-2018-alt-season,2017/18 Alt season,CATEGORY
+ADA,made-in-america,Made in America,CATEGORY
+ADA,us-strategic-crypto-reserve,US Strategic Crypto Reserve,CATEGORY
+ADA,binance-ecosystem,Binance Ecosystem,CATEGORY
+ADA,binance-listing,Binance Listing,CATEGORY
+AERO,defi,DeFi,CATEGORY
+AERO,amm,AMM,CATEGORY
+AERO,base-ecosystem,Base Ecosystem,PLATFORM
+AERO,binance-alpha,Binance Alpha,CATEGORY
+AERO,made-in-america,Made in America,CATEGORY
+AERO,binance-ecosystem,Binance Ecosystem,CATEGORY
+AERO,binance-listing,Binance Listing,CATEGORY
+AIOZ,media,Media,INDUSTRY
+AIOZ,platform,Platform,CATEGORY
+AIOZ,ai-big-data,AI & Big Data,INDUSTRY
+AIOZ,distributed-computing,Distributed Computing,INDUSTRY
+AIOZ,smart-contracts,Smart Contracts,CATEGORY
+AIOZ,video,Video,INDUSTRY
+AIOZ,storage,Storage,CATEGORY
+AIOZ,web3,Web3,INDUSTRY
+AIOZ,generative-ai,Generative AI,CATEGORY
+AIOZ,layer-1,Layer 1,CATEGORY
+AIOZ,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+AIOZ,depin,DePIN,INDUSTRY
+AKT,cosmos-ecosystem,Cosmos Ecosystem,PLATFORM
+AKT,ai-big-data,AI & Big Data,INDUSTRY
+AKT,distributed-computing,Distributed Computing,INDUSTRY
+AKT,web3,Web3,INDUSTRY
+AKT,injective-ecosystem,Injective Ecosystem,PLATFORM
+AKT,osmosis-ecosystem,Osmosis Ecosystem,PLATFORM
+AKT,generative-ai,Generative AI,CATEGORY
+AKT,depin,DePIN,INDUSTRY
+AKT,made-in-america,Made in America,CATEGORY
+AKT,binance-ecosystem,Binance Ecosystem,CATEGORY
+AKT,binance-listing,Binance Listing,CATEGORY
+ALGO,pos,PoS,ALGORITHM
+ALGO,platform,Platform,CATEGORY
+ALGO,research,Research,INDUSTRY
+ALGO,smart-contracts,Smart Contracts,CATEGORY
+ALGO,algorand-ecosystem,Algorand Ecosystem,PLATFORM
+ALGO,arrington-xrp-capital-portfolio,Arrington XRP Capital Portfolio,CATEGORY
+ALGO,kenetic-capital-portfolio,Kenetic Capital Portfolio,CATEGORY
+ALGO,usv-portfolio,USV Portfolio,CATEGORY
+ALGO,multicoin-capital-portfolio,Multicoin Capital Portfolio,CATEGORY
+ALGO,exnetwork-capital-portfolio,Exnetwork Capital Portfolio,CATEGORY
+ALGO,real-world-assets-protocols,Real World Assets Protocols,CATEGORY
+ALGO,layer-1,Layer 1,CATEGORY
+ALGO,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+ALGO,alleged-sec-securities,Alleged SEC Securities,CATEGORY
+ALGO,made-in-america,Made in America,CATEGORY
+ALGO,binance-ecosystem,Binance Ecosystem,CATEGORY
+ALGO,binance-listing,Binance Listing,CATEGORY
+ALICE,collectibles-nfts,Collectibles & NFTs,CATEGORY
+ALICE,defi,DeFi,CATEGORY
+ALICE,gaming,Gaming,INDUSTRY
+ALICE,entertainment,Entertainment,INDUSTRY
+ALICE,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+ALICE,binance-launchpool,Binance Launchpool,CATEGORY
+ALICE,solana-ecosystem,Solana Ecosystem,PLATFORM
+ALICE,metaverse,Metaverse,CATEGORY
+ALICE,dao-maker,DAO Maker,CATEGORY
+ALICE,exnetwork-capital-portfolio,Exnetwork Capital Portfolio,CATEGORY
+ALICE,chromia-ecosystem,Chromia Ecosystem,PLATFORM
+ALICE,play-to-earn,Play To Earn,CATEGORY
+ALICE,bnb-chain-ecosystem,BNB Chain Ecosystem,PLATFORM
+ALICE,binance-ecosystem,Binance Ecosystem,CATEGORY
+ALICE,binance-listing,Binance Listing,CATEGORY
+AMP,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+AMP,alleged-sec-securities,Alleged SEC Securities,CATEGORY
+AMP,made-in-america,Made in America,CATEGORY
+AMP,binance-ecosystem,Binance Ecosystem,CATEGORY
+AMP,binance-listing,Binance Listing,CATEGORY
+ANKR,platform,Platform,CATEGORY
+ANKR,enterprise-solutions,Enterprise Solutions,INDUSTRY
+ANKR,distributed-computing,Distributed Computing,INDUSTRY
+ANKR,defi,DeFi,CATEGORY
+ANKR,filesharing,Filesharing,INDUSTRY
+ANKR,staking,Staking,CATEGORY
+ANKR,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+ANKR,substrate,Substrate,CATEGORY
+ANKR,polkadot,Polkadot,PLATFORM
+ANKR,avalanche-ecosystem,Avalanche Ecosystem,PLATFORM
+ANKR,solana-ecosystem,Solana Ecosystem,PLATFORM
+ANKR,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+ANKR,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+ANKR,fantom-ecosystem,Fantom Ecosystem,PLATFORM
+ANKR,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+ANKR,liquid-staking-derivatives,Liquid Staking Derivatives,CATEGORY
+ANKR,optimism-ecosystem,Optimism Ecosystem,PLATFORM
+ANKR,rollups-as-a-service,Rollups-as-a-Service (RaaS),CATEGORY
+ANKR,blast-ecosystem,Blast Ecosystem,CATEGORY
+ANKR,depin,DePIN,INDUSTRY
+ANKR,polygon-zkevm-ecosystem,Polygon zkEVM Ecosystem,PLATFORM
+ANKR,made-in-america,Made in America,CATEGORY
+ANKR,binance-ecosystem,Binance Ecosystem,CATEGORY
+ANKR,binance-listing,Binance Listing,CATEGORY
+APE,communications-social-media,Communications & Social Media,INDUSTRY
+APE,collectibles-nfts,Collectibles & NFTs,CATEGORY
+APE,content-creation,Content Creation,INDUSTRY
+APE,gaming,Gaming,INDUSTRY
+APE,entertainment,Entertainment,INDUSTRY
+APE,memes,Memes,INDUSTRY
+APE,dao,DAO,CATEGORY
+APE,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+APE,governance,Governance,CATEGORY
+APE,metaverse,Metaverse,CATEGORY
+APE,animoca-brands-portfolio,Animoca Brands Portfolio,CATEGORY
+APE,ip-memes,IP Memes,CATEGORY
+APE,binance-ecosystem,Binance Ecosystem,CATEGORY
+APE,binance-listing,Binance Listing,CATEGORY
+API3,defi,DeFi,CATEGORY
+API3,oracles,Oracles,CATEGORY
+API3,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+API3,coinfund-portfolio,Coinfund Portfolio,CATEGORY
+API3,dcg-portfolio,DCG Portfolio,CATEGORY
+API3,placeholder-ventures-portfolio,Placeholder Ventures Portfolio,CATEGORY
+API3,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+API3,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+API3,fantom-ecosystem,Fantom Ecosystem,PLATFORM
+API3,cardano-ecosystem,Cardano Ecosystem,PLATFORM
+API3,web3,Web3,INDUSTRY
+API3,cardano,Cardano,PLATFORM
+API3,injective-ecosystem,Injective Ecosystem,PLATFORM
+API3,binance-ecosystem,Binance Ecosystem,CATEGORY
+API3,binance-listing,Binance Listing,CATEGORY
+APT,binance-labs-portfolio,YZi Labs Portfolio,CATEGORY
+APT,circle-ventures-portfolio,Circle Ventures Portfolio,CATEGORY
+APT,layer-1,Layer 1,CATEGORY
+APT,ftx-bankruptcy-estate,FTX Bankruptcy Estate ,CATEGORY
+APT,move-vm,MoveVM (MVM),CATEGORY
+APT,made-in-america,Made in America,CATEGORY
+APT,binance-ecosystem,Binance Ecosystem,CATEGORY
+APT,binance-listing,Binance Listing,CATEGORY
+ARB,scaling,Scaling,CATEGORY
+ARB,dao,DAO,CATEGORY
+ARB,dapp,DApp,CATEGORY
+ARB,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+ARB,polychain-capital-portfolio,Polychain Capital Portfolio,CATEGORY
+ARB,layer-2,Layer 2,CATEGORY
+ARB,rollups,Rollups,CATEGORY
+ARB,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+ARB,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+ARB,osmosis-ecosystem,Osmosis Ecosystem,PLATFORM
+ARB,modular-blockchain,Modular Blockchain,CATEGORY
+ARB,egirl-capital-portfolio,eGirl Capital Portfolio,CATEGORY
+ARB,binance-ecosystem,Binance Ecosystem,CATEGORY
+ARB,binance-listing,Binance Listing,CATEGORY
+ARKM,marketplace,Marketplace,INDUSTRY
+ARKM,ai-big-data,AI & Big Data,INDUSTRY
+ARKM,defi,DeFi,CATEGORY
+ARKM,derivatives,Derivatives,CATEGORY
+ARKM,research,Research,INDUSTRY
+ARKM,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+ARKM,governance,Governance,CATEGORY
+ARKM,binance-launchpad,Binance Launchpad,CATEGORY
+ARKM,binance-labs-portfolio,YZi Labs Portfolio,CATEGORY
+ARKM,analytics,Analytics,CATEGORY
+ARKM,cmc-crypto-yearbook-2024-2025,CMC Crypto Yearbook 2024-25,CATEGORY
+ARKM,made-in-america,Made in America,CATEGORY
+ARKM,binance-ecosystem,Binance Ecosystem,CATEGORY
+ARKM,binance-listing,Binance Listing,CATEGORY
+ARKM,perp-dex-coins,Perp dex coins,CATEGORY
+ATH,ai-big-data,AI & Big Data,INDUSTRY
+ATH,distributed-computing,Distributed Computing,INDUSTRY
+ATH,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+ATH,solana-ecosystem,Solana Ecosystem,PLATFORM
+ATH,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+ATH,depin,DePIN,INDUSTRY
+ATH,binance-alpha,Binance Alpha,CATEGORY
+ATH,cmc-crypto-yearbook-2024-2025,CMC Crypto Yearbook 2024-25,CATEGORY
+ATH,binance-ecosystem,Binance Ecosystem,CATEGORY
+ATH,binance-listing,Binance Listing,CATEGORY
+ATOM,platform,Platform,CATEGORY
+ATOM,cosmos-ecosystem,Cosmos Ecosystem,PLATFORM
+ATOM,communications-social-media,Communications & Social Media,INDUSTRY
+ATOM,content-creation,Content Creation,INDUSTRY
+ATOM,defi,DeFi,CATEGORY
+ATOM,interoperability,Interoperability,CATEGORY
+ATOM,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+ATOM,polychain-capital-portfolio,Polychain Capital Portfolio,CATEGORY
+ATOM,dragonfly-capital-portfolio,DragonFly Capital Portfolio,CATEGORY
+ATOM,hashkey-capital-portfolio,Hashkey Capital Portfolio,CATEGORY
+ATOM,1confirmation-portfolio,1Confirmation Portfolio,CATEGORY
+ATOM,paradigm-portfolio,Paradigm Portfolio,CATEGORY
+ATOM,exnetwork-capital-portfolio,Exnetwork Capital Portfolio,CATEGORY
+ATOM,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+ATOM,cronos-ecosystem,Cronos Ecosystem,PLATFORM
+ATOM,injective-ecosystem,Injective Ecosystem,PLATFORM
+ATOM,canto-ecosystem,Canto Ecosystem,PLATFORM
+ATOM,osmosis-ecosystem,Osmosis Ecosystem,PLATFORM
+ATOM,alleged-sec-securities,Alleged SEC Securities,CATEGORY
+ATOM,binance-ecosystem,Binance Ecosystem,CATEGORY
+ATOM,binance-listing,Binance Listing,CATEGORY
+AUDIO,music,Music,INDUSTRY
+AUDIO,dao,DAO,CATEGORY
+AUDIO,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+AUDIO,coinbase-ventures-portfolio,Coinbase Ventures Portfolio,CATEGORY
+AUDIO,binance-labs-portfolio,YZi Labs Portfolio,CATEGORY
+AUDIO,solana-ecosystem,Solana Ecosystem,PLATFORM
+AUDIO,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+AUDIO,multicoin-capital-portfolio,Multicoin Capital Portfolio,CATEGORY
+AUDIO,web3,Web3,INDUSTRY
+AUDIO,bnb-chain-ecosystem,BNB Chain Ecosystem,PLATFORM
+AUDIO,standard-crypto-portfolio,Standard Crypto Portfolio,CATEGORY
+AUDIO,gnosis-chain-ecosystem,Gnosis Chain Ecosystem,PLATFORM
+AUDIO,made-in-america,Made in America,CATEGORY
+AUDIO,binance-ecosystem,Binance Ecosystem,CATEGORY
+AUDIO,binance-listing,Binance Listing,CATEGORY
+AVAX,smart-contracts,Smart Contracts,CATEGORY
+AVAX,three-arrows-capital-portfolio,Three Arrows Capital Portfolio,CATEGORY
+AVAX,polychain-capital-portfolio,Polychain Capital Portfolio,CATEGORY
+AVAX,avalanche-ecosystem,Avalanche Ecosystem,PLATFORM
+AVAX,cms-holdings-portfolio,CMS Holdings Portfolio,CATEGORY
+AVAX,dragonfly-capital-portfolio,DragonFly Capital Portfolio,CATEGORY
+AVAX,real-world-assets-protocols,Real World Assets Protocols,CATEGORY
+AVAX,layer-1,Layer 1,CATEGORY
+AVAX,made-in-america,Made in America,CATEGORY
+AVAX,world-liberty-financial-portfolio,World Liberty Financial Portfolio,CATEGORY
+AVAX,binance-ecosystem,Binance Ecosystem,CATEGORY
+AVAX,binance-listing,Binance Listing,CATEGORY
+AXL,defi,DeFi,CATEGORY
+AXL,interoperability,Interoperability,CATEGORY
+AXL,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+AXL,coinbase-ventures-portfolio,Coinbase Ventures Portfolio,CATEGORY
+AXL,polychain-capital-portfolio,Polychain Capital Portfolio,CATEGORY
+AXL,binance-labs-portfolio,YZi Labs Portfolio,CATEGORY
+AXL,avalanche-ecosystem,Avalanche Ecosystem,PLATFORM
+AXL,galaxy-digital-portfolio,Galaxy Digital Portfolio,CATEGORY
+AXL,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+AXL,fantom-ecosystem,Fantom Ecosystem,PLATFORM
+AXL,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+AXL,bnb-chain-ecosystem,BNB Chain Ecosystem,PLATFORM
+AXL,optimism-ecosystem,Optimism Ecosystem,PLATFORM
+AXL,osmosis-ecosystem,Osmosis Ecosystem,PLATFORM
+AXL,real-world-assets-protocols,Real World Assets Protocols,CATEGORY
+AXL,base-ecosystem,Base Ecosystem,PLATFORM
+AXL,linea-ecosystem,Linea Ecosystem,PLATFORM
+AXL,sei-ecosystem,Sei Ecosystem,PLATFORM
+AXL,mantle-ecosystem,Mantle Ecosystem,PLATFORM
+AXL,scroll-ecosystem,Scroll Ecosystem,PLATFORM
+AXL,made-in-america,Made in America,CATEGORY
+AXL,binance-ecosystem,Binance Ecosystem,CATEGORY
+AXL,binance-listing,Binance Listing,CATEGORY
+AXS,collectibles-nfts,Collectibles & NFTs,CATEGORY
+AXS,gaming,Gaming,INDUSTRY
+AXS,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+AXS,binance-launchpad,Binance Launchpad,CATEGORY
+AXS,solana-ecosystem,Solana Ecosystem,PLATFORM
+AXS,metaverse,Metaverse,CATEGORY
+AXS,defiance-capital-portfolio,DeFiance Capital Portfolio,CATEGORY
+AXS,play-to-earn,Play To Earn,CATEGORY
+AXS,animoca-brands-portfolio,Animoca Brands Portfolio,CATEGORY
+AXS,harmony-ecosystem,Harmony Ecosystem,PLATFORM
+AXS,alleged-sec-securities,Alleged SEC Securities,CATEGORY
+AXS,ronin-ecosystem,Ronin Ecosystem,PLATFORM
+AXS,binance-ecosystem,Binance Ecosystem,CATEGORY
+AXS,binance-listing,Binance Listing,CATEGORY
+AXS,trading-card-game,Trading Card Game (TCG),CATEGORY
+BAL,decentralized-exchange-dex-token,Decentralized Exchange (DEX) Token,CATEGORY
+BAL,defi,DeFi,CATEGORY
+BAL,dao,DAO,CATEGORY
+BAL,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+BAL,yield-farming,Yield Farming,CATEGORY
+BAL,amm,AMM,CATEGORY
+BAL,three-arrows-capital-portfolio,Three Arrows Capital Portfolio,CATEGORY
+BAL,governance,Governance,CATEGORY
+BAL,heco-ecosystem,HECO Ecosystem,PLATFORM
+BAL,coinfund-portfolio,Coinfund Portfolio,CATEGORY
+BAL,alameda-research-portfolio,Alameda Research Portfolio,CATEGORY
+BAL,placeholder-ventures-portfolio,Placeholder Ventures Portfolio,CATEGORY
+BAL,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+BAL,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+BAL,near-protocol-ecosystem,Near Protocol Ecosystem,PLATFORM
+BAL,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+BAL,optimism-ecosystem,Optimism Ecosystem,PLATFORM
+BAL,base-ecosystem,Base Ecosystem,PLATFORM
+BAL,gnosis-chain-ecosystem,Gnosis Chain Ecosystem,PLATFORM
+BAND,cosmos-ecosystem,Cosmos Ecosystem,PLATFORM
+BAND,defi,DeFi,CATEGORY
+BAND,oracles,Oracles,CATEGORY
+BAND,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+BAND,binance-chain,Binance Chain,PLATFORM
+BAND,binance-launchpad,Binance Launchpad,CATEGORY
+BAND,binance-labs-portfolio,YZi Labs Portfolio,CATEGORY
+BAND,solana-ecosystem,Solana Ecosystem,PLATFORM
+BAND,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+BAND,fantom-ecosystem,Fantom Ecosystem,PLATFORM
+BAND,web3,Web3,INDUSTRY
+BAND,near-protocol-ecosystem,Near Protocol Ecosystem,PLATFORM
+BAND,spartan-group,Spartan Group,CATEGORY
+BAND,injective-ecosystem,Injective Ecosystem,PLATFORM
+BAND,gnosis-chain-ecosystem,Gnosis Chain Ecosystem,PLATFORM
+BAND,binance-ecosystem,Binance Ecosystem,CATEGORY
+BAND,binance-listing,Binance Listing,CATEGORY
+BAT,marketing,Marketing,INDUSTRY
+BAT,communications-social-media,Communications & Social Media,INDUSTRY
+BAT,ai-big-data,AI & Big Data,INDUSTRY
+BAT,content-creation,Content Creation,INDUSTRY
+BAT,defi,DeFi,CATEGORY
+BAT,interoperability,Interoperability,CATEGORY
+BAT,payments,Payments,INDUSTRY
+BAT,smart-contracts,Smart Contracts,CATEGORY
+BAT,staking,Staking,CATEGORY
+BAT,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+BAT,governance,Governance,CATEGORY
+BAT,avalanche-ecosystem,Avalanche Ecosystem,PLATFORM
+BAT,solana-ecosystem,Solana Ecosystem,PLATFORM
+BAT,dcg-portfolio,DCG Portfolio,CATEGORY
+BAT,1confirmation-portfolio,1Confirmation Portfolio,CATEGORY
+BAT,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+BAT,web3,Web3,INDUSTRY
+BAT,near-protocol-ecosystem,Near Protocol Ecosystem,PLATFORM
+BAT,gnosis-chain-ecosystem,Gnosis Chain Ecosystem,PLATFORM
+BAT,made-in-america,Made in America,CATEGORY
+BAT,binance-ecosystem,Binance Ecosystem,CATEGORY
+BAT,binance-listing,Binance Listing,CATEGORY
+BCH,mineable,Mineable,OTHERS
+BCH,pow,PoW,ALGORITHM
+BCH,sha-256,SHA-256,ALGORITHM
+BCH,marketplace,Marketplace,INDUSTRY
+BCH,medium-of-exchange,Medium of Exchange,INDUSTRY
+BCH,store-of-value,Store Of Value,CATEGORY
+BCH,enterprise-solutions,Enterprise Solutions,INDUSTRY
+BCH,payments,Payments,INDUSTRY
+BCH,layer-1,Layer 1,CATEGORY
+BCH,2017-2018-alt-season,2017/18 Alt season,CATEGORY
+BCH,made-in-america,Made in America,CATEGORY
+BCH,binance-ecosystem,Binance Ecosystem,CATEGORY
+BCH,binance-listing,Binance Listing,CATEGORY
+BICO,platform,Platform,CATEGORY
+BICO,defi,DeFi,CATEGORY
+BICO,interoperability,Interoperability,CATEGORY
+BICO,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+BICO,coinbase-ventures-portfolio,Coinbase Ventures Portfolio,CATEGORY
+BICO,binance-labs-portfolio,YZi Labs Portfolio,CATEGORY
+BICO,avalanche-ecosystem,Avalanche Ecosystem,PLATFORM
+BICO,fenbushi-capital-portfolio,Fenbushi Capital Portfolio,CATEGORY
+BICO,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+BICO,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+BICO,mvb,MVB,CATEGORY
+BICO,bnb-chain-ecosystem,BNB Chain Ecosystem,PLATFORM
+BICO,optimism-ecosystem,Optimism Ecosystem,PLATFORM
+BICO,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+BICO,base-ecosystem,Base Ecosystem,PLATFORM
+BICO,account-abstraction,Account Abstraction,CATEGORY
+BICO,binance-ecosystem,Binance Ecosystem,CATEGORY
+BICO,binance-listing,Binance Listing,CATEGORY
+BIO,dao,DAO,CATEGORY
+BIO,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+BIO,binance-labs-portfolio,YZi Labs Portfolio,CATEGORY
+BIO,solana-ecosystem,Solana Ecosystem,PLATFORM
+BIO,bnb-chain-ecosystem,BNB Chain Ecosystem,PLATFORM
+BIO,desci,DeSci,INDUSTRY
+BIO,binance-ecosystem,Binance Ecosystem,CATEGORY
+BIO,binance-listing,Binance Listing,CATEGORY
+BLUR,collectibles-nfts,Collectibles & NFTs,CATEGORY
+BLUR,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+BLUR,egirl-capital-portfolio,eGirl Capital Portfolio,CATEGORY
+BLUR,made-in-america,Made in America,CATEGORY
+BLUR,binance-ecosystem,Binance Ecosystem,CATEGORY
+BLUR,binance-listing,Binance Listing,CATEGORY
+BNB,marketplace,Marketplace,INDUSTRY
+BNB,centralized-exchange,Centralized Exchange (CEX) Token,CATEGORY
+BNB,payments,Payments,INDUSTRY
+BNB,smart-contracts,Smart Contracts,CATEGORY
+BNB,alameda-research-portfolio,Alameda Research Portfolio,CATEGORY
+BNB,multicoin-capital-portfolio,Multicoin Capital Portfolio,CATEGORY
+BNB,bnb-chain-ecosystem,BNB Chain Ecosystem,PLATFORM
+BNB,layer-1,Layer 1,CATEGORY
+BNB,alleged-sec-securities,Alleged SEC Securities,CATEGORY
+BNB,celsius-bankruptcy-estate,Celsius Bankruptcy Estate,CATEGORY
+BNB,binance-ecosystem,Binance Ecosystem,CATEGORY
+BNB,binance-listing,Binance Listing,CATEGORY
+BNB,made-in-china,Made in China,CATEGORY
+BNT,marketplace,Marketplace,INDUSTRY
+BNT,decentralized-exchange-dex-token,Decentralized Exchange (DEX) Token,CATEGORY
+BNT,defi,DeFi,CATEGORY
+BNT,payments,Payments,INDUSTRY
+BNT,scaling,Scaling,CATEGORY
+BNT,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+BNT,amm,AMM,CATEGORY
+BNT,solana-ecosystem,Solana Ecosystem,PLATFORM
+BNT,kenetic-capital-portfolio,Kenetic Capital Portfolio,CATEGORY
+BNT,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+BNT,gnosis-chain-ecosystem,Gnosis Chain Ecosystem,PLATFORM
+BNT,binance-ecosystem,Binance Ecosystem,CATEGORY
+BNT,binance-listing,Binance Listing,CATEGORY
+BONK,memes,Memes,INDUSTRY
+BONK,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+BONK,solana-ecosystem,Solana Ecosystem,PLATFORM
+BONK,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+BONK,doggone-doggerel,Doggone Doggerel,CATEGORY
+BONK,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+BONK,injective-ecosystem,Injective Ecosystem,PLATFORM
+BONK,aptos-ecosystem,Aptos Ecosystem,PLATFORM
+BONK,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+BONK,base-ecosystem,Base Ecosystem,PLATFORM
+BONK,cmc-crypto-awards-2024,CMC Crypto Awards 2024,CATEGORY
+BONK,move-vm,MoveVM (MVM),CATEGORY
+BONK,animal-memes,Animal Memes,CATEGORY
+BONK,made-in-america,Made in America,CATEGORY
+BONK,binance-ecosystem,Binance Ecosystem,CATEGORY
+BONK,binance-listing,Binance Listing,CATEGORY
+BTC,mineable,Mineable,OTHERS
+BTC,pow,PoW,ALGORITHM
+BTC,sha-256,SHA-256,ALGORITHM
+BTC,store-of-value,Store Of Value,CATEGORY
+BTC,state-channel,State Channel,CATEGORY
+BTC,coinbase-ventures-portfolio,Coinbase Ventures Portfolio,CATEGORY
+BTC,three-arrows-capital-portfolio,Three Arrows Capital Portfolio,CATEGORY
+BTC,polychain-capital-portfolio,Polychain Capital Portfolio,CATEGORY
+BTC,binance-labs-portfolio,YZi Labs Portfolio,CATEGORY
+BTC,blockchain-capital-portfolio,Blockchain Capital Portfolio,CATEGORY
+BTC,boostvc-portfolio,BoostVC Portfolio,CATEGORY
+BTC,cms-holdings-portfolio,CMS Holdings Portfolio,CATEGORY
+BTC,dcg-portfolio,DCG Portfolio,CATEGORY
+BTC,dragonfly-capital-portfolio,DragonFly Capital Portfolio,CATEGORY
+BTC,electric-capital-portfolio,Electric Capital Portfolio,CATEGORY
+BTC,fabric-ventures-portfolio,Fabric Ventures Portfolio,CATEGORY
+BTC,framework-ventures-portfolio,Framework Ventures Portfolio,CATEGORY
+BTC,galaxy-digital-portfolio,Galaxy Digital Portfolio,CATEGORY
+BTC,huobi-capital-portfolio,Huobi Capital Portfolio,CATEGORY
+BTC,alameda-research-portfolio,Alameda Research Portfolio,CATEGORY
+BTC,a16z-portfolio,a16z Portfolio,CATEGORY
+BTC,1confirmation-portfolio,1Confirmation Portfolio,CATEGORY
+BTC,winklevoss-capital-portfolio,Winklevoss Capital Portfolio,CATEGORY
+BTC,usv-portfolio,USV Portfolio,CATEGORY
+BTC,placeholder-ventures-portfolio,Placeholder Ventures Portfolio,CATEGORY
+BTC,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+BTC,multicoin-capital-portfolio,Multicoin Capital Portfolio,CATEGORY
+BTC,paradigm-portfolio,Paradigm Portfolio,CATEGORY
+BTC,bitcoin-ecosystem,Bitcoin Ecosystem,PLATFORM
+BTC,layer-1,Layer 1,CATEGORY
+BTC,ftx-bankruptcy-estate,FTX Bankruptcy Estate ,CATEGORY
+BTC,2017-2018-alt-season,2017/18 Alt season,CATEGORY
+BTC,us-strategic-crypto-reserve,US Strategic Crypto Reserve,CATEGORY
+BTC,binance-ecosystem,Binance Ecosystem,CATEGORY
+BTC,binance-listing,Binance Listing,CATEGORY
+BTRST,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+BTRST,coinbase-ventures-portfolio,Coinbase Ventures Portfolio,CATEGORY
+BTRST,web3,Web3,INDUSTRY
+BTRST,base-ecosystem,Base Ecosystem,PLATFORM
+CAKE,collectibles-nfts,Collectibles & NFTs,CATEGORY
+CAKE,decentralized-exchange-dex-token,Decentralized Exchange (DEX) Token,CATEGORY
+CAKE,defi,DeFi,CATEGORY
+CAKE,smart-contracts,Smart Contracts,CATEGORY
+CAKE,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+CAKE,yield-farming,Yield Farming,CATEGORY
+CAKE,amm,AMM,CATEGORY
+CAKE,dex,DEX,CATEGORY
+CAKE,governance,Governance,CATEGORY
+CAKE,solana-ecosystem,Solana Ecosystem,PLATFORM
+CAKE,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+CAKE,bnb-chain-ecosystem,BNB Chain Ecosystem,PLATFORM
+CAKE,aptos-ecosystem,Aptos Ecosystem,PLATFORM
+CAKE,zksync-era-ecosystem,zkSync Era Ecosystem,PLATFORM
+CAKE,base-ecosystem,Base Ecosystem,PLATFORM
+CAKE,linea-ecosystem,Linea Ecosystem,PLATFORM
+CAKE,move-vm,MoveVM (MVM),CATEGORY
+CAKE,polygon-zkevm-ecosystem,Polygon zkEVM Ecosystem,PLATFORM
+CAKE,opbnb-ecosystem,opBNB Ecosystem,PLATFORM
+CAKE,binance-ecosystem,Binance Ecosystem,CATEGORY
+CAKE,binance-listing,Binance Listing,CATEGORY
+CELO,pos,PoS,ALGORITHM
+CELO,privacy,Privacy,CATEGORY
+CELO,zero-knowledge-proofs,Zero Knowledge Proofs,CATEGORY
+CELO,mobile,Mobile,INDUSTRY
+CELO,payments,Payments,INDUSTRY
+CELO,smart-contracts,Smart Contracts,CATEGORY
+CELO,coinbase-ventures-portfolio,Coinbase Ventures Portfolio,CATEGORY
+CELO,polychain-capital-portfolio,Polychain Capital Portfolio,CATEGORY
+CELO,layer-2,Layer 2,CATEGORY
+CELO,dragonfly-capital-portfolio,DragonFly Capital Portfolio,CATEGORY
+CELO,electric-capital-portfolio,Electric Capital Portfolio,CATEGORY
+CELO,a16z-portfolio,a16z Portfolio,CATEGORY
+CELO,near-protocol-ecosystem,Near Protocol Ecosystem,PLATFORM
+CELO,celo-ecosystem,Celo Ecosystem,PLATFORM
+CELO,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+CELO,made-in-america,Made in America,CATEGORY
+CELO,binance-ecosystem,Binance Ecosystem,CATEGORY
+CELO,binance-listing,Binance Listing,CATEGORY
+CELR,platform,Platform,CATEGORY
+CELR,enterprise-solutions,Enterprise Solutions,INDUSTRY
+CELR,defi,DeFi,CATEGORY
+CELR,zero-knowledge-proofs,Zero Knowledge Proofs,CATEGORY
+CELR,interoperability,Interoperability,CATEGORY
+CELR,scaling,Scaling,CATEGORY
+CELR,state-channel,State Channel,CATEGORY
+CELR,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+CELR,substrate,Substrate,CATEGORY
+CELR,polkadot,Polkadot,PLATFORM
+CELR,binance-launchpad,Binance Launchpad,CATEGORY
+CELR,arrington-xrp-capital-portfolio,Arrington XRP Capital Portfolio,CATEGORY
+CELR,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+CELR,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+CELR,cross-chain,Cross-Chain,CATEGORY
+CELR,oasis-ecosystem,Oasis Ecosystem,PLATFORM
+CELR,moonbeam-ecosystem,Moonbeam Ecosystem,PLATFORM
+CELR,sei-ecosystem,Sei Ecosystem,PLATFORM
+CELR,depin,DePIN,INDUSTRY
+CELR,metis-andromeda-ecosystem,Metis Andromeda Ecosystem,PLATFORM
+CELR,binance-ecosystem,Binance Ecosystem,CATEGORY
+CELR,binance-listing,Binance Listing,CATEGORY
+CFG,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+CFG,real-world-assets-protocols,Real World Assets Protocols,CATEGORY
+CHZ,sports,Sports,INDUSTRY
+CHZ,communications-social-media,Communications & Social Media,INDUSTRY
+CHZ,collectibles-nfts,Collectibles & NFTs,CATEGORY
+CHZ,content-creation,Content Creation,INDUSTRY
+CHZ,payments,Payments,INDUSTRY
+CHZ,layer-1,Layer 1,CATEGORY
+CHZ,alleged-sec-securities,Alleged SEC Securities,CATEGORY
+CHZ,binance-ecosystem,Binance Ecosystem,CATEGORY
+CHZ,binance-listing,Binance Listing,CATEGORY
+COMP,defi,DeFi,CATEGORY
+COMP,dao,DAO,CATEGORY
+COMP,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+COMP,yield-farming,Yield Farming,CATEGORY
+COMP,coinbase-ventures-portfolio,Coinbase Ventures Portfolio,CATEGORY
+COMP,three-arrows-capital-portfolio,Three Arrows Capital Portfolio,CATEGORY
+COMP,polychain-capital-portfolio,Polychain Capital Portfolio,CATEGORY
+COMP,avalanche-ecosystem,Avalanche Ecosystem,PLATFORM
+COMP,solana-ecosystem,Solana Ecosystem,PLATFORM
+COMP,lending-borowing,Lending & Borrowing,CATEGORY
+COMP,dragonfly-capital-portfolio,DragonFly Capital Portfolio,CATEGORY
+COMP,alameda-research-portfolio,Alameda Research Portfolio,CATEGORY
+COMP,a16z-portfolio,a16z Portfolio,CATEGORY
+COMP,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+COMP,paradigm-portfolio,Paradigm Portfolio,CATEGORY
+COMP,near-protocol-ecosystem,Near Protocol Ecosystem,PLATFORM
+COMP,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+COMP,gnosis-chain-ecosystem,Gnosis Chain Ecosystem,PLATFORM
+COMP,sora-ecosystem,Sora Ecosystem,PLATFORM
+COMP,made-in-america,Made in America,CATEGORY
+COMP,binance-ecosystem,Binance Ecosystem,CATEGORY
+COMP,binance-listing,Binance Listing,CATEGORY
+COTI,defi,DeFi,CATEGORY
+COTI,privacy,Privacy,CATEGORY
+COTI,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+COTI,layer-2,Layer 2,CATEGORY
+COTI,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+COTI,binance-ecosystem,Binance Ecosystem,CATEGORY
+COTI,binance-listing,Binance Listing,CATEGORY
+CRO,medium-of-exchange,Medium of Exchange,INDUSTRY
+CRO,centralized-exchange,Centralized Exchange (CEX) Token,CATEGORY
+CRO,mobile,Mobile,INDUSTRY
+CRO,payments,Payments,INDUSTRY
+CRO,layer-1,Layer 1,CATEGORY
+CRV,decentralized-exchange-dex-token,Decentralized Exchange (DEX) Token,CATEGORY
+CRV,defi,DeFi,CATEGORY
+CRV,dao,DAO,CATEGORY
+CRV,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+CRV,yield-farming,Yield Farming,CATEGORY
+CRV,amm,AMM,CATEGORY
+CRV,governance,Governance,CATEGORY
+CRV,framework-ventures-portfolio,Framework Ventures Portfolio,CATEGORY
+CRV,alameda-research-portfolio,Alameda Research Portfolio,CATEGORY
+CRV,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+CRV,fantom-ecosystem,Fantom Ecosystem,PLATFORM
+CRV,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+CRV,optimism-ecosystem,Optimism Ecosystem,PLATFORM
+CRV,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+CRV,base-ecosystem,Base Ecosystem,PLATFORM
+CRV,gnosis-chain-ecosystem,Gnosis Chain Ecosystem,PLATFORM
+CRV,binance-ecosystem,Binance Ecosystem,CATEGORY
+CRV,binance-listing,Binance Listing,CATEGORY
+CTSI,pos,PoS,ALGORITHM
+CTSI,platform,Platform,CATEGORY
+CTSI,scaling,Scaling,CATEGORY
+CTSI,smart-contracts,Smart Contracts,CATEGORY
+CTSI,staking,Staking,CATEGORY
+CTSI,dapp,DApp,CATEGORY
+CTSI,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+CTSI,binance-smart-chain,[Deprecated] BNB Smart Chain -> BNB Chain Eco,PLATFORM
+CTSI,layer-2,Layer 2,CATEGORY
+CTSI,rollups,Rollups,CATEGORY
+CTSI,sidechain,Sidechain,CATEGORY
+CTSI,binance-launchpad,Binance Launchpad,CATEGORY
+CTSI,binance-labs-portfolio,YZi Labs Portfolio,CATEGORY
+CTSI,avalanche-ecosystem,Avalanche Ecosystem,PLATFORM
+CTSI,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+CTSI,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+CTSI,optimism-ecosystem,Optimism Ecosystem,PLATFORM
+CTSI,base-ecosystem,Base Ecosystem,PLATFORM
+CTSI,modular-blockchain,Modular Blockchain,CATEGORY
+CTSI,binance-ecosystem,Binance Ecosystem,CATEGORY
+CTSI,binance-listing,Binance Listing,CATEGORY
+CVC,enterprise-solutions,Enterprise Solutions,INDUSTRY
+CVC,identity,Identity,INDUSTRY
+CVC,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+CVC,solana-ecosystem,Solana Ecosystem,PLATFORM
+CVC,dcg-portfolio,DCG Portfolio,CATEGORY
+CVC,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+CVC,web3,Web3,INDUSTRY
+CVC,binance-ecosystem,Binance Ecosystem,CATEGORY
+CVC,binance-listing,Binance Listing,CATEGORY
+CVX,defi,DeFi,CATEGORY
+CVX,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+CVX,yield-aggregator,Yield Aggregator,CATEGORY
+CVX,solana-ecosystem,Solana Ecosystem,PLATFORM
+CVX,binance-ecosystem,Binance Ecosystem,CATEGORY
+CVX,binance-listing,Binance Listing,CATEGORY
+DAI,defi,DeFi,CATEGORY
+DAI,stablecoin,Stablecoin,CATEGORY
+DAI,asset-backed-stablecoin,Asset-Backed Stablecoin,CATEGORY
+DAI,usd-stablecoin,USD Stablecoin,CATEGORY
+DAI,binance-ecosystem,Binance Ecosystem,CATEGORY
+DAI,binance-listing,Binance Listing,CATEGORY
+DAI,xlayer-ecosystem,Xlayer Ecosystem,CATEGORY
+DASH,mineable,Mineable,OTHERS
+DASH,hybrid-pow-pos,Hybrid - PoW & PoS,ALGORITHM
+DASH,x11,X11,ALGORITHM
+DASH,medium-of-exchange,Medium of Exchange,INDUSTRY
+DASH,privacy,Privacy,CATEGORY
+DASH,masternodes,Masternodes,CATEGORY
+DASH,dao,DAO,CATEGORY
+DASH,governance,Governance,CATEGORY
+DASH,alleged-sec-securities,Alleged SEC Securities,CATEGORY
+DASH,2017-2018-alt-season,2017/18 Alt season,CATEGORY
+DASH,made-in-america,Made in America,CATEGORY
+DASH,binance-ecosystem,Binance Ecosystem,CATEGORY
+DASH,binance-listing,Binance Listing,CATEGORY
+DIA,platform,Platform,CATEGORY
+DIA,ai-big-data,AI & Big Data,INDUSTRY
+DIA,defi,DeFi,CATEGORY
+DIA,oracles,Oracles,CATEGORY
+DIA,smart-contracts,Smart Contracts,CATEGORY
+DIA,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+DIA,substrate,Substrate,CATEGORY
+DIA,polkadot,Polkadot,PLATFORM
+DIA,avalanche-ecosystem,Avalanche Ecosystem,PLATFORM
+DIA,solana-ecosystem,Solana Ecosystem,PLATFORM
+DIA,exnetwork-capital-portfolio,Exnetwork Capital Portfolio,CATEGORY
+DIA,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+DIA,fantom-ecosystem,Fantom Ecosystem,PLATFORM
+DIA,web3,Web3,INDUSTRY
+DIA,near-protocol-ecosystem,Near Protocol Ecosystem,PLATFORM
+DIA,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+DIA,injective-ecosystem,Injective Ecosystem,PLATFORM
+DIA,real-world-assets-protocols,Real World Assets Protocols,CATEGORY
+DIA,binance-ecosystem,Binance Ecosystem,CATEGORY
+DIA,binance-listing,Binance Listing,CATEGORY
+DOGE,mineable,Mineable,OTHERS
+DOGE,pow,PoW,ALGORITHM
+DOGE,scrypt,Scrypt,ALGORITHM
+DOGE,medium-of-exchange,Medium of Exchange,INDUSTRY
+DOGE,memes,Memes,INDUSTRY
+DOGE,payments,Payments,INDUSTRY
+DOGE,doggone-doggerel,Doggone Doggerel,CATEGORY
+DOGE,osmosis-ecosystem,Osmosis Ecosystem,PLATFORM
+DOGE,ftx-bankruptcy-estate,FTX Bankruptcy Estate ,CATEGORY
+DOGE,animal-memes,Animal Memes,CATEGORY
+DOGE,made-in-america,Made in America,CATEGORY
+DOGE,binance-ecosystem,Binance Ecosystem,CATEGORY
+DOGE,binance-listing,Binance Listing,CATEGORY
+DOT,defi,DeFi,CATEGORY
+DOT,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+DOT,substrate,Substrate,CATEGORY
+DOT,polkadot,Polkadot,PLATFORM
+DOT,polkadot-ecosystem,Polkadot Ecosystem,PLATFORM
+DOT,three-arrows-capital-portfolio,Three Arrows Capital Portfolio,CATEGORY
+DOT,polychain-capital-portfolio,Polychain Capital Portfolio,CATEGORY
+DOT,heco-ecosystem,HECO Ecosystem,PLATFORM
+DOT,arrington-xrp-capital-portfolio,Arrington XRP Capital Portfolio,CATEGORY
+DOT,blockchain-capital-portfolio,Blockchain Capital Portfolio,CATEGORY
+DOT,boostvc-portfolio,BoostVC Portfolio,CATEGORY
+DOT,cms-holdings-portfolio,CMS Holdings Portfolio,CATEGORY
+DOT,coinfund-portfolio,Coinfund Portfolio,CATEGORY
+DOT,fabric-ventures-portfolio,Fabric Ventures Portfolio,CATEGORY
+DOT,fenbushi-capital-portfolio,Fenbushi Capital Portfolio,CATEGORY
+DOT,hashkey-capital-portfolio,Hashkey Capital Portfolio,CATEGORY
+DOT,kenetic-capital-portfolio,Kenetic Capital Portfolio,CATEGORY
+DOT,1confirmation-portfolio,1Confirmation Portfolio,CATEGORY
+DOT,placeholder-ventures-portfolio,Placeholder Ventures Portfolio,CATEGORY
+DOT,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+DOT,exnetwork-capital-portfolio,Exnetwork Capital Portfolio,CATEGORY
+DOT,web3,Web3,INDUSTRY
+DOT,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+DOT,spartan-group,Spartan Group,CATEGORY
+DOT,optimism-ecosystem,Optimism Ecosystem,PLATFORM
+DOT,osmosis-ecosystem,Osmosis Ecosystem,PLATFORM
+DOT,base-ecosystem,Base Ecosystem,PLATFORM
+DOT,gnosis-chain-ecosystem,Gnosis Chain Ecosystem,PLATFORM
+DOT,binance-ecosystem,Binance Ecosystem,CATEGORY
+DOT,binance-listing,Binance Listing,CATEGORY
+DRIFT,decentralized-exchange-dex-token,Decentralized Exchange (DEX) Token,CATEGORY
+DRIFT,defi,DeFi,CATEGORY
+DRIFT,derivatives,Derivatives,CATEGORY
+DRIFT,polychain-capital-portfolio,Polychain Capital Portfolio,CATEGORY
+DRIFT,governance,Governance,CATEGORY
+DRIFT,solana-ecosystem,Solana Ecosystem,PLATFORM
+DRIFT,multicoin-capital-portfolio,Multicoin Capital Portfolio,CATEGORY
+DRIFT,jump-crypto,Jump Crypto,CATEGORY
+DRIFT,binance-alpha,Binance Alpha,CATEGORY
+DRIFT,binance-ecosystem,Binance Ecosystem,CATEGORY
+DRIFT,binance-listing,Binance Listing,CATEGORY
+EGLD,pos,PoS,ALGORITHM
+EGLD,enterprise-solutions,Enterprise Solutions,INDUSTRY
+EGLD,distributed-computing,Distributed Computing,INDUSTRY
+EGLD,loyalty,Loyalty,INDUSTRY
+EGLD,gaming,Gaming,INDUSTRY
+EGLD,identity,Identity,INDUSTRY
+EGLD,payments,Payments,INDUSTRY
+EGLD,scaling,Scaling,CATEGORY
+EGLD,smart-contracts,Smart Contracts,CATEGORY
+EGLD,software,Software,INDUSTRY
+EGLD,binance-launchpad,Binance Launchpad,CATEGORY
+EGLD,binance-labs-portfolio,YZi Labs Portfolio,CATEGORY
+EGLD,metaverse,Metaverse,CATEGORY
+EGLD,electric-capital-portfolio,Electric Capital Portfolio,CATEGORY
+EGLD,exnetwork-capital-portfolio,Exnetwork Capital Portfolio,CATEGORY
+EGLD,mobile-payment,Mobile Payment,CATEGORY
+EGLD,web3,Web3,INDUSTRY
+EGLD,elrond-ecosystem,Elrond Ecosystem,PLATFORM
+EGLD,layer-1,Layer 1,CATEGORY
+EGLD,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+EGLD,multiversx-ecosystem,MultiversX Ecosystem,PLATFORM
+EGLD,depin,DePIN,INDUSTRY
+EGLD,binance-ecosystem,Binance Ecosystem,CATEGORY
+EGLD,binance-listing,Binance Listing,CATEGORY
+EIGEN,defi,DeFi,CATEGORY
+EIGEN,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+EIGEN,restaking,Restaking,CATEGORY
+EIGEN,cmc-crypto-yearbook-2024-2025,CMC Crypto Yearbook 2024-25,CATEGORY
+EIGEN,made-in-america,Made in America,CATEGORY
+EIGEN,binance-ecosystem,Binance Ecosystem,CATEGORY
+EIGEN,binance-listing,Binance Listing,CATEGORY
+EIGEN,x402-ecosystem,x402 Ecosystem,CATEGORY
+ELA,mineable,Mineable,OTHERS
+ELA,sha-256,SHA-256,ALGORITHM
+ELA,platform,Platform,CATEGORY
+ELA,distributed-computing,Distributed Computing,INDUSTRY
+ELA,filesharing,Filesharing,INDUSTRY
+ELA,state-channel,State Channel,CATEGORY
+ELA,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+ELA,sidechain,Sidechain,CATEGORY
+ELA,heco-ecosystem,HECO Ecosystem,PLATFORM
+ELA,web3,Web3,INDUSTRY
+ELA,depin,DePIN,INDUSTRY
+ENA,defi,DeFi,CATEGORY
+ENA,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+ENA,binance-labs-portfolio,YZi Labs Portfolio,CATEGORY
+ENA,okx-ventures-portfolio,OKX Ventures Portfolio,CATEGORY
+ENA,cmc-crypto-yearbook-2024-2025,CMC Crypto Yearbook 2024-25,CATEGORY
+ENA,world-liberty-financial-portfolio,World Liberty Financial Portfolio,CATEGORY
+ENA,binance-ecosystem,Binance Ecosystem,CATEGORY
+ENA,binance-listing,Binance Listing,CATEGORY
+ENS,dao,DAO,CATEGORY
+ENS,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+ENS,governance,Governance,CATEGORY
+ENS,solana-ecosystem,Solana Ecosystem,PLATFORM
+ENS,web3,Web3,INDUSTRY
+ENS,binance-ecosystem,Binance Ecosystem,CATEGORY
+ENS,binance-listing,Binance Listing,CATEGORY
+EOS,medium-of-exchange,Medium of Exchange,INDUSTRY
+EOS,enterprise-solutions,Enterprise Solutions,INDUSTRY
+EOS,defi,DeFi,CATEGORY
+EOS,smart-contracts,Smart Contracts,CATEGORY
+EOS,eos-ecosystem,EOS Ecosystem,PLATFORM
+EOS,heco-ecosystem,HECO Ecosystem,PLATFORM
+EOS,fenbushi-capital-portfolio,Fenbushi Capital Portfolio,CATEGORY
+EOS,galaxy-digital-portfolio,Galaxy Digital Portfolio,CATEGORY
+EOS,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+EOS,2017-2018-alt-season,2017/18 Alt season,CATEGORY
+EOS,made-in-america,Made in America,CATEGORY
+EOS,world-liberty-financial-portfolio,World Liberty Financial Portfolio,CATEGORY
+EOS,binance-ecosystem,Binance Ecosystem,CATEGORY
+EOS,binance-listing,Binance Listing,CATEGORY
+ETC,mineable,Mineable,OTHERS
+ETC,pow,PoW,ALGORITHM
+ETC,ethash,Ethash,ALGORITHM
+ETC,platform,Platform,CATEGORY
+ETC,smart-contracts,Smart Contracts,CATEGORY
+ETC,dcg-portfolio,DCG Portfolio,CATEGORY
+ETC,layer-1,Layer 1,CATEGORY
+ETC,2017-2018-alt-season,2017/18 Alt season,CATEGORY
+ETC,ethereum-classic-ecosystem,Ethereum Classic Ecosystem,PLATFORM
+ETC,binance-ecosystem,Binance Ecosystem,CATEGORY
+ETC,binance-listing,Binance Listing,CATEGORY
+ETH,pos,PoS,ALGORITHM
+ETH,smart-contracts,Smart Contracts,CATEGORY
+ETH,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+ETH,coinbase-ventures-portfolio,Coinbase Ventures Portfolio,CATEGORY
+ETH,three-arrows-capital-portfolio,Three Arrows Capital Portfolio,CATEGORY
+ETH,polychain-capital-portfolio,Polychain Capital Portfolio,CATEGORY
+ETH,binance-labs-portfolio,YZi Labs Portfolio,CATEGORY
+ETH,blockchain-capital-portfolio,Blockchain Capital Portfolio,CATEGORY
+ETH,boostvc-portfolio,BoostVC Portfolio,CATEGORY
+ETH,cms-holdings-portfolio,CMS Holdings Portfolio,CATEGORY
+ETH,dcg-portfolio,DCG Portfolio,CATEGORY
+ETH,dragonfly-capital-portfolio,DragonFly Capital Portfolio,CATEGORY
+ETH,electric-capital-portfolio,Electric Capital Portfolio,CATEGORY
+ETH,fabric-ventures-portfolio,Fabric Ventures Portfolio,CATEGORY
+ETH,framework-ventures-portfolio,Framework Ventures Portfolio,CATEGORY
+ETH,hashkey-capital-portfolio,Hashkey Capital Portfolio,CATEGORY
+ETH,kenetic-capital-portfolio,Kenetic Capital Portfolio,CATEGORY
+ETH,huobi-capital-portfolio,Huobi Capital Portfolio,CATEGORY
+ETH,alameda-research-portfolio,Alameda Research Portfolio,CATEGORY
+ETH,a16z-portfolio,a16z Portfolio,CATEGORY
+ETH,1confirmation-portfolio,1Confirmation Portfolio,CATEGORY
+ETH,winklevoss-capital-portfolio,Winklevoss Capital Portfolio,CATEGORY
+ETH,usv-portfolio,USV Portfolio,CATEGORY
+ETH,placeholder-ventures-portfolio,Placeholder Ventures Portfolio,CATEGORY
+ETH,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+ETH,multicoin-capital-portfolio,Multicoin Capital Portfolio,CATEGORY
+ETH,paradigm-portfolio,Paradigm Portfolio,CATEGORY
+ETH,ethereum-pow-ecosystem,Ethereum PoW Ecosystem,PLATFORM
+ETH,layer-1,Layer 1,CATEGORY
+ETH,ftx-bankruptcy-estate,FTX Bankruptcy Estate ,CATEGORY
+ETH,sora-ecosystem,Sora Ecosystem,PLATFORM
+ETH,rsk-rbtc-ecosystem,RSK RBTC Ecosystem,PLATFORM
+ETH,world-liberty-financial-portfolio,World Liberty Financial Portfolio,CATEGORY
+ETH,us-strategic-crypto-reserve,US Strategic Crypto Reserve,CATEGORY
+ETH,binance-ecosystem,Binance Ecosystem,CATEGORY
+ETH,binance-listing,Binance Listing,CATEGORY
+ETH,sophon-ecosystem,Sophon Ecosystem,PLATFORM
+ETHFI,defi,DeFi,CATEGORY
+ETHFI,staking,Staking,CATEGORY
+ETHFI,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+ETHFI,binance-launchpool,Binance Launchpool,CATEGORY
+ETHFI,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+ETHFI,eigenlayer-ecosystem,EigenLayer Ecosystem,PLATFORM
+ETHFI,cmc-crypto-yearbook-2024-2025,CMC Crypto Yearbook 2024-25,CATEGORY
+ETHFI,binance-ecosystem,Binance Ecosystem,CATEGORY
+ETHFI,binance-listing,Binance Listing,CATEGORY
+FARTCOIN,memes,Memes,INDUSTRY
+FARTCOIN,solana-ecosystem,Solana Ecosystem,PLATFORM
+FARTCOIN,ai-memes,AI Memes,CATEGORY
+FARTCOIN,pump-fun-ecosystem,Pump Fun Ecosystem,CATEGORY
+FARTCOIN,terminal-of-truths,Terminal of Truths,CATEGORY
+FARTCOIN,binance-alpha,Binance Alpha,CATEGORY
+FARTCOIN,binance-ecosystem,Binance Ecosystem,CATEGORY
+FARTCOIN,binance-listing,Binance Listing,CATEGORY
+FET,cosmos-ecosystem,Cosmos Ecosystem,PLATFORM
+FET,ai-big-data,AI & Big Data,INDUSTRY
+FET,collectibles-nfts,Collectibles & NFTs,CATEGORY
+FET,iot,IoT,INDUSTRY
+FET,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+FET,binance-launchpad,Binance Launchpad,CATEGORY
+FET,web3,Web3,INDUSTRY
+FET,injective-ecosystem,Injective Ecosystem,PLATFORM
+FET,osmosis-ecosystem,Osmosis Ecosystem,PLATFORM
+FET,generative-ai,Generative AI,CATEGORY
+FET,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+FET,ai-agents,AI Agents,CATEGORY
+FET,binance-ecosystem,Binance Ecosystem,CATEGORY
+FET,binance-listing,Binance Listing,CATEGORY
+FIL,mineable,Mineable,OTHERS
+FIL,ai-big-data,AI & Big Data,INDUSTRY
+FIL,distributed-computing,Distributed Computing,INDUSTRY
+FIL,filesharing,Filesharing,INDUSTRY
+FIL,storage,Storage,CATEGORY
+FIL,polychain-capital-portfolio,Polychain Capital Portfolio,CATEGORY
+FIL,blockchain-capital-portfolio,Blockchain Capital Portfolio,CATEGORY
+FIL,boostvc-portfolio,BoostVC Portfolio,CATEGORY
+FIL,dcg-portfolio,DCG Portfolio,CATEGORY
+FIL,hashkey-capital-portfolio,Hashkey Capital Portfolio,CATEGORY
+FIL,a16z-portfolio,a16z Portfolio,CATEGORY
+FIL,winklevoss-capital-portfolio,Winklevoss Capital Portfolio,CATEGORY
+FIL,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+FIL,web3,Web3,INDUSTRY
+FIL,filecoin-ecosystem,Filecoin Ecosystem,PLATFORM
+FIL,layer-1,Layer 1,CATEGORY
+FIL,alleged-sec-securities,Alleged SEC Securities,CATEGORY
+FIL,depin,DePIN,INDUSTRY
+FIL,2017-2018-alt-season,2017/18 Alt season,CATEGORY
+FIL,made-in-america,Made in America,CATEGORY
+FIL,binance-ecosystem,Binance Ecosystem,CATEGORY
+FIL,binance-listing,Binance Listing,CATEGORY
+FLOKI,defi,DeFi,CATEGORY
+FLOKI,gaming,Gaming,INDUSTRY
+FLOKI,memes,Memes,INDUSTRY
+FLOKI,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+FLOKI,metaverse,Metaverse,CATEGORY
+FLOKI,doggone-doggerel,Doggone Doggerel,CATEGORY
+FLOKI,play-to-earn,Play To Earn,CATEGORY
+FLOKI,bnb-chain-ecosystem,BNB Chain Ecosystem,PLATFORM
+FLOKI,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+FLOKI,paal-ecosystem,Paal Ecosystem,PLATFORM
+FLOKI,tokenfi-launchpad,TokenFi Launchpad,CATEGORY
+FLOKI,animal-memes,Animal Memes,CATEGORY
+FLOKI,binance-ecosystem,Binance Ecosystem,CATEGORY
+FLOKI,binance-listing,Binance Listing,CATEGORY
+FLOW,platform,Platform,CATEGORY
+FLOW,collectibles-nfts,Collectibles & NFTs,CATEGORY
+FLOW,staking,Staking,CATEGORY
+FLOW,coinbase-ventures-portfolio,Coinbase Ventures Portfolio,CATEGORY
+FLOW,coinfund-portfolio,Coinfund Portfolio,CATEGORY
+FLOW,dcg-portfolio,DCG Portfolio,CATEGORY
+FLOW,ledgerprime-portfolio,LedgerPrime Portfolio,CATEGORY
+FLOW,a16z-portfolio,a16z Portfolio,CATEGORY
+FLOW,animoca-brands-portfolio,Animoca Brands Portfolio,CATEGORY
+FLOW,layer-1,Layer 1,CATEGORY
+FLOW,alleged-sec-securities,Alleged SEC Securities,CATEGORY
+FLOW,flow-ecosystem,Flow Ecosystem,PLATFORM
+FLOW,binance-ecosystem,Binance Ecosystem,CATEGORY
+FLOW,binance-listing,Binance Listing,CATEGORY
+FLR,layer-1,Layer 1,CATEGORY
+FLR,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+GIGA,memes,Memes,INDUSTRY
+GIGA,solana-ecosystem,Solana Ecosystem,PLATFORM
+GLM,platform,Platform,CATEGORY
+GLM,ai-big-data,AI & Big Data,INDUSTRY
+GLM,distributed-computing,Distributed Computing,INDUSTRY
+GLM,payments,Payments,INDUSTRY
+GLM,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+GLM,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+GLM,web3,Web3,INDUSTRY
+GLM,depin,DePIN,INDUSTRY
+GLM,binance-ecosystem,Binance Ecosystem,CATEGORY
+GLM,binance-listing,Binance Listing,CATEGORY
+GMT,collectibles-nfts,Collectibles & NFTs,CATEGORY
+GMT,gaming,Gaming,INDUSTRY
+GMT,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+GMT,binance-smart-chain,[Deprecated] BNB Smart Chain -> BNB Chain Eco,PLATFORM
+GMT,binance-launchpad,Binance Launchpad,CATEGORY
+GMT,solana-ecosystem,Solana Ecosystem,PLATFORM
+GMT,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+GMT,move-to-earn,Move To Earn,CATEGORY
+GMT,binance-ecosystem,Binance Ecosystem,CATEGORY
+GMT,binance-listing,Binance Listing,CATEGORY
+GNO,services,Services,INDUSTRY
+GNO,decentralized-exchange-dex-token,Decentralized Exchange (DEX) Token,CATEGORY
+GNO,prediction-markets,Prediction Markets,CATEGORY
+GNO,kenetic-capital-portfolio,Kenetic Capital Portfolio,CATEGORY
+GNO,layer-1,Layer 1,CATEGORY
+GNO,gnosis-chain-ecosystem,Gnosis Chain Ecosystem,PLATFORM
+GNO,binance-ecosystem,Binance Ecosystem,CATEGORY
+GNO,binance-listing,Binance Listing,CATEGORY
+GRT,ai-big-data,AI & Big Data,INDUSTRY
+GRT,enterprise-solutions,Enterprise Solutions,INDUSTRY
+GRT,defi,DeFi,CATEGORY
+GRT,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+GRT,coinbase-ventures-portfolio,Coinbase Ventures Portfolio,CATEGORY
+GRT,avalanche-ecosystem,Avalanche Ecosystem,PLATFORM
+GRT,solana-ecosystem,Solana Ecosystem,PLATFORM
+GRT,analytics,Analytics,CATEGORY
+GRT,coinfund-portfolio,Coinfund Portfolio,CATEGORY
+GRT,dcg-portfolio,DCG Portfolio,CATEGORY
+GRT,fabric-ventures-portfolio,Fabric Ventures Portfolio,CATEGORY
+GRT,framework-ventures-portfolio,Framework Ventures Portfolio,CATEGORY
+GRT,ledgerprime-portfolio,LedgerPrime Portfolio,CATEGORY
+GRT,multicoin-capital-portfolio,Multicoin Capital Portfolio,CATEGORY
+GRT,parafi-capital,ParaFi Capital,CATEGORY
+GRT,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+GRT,fantom-ecosystem,Fantom Ecosystem,PLATFORM
+GRT,web3,Web3,INDUSTRY
+GRT,near-protocol-ecosystem,Near Protocol Ecosystem,PLATFORM
+GRT,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+GRT,spartan-group,Spartan Group,CATEGORY
+GRT,injective-ecosystem,Injective Ecosystem,PLATFORM
+GRT,sora-ecosystem,Sora Ecosystem,PLATFORM
+GRT,made-in-america,Made in America,CATEGORY
+GRT,binance-ecosystem,Binance Ecosystem,CATEGORY
+GRT,binance-listing,Binance Listing,CATEGORY
+HBAR,dag,DAG,ALGORITHM
+HBAR,marketplace,Marketplace,INDUSTRY
+HBAR,enterprise-solutions,Enterprise Solutions,INDUSTRY
+HBAR,payments,Payments,INDUSTRY
+HBAR,dcg-portfolio,DCG Portfolio,CATEGORY
+HBAR,hedera-hashgraph-ecosystem,Hedera Hashgraph Ecosystem,PLATFORM
+HBAR,real-world-assets-protocols,Real World Assets Protocols,CATEGORY
+HBAR,layer-1,Layer 1,CATEGORY
+HBAR,made-in-america,Made in America,CATEGORY
+HBAR,binance-ecosystem,Binance Ecosystem,CATEGORY
+HBAR,binance-listing,Binance Listing,CATEGORY
+HNT,mineable,Mineable,OTHERS
+HNT,enterprise-solutions,Enterprise Solutions,INDUSTRY
+HNT,distributed-computing,Distributed Computing,INDUSTRY
+HNT,iot,IoT,INDUSTRY
+HNT,solana-ecosystem,Solana Ecosystem,PLATFORM
+HNT,usv-portfolio,USV Portfolio,CATEGORY
+HNT,multicoin-capital-portfolio,Multicoin Capital Portfolio,CATEGORY
+HNT,web3,Web3,INDUSTRY
+HNT,depin,DePIN,INDUSTRY
+HNT,made-in-america,Made in America,CATEGORY
+HNT,robotics,Robotics,CATEGORY
+ICP,platform,Platform,CATEGORY
+ICP,ai-big-data,AI & Big Data,INDUSTRY
+ICP,smart-contracts,Smart Contracts,CATEGORY
+ICP,polychain-capital-portfolio,Polychain Capital Portfolio,CATEGORY
+ICP,electric-capital-portfolio,Electric Capital Portfolio,CATEGORY
+ICP,fenbushi-capital-portfolio,Fenbushi Capital Portfolio,CATEGORY
+ICP,hashkey-capital-portfolio,Hashkey Capital Portfolio,CATEGORY
+ICP,a16z-portfolio,a16z Portfolio,CATEGORY
+ICP,multicoin-capital-portfolio,Multicoin Capital Portfolio,CATEGORY
+ICP,exnetwork-capital-portfolio,Exnetwork Capital Portfolio,CATEGORY
+ICP,icp-ecosystem,[Deprecated] ICP Ecosystem,PLATFORM
+ICP,internet-computer-ecosystem,Internet Computer Ecosystem,PLATFORM
+ICP,layer-1,Layer 1,CATEGORY
+ICP,alleged-sec-securities,Alleged SEC Securities,CATEGORY
+ICP,depin,DePIN,INDUSTRY
+ICP,binance-ecosystem,Binance Ecosystem,CATEGORY
+ICP,binance-listing,Binance Listing,CATEGORY
+ILV,collectibles-nfts,Collectibles & NFTs,CATEGORY
+ILV,gaming,Gaming,INDUSTRY
+ILV,dao,DAO,CATEGORY
+ILV,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+ILV,metaverse,Metaverse,CATEGORY
+ILV,play-to-earn,Play To Earn,CATEGORY
+ILV,binance-ecosystem,Binance Ecosystem,CATEGORY
+ILV,binance-listing,Binance Listing,CATEGORY
+IMX,collectibles-nfts,Collectibles & NFTs,CATEGORY
+IMX,zero-knowledge-proofs,Zero Knowledge Proofs,CATEGORY
+IMX,gaming,Gaming,INDUSTRY
+IMX,scaling,Scaling,CATEGORY
+IMX,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+IMX,layer-2,Layer 2,CATEGORY
+IMX,rollups,Rollups,CATEGORY
+IMX,arrington-xrp-capital-portfolio,Arrington XRP Capital Portfolio,CATEGORY
+IMX,alameda-research-portfolio,Alameda Research Portfolio,CATEGORY
+IMX,modular-blockchain,Modular Blockchain,CATEGORY
+IMX,binance-ecosystem,Binance Ecosystem,CATEGORY
+IMX,binance-listing,Binance Listing,CATEGORY
+INJ,pos,PoS,ALGORITHM
+INJ,platform,Platform,CATEGORY
+INJ,ai-big-data,AI & Big Data,INDUSTRY
+INJ,smart-contracts,Smart Contracts,CATEGORY
+INJ,cosmos,Cosmos,PLATFORM
+INJ,binance-smart-chain,[Deprecated] BNB Smart Chain -> BNB Chain Eco,PLATFORM
+INJ,binance-launchpad,Binance Launchpad,CATEGORY
+INJ,binance-labs-portfolio,YZi Labs Portfolio,CATEGORY
+INJ,cms-holdings-portfolio,CMS Holdings Portfolio,CATEGORY
+INJ,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+INJ,web3,Web3,INDUSTRY
+INJ,injective-ecosystem,Injective Ecosystem,PLATFORM
+INJ,real-world-assets-protocols,Real World Assets Protocols,CATEGORY
+INJ,layer-1,Layer 1,CATEGORY
+INJ,made-in-america,Made in America,CATEGORY
+INJ,binance-ecosystem,Binance Ecosystem,CATEGORY
+INJ,binance-listing,Binance Listing,CATEGORY
+IO,ai-big-data,AI & Big Data,INDUSTRY
+IO,distributed-computing,Distributed Computing,INDUSTRY
+IO,binance-launchpool,Binance Launchpool,CATEGORY
+IO,solana-ecosystem,Solana Ecosystem,PLATFORM
+IO,depin,DePIN,INDUSTRY
+IO,made-in-america,Made in America,CATEGORY
+IO,binance-ecosystem,Binance Ecosystem,CATEGORY
+IO,binance-listing,Binance Listing,CATEGORY
+IOTX,platform,Platform,CATEGORY
+IOTX,ai-big-data,AI & Big Data,INDUSTRY
+IOTX,distributed-computing,Distributed Computing,INDUSTRY
+IOTX,defi,DeFi,CATEGORY
+IOTX,iot,IoT,INDUSTRY
+IOTX,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+IOTX,hashkey-capital-portfolio,Hashkey Capital Portfolio,CATEGORY
+IOTX,kenetic-capital-portfolio,Kenetic Capital Portfolio,CATEGORY
+IOTX,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+IOTX,iotex-ecosystem,IoTeX Ecosystem,PLATFORM
+IOTX,base-ecosystem,Base Ecosystem,PLATFORM
+IOTX,depin,DePIN,INDUSTRY
+IOTX,made-in-america,Made in America,CATEGORY
+IOTX,binance-ecosystem,Binance Ecosystem,CATEGORY
+IOTX,binance-listing,Binance Listing,CATEGORY
+IOTX,robotics,Robotics,CATEGORY
+JASMY,iot,IoT,INDUSTRY
+JASMY,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+JASMY,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+JASMY,binance-ecosystem,Binance Ecosystem,CATEGORY
+JASMY,binance-listing,Binance Listing,CATEGORY
+JASMY,robotics,Robotics,CATEGORY
+JTO,defi,DeFi,CATEGORY
+JTO,staking,Staking,CATEGORY
+JTO,dao,DAO,CATEGORY
+JTO,solana-ecosystem,Solana Ecosystem,PLATFORM
+JTO,liquid-staking-derivatives,Liquid Staking Derivatives,CATEGORY
+JTO,cmc-crypto-yearbook-2024-2025,CMC Crypto Yearbook 2024-25,CATEGORY
+JTO,binance-ecosystem,Binance Ecosystem,CATEGORY
+JTO,binance-listing,Binance Listing,CATEGORY
+KAVA,platform,Platform,CATEGORY
+KAVA,binance-launchpad,Binance Launchpad,CATEGORY
+KAVA,binance-labs-portfolio,YZi Labs Portfolio,CATEGORY
+KAVA,lending-borowing,Lending & Borrowing,CATEGORY
+KAVA,arrington-xrp-capital-portfolio,Arrington XRP Capital Portfolio,CATEGORY
+KAVA,framework-ventures-portfolio,Framework Ventures Portfolio,CATEGORY
+KAVA,hashkey-capital-portfolio,Hashkey Capital Portfolio,CATEGORY
+KAVA,web3,Web3,INDUSTRY
+KAVA,layer-1,Layer 1,CATEGORY
+KAVA,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+KAVA,made-in-america,Made in America,CATEGORY
+KAVA,binance-ecosystem,Binance Ecosystem,CATEGORY
+KAVA,binance-listing,Binance Listing,CATEGORY
+KNC,marketplace,Marketplace,INDUSTRY
+KNC,decentralized-exchange-dex-token,Decentralized Exchange (DEX) Token,CATEGORY
+KNC,defi,DeFi,CATEGORY
+KNC,dao,DAO,CATEGORY
+KNC,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+KNC,amm,AMM,CATEGORY
+KNC,three-arrows-capital-portfolio,Three Arrows Capital Portfolio,CATEGORY
+KNC,governance,Governance,CATEGORY
+KNC,kenetic-capital-portfolio,Kenetic Capital Portfolio,CATEGORY
+KNC,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+KNC,parafi-capital,ParaFi Capital,CATEGORY
+KNC,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+KNC,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+KNC,bnb-chain-ecosystem,BNB Chain Ecosystem,PLATFORM
+KNC,optimism-ecosystem,Optimism Ecosystem,PLATFORM
+KNC,binance-ecosystem,Binance Ecosystem,CATEGORY
+KNC,binance-listing,Binance Listing,CATEGORY
+KSM,substrate,Substrate,CATEGORY
+KSM,polkadot,Polkadot,PLATFORM
+KSM,polkadot-ecosystem,Polkadot Ecosystem,PLATFORM
+KSM,cms-holdings-portfolio,CMS Holdings Portfolio,CATEGORY
+KSM,kenetic-capital-portfolio,Kenetic Capital Portfolio,CATEGORY
+KSM,1confirmation-portfolio,1Confirmation Portfolio,CATEGORY
+KSM,vbc-ventures-portfolio,VBC Ventures Portfolio,CATEGORY
+KSM,made-in-america,Made in America,CATEGORY
+KSM,binance-ecosystem,Binance Ecosystem,CATEGORY
+KSM,binance-listing,Binance Listing,CATEGORY
+LA,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+LA,fenbushi-capital-portfolio,Fenbushi Capital Portfolio,CATEGORY
+LA,bnb-chain-ecosystem,BNB Chain Ecosystem,PLATFORM
+LA,binance-hodler-airdrops,Binance HODLer Airdrops,CATEGORY
+LA,binance-alpha-airdrops,Binance Alpha Airdrops,CATEGORY
+LA,binance-ecosystem,Binance Ecosystem,CATEGORY
+LA,binance-listing,Binance Listing,CATEGORY
+LDO,defi,DeFi,CATEGORY
+LDO,dao,DAO,CATEGORY
+LDO,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+LDO,three-arrows-capital-portfolio,Three Arrows Capital Portfolio,CATEGORY
+LDO,solana-ecosystem,Solana Ecosystem,PLATFORM
+LDO,paradigm-portfolio,Paradigm Portfolio,CATEGORY
+LDO,terra-ecosystem,Terra Ecosystem,PLATFORM
+LDO,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+LDO,liquid-staking-derivatives,Liquid Staking Derivatives,CATEGORY
+LDO,optimism-ecosystem,Optimism Ecosystem,PLATFORM
+LDO,standard-crypto-portfolio,Standard Crypto Portfolio,CATEGORY
+LDO,egirl-capital-portfolio,eGirl Capital Portfolio,CATEGORY
+LDO,cmc-crypto-yearbook-2024-2025,CMC Crypto Yearbook 2024-25,CATEGORY
+LDO,binance-ecosystem,Binance Ecosystem,CATEGORY
+LDO,binance-listing,Binance Listing,CATEGORY
+LINK,platform,Platform,CATEGORY
+LINK,cosmos-ecosystem,Cosmos Ecosystem,PLATFORM
+LINK,defi,DeFi,CATEGORY
+LINK,interoperability,Interoperability,CATEGORY
+LINK,oracles,Oracles,CATEGORY
+LINK,smart-contracts,Smart Contracts,CATEGORY
+LINK,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+LINK,tron-ecosystem,TRON Ecosystem,PLATFORM
+LINK,polkadot,Polkadot,PLATFORM
+LINK,tokenized-stock,Tokenized Stock,CATEGORY
+LINK,polkadot-ecosystem,Polkadot Ecosystem,PLATFORM
+LINK,heco-ecosystem,HECO Ecosystem,PLATFORM
+LINK,avalanche-ecosystem,Avalanche Ecosystem,PLATFORM
+LINK,solana-ecosystem,Solana Ecosystem,PLATFORM
+LINK,framework-ventures-portfolio,Framework Ventures Portfolio,CATEGORY
+LINK,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+LINK,fantom-ecosystem,Fantom Ecosystem,PLATFORM
+LINK,cardano-ecosystem,Cardano Ecosystem,PLATFORM
+LINK,terra-ecosystem,Terra Ecosystem,PLATFORM
+LINK,web3,Web3,INDUSTRY
+LINK,near-protocol-ecosystem,Near Protocol Ecosystem,PLATFORM
+LINK,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+LINK,defi-2,DeFi 2.0,CATEGORY
+LINK,cross-chain,Cross-Chain,CATEGORY
+LINK,cronos-ecosystem,Cronos Ecosystem,PLATFORM
+LINK,cardano,Cardano,PLATFORM
+LINK,injective-ecosystem,Injective Ecosystem,PLATFORM
+LINK,bnb-chain-ecosystem,BNB Chain Ecosystem,PLATFORM
+LINK,oasis-ecosystem,Oasis Ecosystem,PLATFORM
+LINK,metisdao-ecosystem,MetisDAO Ecosystem,PLATFORM
+LINK,aptos-ecosystem,Aptos Ecosystem,PLATFORM
+LINK,sui-ecosystem,Sui Ecosystem,PLATFORM
+LINK,optimism-ecosystem,Optimism Ecosystem,PLATFORM
+LINK,bitcoin-ecosystem,Bitcoin Ecosystem,PLATFORM
+LINK,real-world-assets-protocols,Real World Assets Protocols,CATEGORY
+LINK,zksync-era-ecosystem,zkSync Era Ecosystem,PLATFORM
+LINK,base-ecosystem,Base Ecosystem,PLATFORM
+LINK,linea-ecosystem,Linea Ecosystem,PLATFORM
+LINK,sei-ecosystem,Sei Ecosystem,PLATFORM
+LINK,blast-ecosystem,Blast Ecosystem,CATEGORY
+LINK,move-vm,MoveVM (MVM),CATEGORY
+LINK,hyperliquid-ecosystem,Hyperliquid Ecosystem,CATEGORY
+LINK,gnosis-chain-ecosystem,Gnosis Chain Ecosystem,PLATFORM
+LINK,astar-ecosystem,Astar Ecosystem,PLATFORM
+LINK,core-ecosystem,Core Ecosystem,PLATFORM
+LINK,x-layer-ecosystem,X Layer Ecosystem,PLATFORM
+LINK,made-in-america,Made in America,CATEGORY
+LINK,btcfi,BTCfi,CATEGORY
+LINK,world-liberty-financial-portfolio,World Liberty Financial Portfolio,CATEGORY
+LINK,corn-ecosystem,Corn Ecosystem,CATEGORY
+LINK,sonic-ecosystem,Sonic Ecosystem,CATEGORY
+LINK,binance-ecosystem,Binance Ecosystem,CATEGORY
+LINK,binance-listing,Binance Listing,CATEGORY
+LINK,tokenized-assets,Tokenized Assets,CATEGORY
+LINK,xstocks-ecosystem,xStocks Ecosystem,CATEGORY
+LINK,hyperevm-ecosystem,HyperEVM Ecosystem,PLATFORM
+LINK,bera-chain-ecosystem,Bera Chain Ecosystem,PLATFORM
+LINK,unichain-ecosystem,Unichain Ecosystem,PLATFORM
+LINK,wlfi-ecosystem,WLFI Ecosystem,CATEGORY
+LINK,plasma-ecosystem,Plasma Ecosystem,PLATFORM
+LPT,media,Media,INDUSTRY
+LPT,ai-big-data,AI & Big Data,INDUSTRY
+LPT,distributed-computing,Distributed Computing,INDUSTRY
+LPT,video,Video,INDUSTRY
+LPT,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+LPT,coinfund-portfolio,Coinfund Portfolio,CATEGORY
+LPT,dcg-portfolio,DCG Portfolio,CATEGORY
+LPT,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+LPT,multicoin-capital-portfolio,Multicoin Capital Portfolio,CATEGORY
+LPT,web3,Web3,INDUSTRY
+LPT,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+LPT,harmony-ecosystem,Harmony Ecosystem,PLATFORM
+LPT,generative-ai,Generative AI,CATEGORY
+LPT,depin,DePIN,INDUSTRY
+LPT,binance-ecosystem,Binance Ecosystem,CATEGORY
+LPT,binance-listing,Binance Listing,CATEGORY
+LRC,marketplace,Marketplace,INDUSTRY
+LRC,decentralized-exchange-dex-token,Decentralized Exchange (DEX) Token,CATEGORY
+LRC,zero-knowledge-proofs,Zero Knowledge Proofs,CATEGORY
+LRC,scaling,Scaling,CATEGORY
+LRC,smart-contracts,Smart Contracts,CATEGORY
+LRC,wallet,Wallet,CATEGORY
+LRC,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+LRC,amm,AMM,CATEGORY
+LRC,dex,DEX,CATEGORY
+LRC,layer-2,Layer 2,CATEGORY
+LRC,rollups,Rollups,CATEGORY
+LRC,solana-ecosystem,Solana Ecosystem,PLATFORM
+LRC,red-packets,Red Packets ,CATEGORY
+LRC,web3,Web3,INDUSTRY
+LRC,token,Token,CATEGORY
+LRC,modular-blockchain,Modular Blockchain,CATEGORY
+LRC,binance-ecosystem,Binance Ecosystem,CATEGORY
+LRC,binance-listing,Binance Listing,CATEGORY
+LTC,mineable,Mineable,OTHERS
+LTC,pow,PoW,ALGORITHM
+LTC,scrypt,Scrypt,ALGORITHM
+LTC,medium-of-exchange,Medium of Exchange,INDUSTRY
+LTC,layer-1,Layer 1,CATEGORY
+LTC,2017-2018-alt-season,2017/18 Alt season,CATEGORY
+LTC,made-in-america,Made in America,CATEGORY
+LTC,binance-ecosystem,Binance Ecosystem,CATEGORY
+LTC,binance-listing,Binance Listing,CATEGORY
+MAGIC,ai-big-data,AI & Big Data,INDUSTRY
+MAGIC,collectibles-nfts,Collectibles & NFTs,CATEGORY
+MAGIC,gaming,Gaming,INDUSTRY
+MAGIC,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+MAGIC,layer-2,Layer 2,CATEGORY
+MAGIC,metaverse,Metaverse,CATEGORY
+MAGIC,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+MAGIC,ai-agent-launchpad,AI Agent Launchpad,CATEGORY
+MAGIC,binance-ecosystem,Binance Ecosystem,CATEGORY
+MAGIC,binance-listing,Binance Listing,CATEGORY
+MANA,platform,Platform,CATEGORY
+MANA,collectibles-nfts,Collectibles & NFTs,CATEGORY
+MANA,gaming,Gaming,INDUSTRY
+MANA,payments,Payments,INDUSTRY
+MANA,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+MANA,solana-ecosystem,Solana Ecosystem,PLATFORM
+MANA,metaverse,Metaverse,CATEGORY
+MANA,boostvc-portfolio,BoostVC Portfolio,CATEGORY
+MANA,dcg-portfolio,DCG Portfolio,CATEGORY
+MANA,fabric-ventures-portfolio,Fabric Ventures Portfolio,CATEGORY
+MANA,kenetic-capital-portfolio,Kenetic Capital Portfolio,CATEGORY
+MANA,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+MANA,play-to-earn,Play To Earn,CATEGORY
+MANA,alleged-sec-securities,Alleged SEC Securities,CATEGORY
+MANA,gnosis-chain-ecosystem,Gnosis Chain Ecosystem,PLATFORM
+MANA,fusion-network-ecosystem,Fusion Network Ecosystem,PLATFORM
+MANA,binance-ecosystem,Binance Ecosystem,CATEGORY
+MANA,binance-listing,Binance Listing,CATEGORY
+MASK,communications-social-media,Communications & Social Media,INDUSTRY
+MASK,collectibles-nfts,Collectibles & NFTs,CATEGORY
+MASK,content-creation,Content Creation,INDUSTRY
+MASK,gaming,Gaming,INDUSTRY
+MASK,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+MASK,metaverse,Metaverse,CATEGORY
+MASK,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+MASK,web3,Web3,INDUSTRY
+MASK,animoca-brands-portfolio,Animoca Brands Portfolio,CATEGORY
+MASK,injective-ecosystem,Injective Ecosystem,PLATFORM
+MASK,bnb-chain-ecosystem,BNB Chain Ecosystem,PLATFORM
+MASK,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+MASK,binance-ecosystem,Binance Ecosystem,CATEGORY
+MASK,binance-listing,Binance Listing,CATEGORY
+ME,marketplace,Marketplace,INDUSTRY
+ME,collectibles-nfts,Collectibles & NFTs,CATEGORY
+ME,wallet,Wallet,CATEGORY
+ME,dapp,DApp,CATEGORY
+ME,solana-ecosystem,Solana Ecosystem,PLATFORM
+ME,bitcoin-ecosystem,Bitcoin Ecosystem,PLATFORM
+ME,runes,Runes,CATEGORY
+ME,binance-ecosystem,Binance Ecosystem,CATEGORY
+ME,binance-listing,Binance Listing,CATEGORY
+METIS,zero-knowledge-proofs,Zero Knowledge Proofs,CATEGORY
+METIS,scaling,Scaling,CATEGORY
+METIS,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+METIS,layer-2,Layer 2,CATEGORY
+METIS,rollups,Rollups,CATEGORY
+METIS,okx-ventures-portfolio,OKX Ventures Portfolio,CATEGORY
+METIS,metisdao-ecosystem,MetisDAO Ecosystem,PLATFORM
+METIS,dwf-labs-portfolio,DWF Labs Portfolio,CATEGORY
+METIS,modular-blockchain,Modular Blockchain,CATEGORY
+METIS,metis-andromeda-ecosystem,Metis Andromeda Ecosystem,PLATFORM
+METIS,binance-ecosystem,Binance Ecosystem,CATEGORY
+METIS,binance-listing,Binance Listing,CATEGORY
+MINA,pos,PoS,ALGORITHM
+MINA,defi,DeFi,CATEGORY
+MINA,privacy,Privacy,CATEGORY
+MINA,zero-knowledge-proofs,Zero Knowledge Proofs,CATEGORY
+MINA,staking,Staking,CATEGORY
+MINA,coinbase-ventures-portfolio,Coinbase Ventures Portfolio,CATEGORY
+MINA,three-arrows-capital-portfolio,Three Arrows Capital Portfolio,CATEGORY
+MINA,polychain-capital-portfolio,Polychain Capital Portfolio,CATEGORY
+MINA,binance-ecosystem,Binance Ecosystem,CATEGORY
+MINA,binance-listing,Binance Listing,CATEGORY
+MKR,store-of-value,Store Of Value,CATEGORY
+MKR,defi,DeFi,CATEGORY
+MKR,dao,DAO,CATEGORY
+MKR,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+MKR,polychain-capital-portfolio,Polychain Capital Portfolio,CATEGORY
+MKR,governance,Governance,CATEGORY
+MKR,avalanche-ecosystem,Avalanche Ecosystem,PLATFORM
+MKR,lending-borowing,Lending & Borrowing,CATEGORY
+MKR,dragonfly-capital-portfolio,DragonFly Capital Portfolio,CATEGORY
+MKR,electric-capital-portfolio,Electric Capital Portfolio,CATEGORY
+MKR,a16z-portfolio,a16z Portfolio,CATEGORY
+MKR,1confirmation-portfolio,1Confirmation Portfolio,CATEGORY
+MKR,placeholder-ventures-portfolio,Placeholder Ventures Portfolio,CATEGORY
+MKR,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+MKR,paradigm-portfolio,Paradigm Portfolio,CATEGORY
+MKR,near-protocol-ecosystem,Near Protocol Ecosystem,PLATFORM
+MKR,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+MKR,spartan-group,Spartan Group,CATEGORY
+MKR,bitcoin-ecosystem,Bitcoin Ecosystem,PLATFORM
+MKR,real-world-assets-protocols,Real World Assets Protocols,CATEGORY
+MKR,standard-crypto-portfolio,Standard Crypto Portfolio,CATEGORY
+MKR,made-in-america,Made in America,CATEGORY
+MLN,asset-management,Asset Management,INDUSTRY
+MLN,defi,DeFi,CATEGORY
+MLN,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+MLN,kenetic-capital-portfolio,Kenetic Capital Portfolio,CATEGORY
+MLN,placeholder-ventures-portfolio,Placeholder Ventures Portfolio,CATEGORY
+MLN,polygon-ecosystem,Polygon Ecosystem,PLATFORM
+MLN,binance-ecosystem,Binance Ecosystem,CATEGORY
+MLN,binance-listing,Binance Listing,CATEGORY
+MOG,memes,Memes,INDUSTRY
+MOG,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+MOG,solana-ecosystem,Solana Ecosystem,PLATFORM
+MOG,bnb-chain-ecosystem,BNB Chain Ecosystem,PLATFORM
+MOG,base-ecosystem,Base Ecosystem,PLATFORM
+MOG,cat-themed,Cat-Themed,CATEGORY
+MOG,animal-memes,Animal Memes,CATEGORY
+MOG,binance-alpha,Binance Alpha,CATEGORY
+MOG,binance-ecosystem,Binance Ecosystem,CATEGORY
+MOG,binance-listing,Binance Listing,CATEGORY
+MORPHO,defi,DeFi,CATEGORY
+MORPHO,ethereum-ecosystem,Ethereum Ecosystem,PLATFORM
+MORPHO,coinbase-ventures-portfolio,Coinbase Ventures Portfolio,CATEGORY
+MORPHO,lending-borowing,Lending & Borrowing,CATEGORY
+MORPHO,fenbushi-capital-portfolio,Fenbushi Capital Portfolio,CATEGORY
+MORPHO,pantera-capital-portfolio,Pantera Capital Portfolio,CATEGORY
+MORPHO,arbitrum-ecosystem,Arbitrum Ecosystem,PLATFORM
+MORPHO,base-ecosystem,Base Ecosystem,PLATFORM
+MORPHO,binance-ecosystem,Binance Ecosystem,CATEGORY
+MORPHO,binance-listing,Binance Listing,CATEGORY
