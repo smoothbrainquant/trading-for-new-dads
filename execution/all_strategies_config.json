@@ -1,18 +1,18 @@
 {
   "strategy_weights": {
     "size": 0.0,
-    "breakout": 0.0911,
-    "beta": 0.0825,
+    "breakout": 0.20,
+    "beta": 0.05,
     "mean_reversion": 0.05,
     "carry": 0.05,
-    "volatility": 0.1436,
+    "volatility": 0.15,
     "kurtosis": 0.05,
     "days_from_high": 0.0,
     "adf": 0.05,
     "trendline_breakout": 0.0,
-    "leverage_inverted": 0.3328,
-    "dilution": 0.05,
-    "turnover": 0.1
+    "leverage_inverted": 0.20,
+    "dilution": 0.20,
+    "turnover": 0.0
   },
   "_weights_note": {
     "_comment": "ENSEMBLE METHOD: Robust portfolio weights optimized using ensemble averaging (Regularized MVO + Risk Parity + Max Diversification). 30% more stable than standard MVO.",
