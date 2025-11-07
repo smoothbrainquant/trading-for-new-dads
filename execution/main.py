@@ -339,6 +339,7 @@ def _build_strategy_params(
         rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
         lookback_months = int(p.get("lookback_months", 12)) if isinstance(p, dict) else 12
         top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
+        bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
         volatility_window = int(p.get("volatility_window", 90)) if isinstance(p, dict) else 90
         long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
         short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
@@ -346,6 +347,7 @@ def _build_strategy_params(
             "rebalance_days": rebalance_days,
             "lookback_months": lookback_months,
             "top_n": top_n,
+            "bottom_n": bottom_n,
             "volatility_window": volatility_window,
             "long_allocation": long_allocation,
             "short_allocation": short_allocation,

@@ -280,10 +280,11 @@
       "rebalance_days": 7,
       "lookback_months": 12,
       "top_n": 10,
+      "bottom_n": 10,
       "volatility_window": 90,
       "long_allocation": 0.5,
       "short_allocation": 0.5,
-      "_comment": "TESTING STRATEGY - Long low dilution coins, short high dilution coins. Token supply inflation factor. Strategy caps applied at 5% in main.py for safety during testing phase."
+      "_comment": "TESTING STRATEGY - Long low dilution coins, short high dilution coins. Uses top_n=10, bottom_n=10 with risk parity weighting. Token supply inflation factor. Strategy caps applied at 5% in main.py for safety during testing phase."
     },
     "turnover": {
       "_status": "ACTIVE - Exceptional backtest performance (Sharpe: 2.17)",
