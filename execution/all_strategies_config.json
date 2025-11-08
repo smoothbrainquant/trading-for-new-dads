@@ -1,18 +1,22 @@
 {
   "strategy_weights": {
     "size": 0.0,
-    "breakout": 0.20,
-    "beta": 0.05,
-    "mean_reversion": 0.05,
-    "carry": 0.05,
-    "volatility": 0.15,
-    "kurtosis": 0.05,
+    "breakout": 0.18,
+    "beta": 0.045,
+    "mean_reversion": 0.045,
+    "carry": 0.045,
+    "volatility": 0.135,
+    "kurtosis": 0.045,
     "days_from_high": 0.0,
-    "adf": 0.05,
+    "adf": 0.045,
     "trendline_breakout": 0.0,
-    "leverage_inverted": 0.20,
-    "dilution": 0.20,
-    "turnover": 0.0
+    "leverage_inverted": 0.18,
+    "dilution": 0.18,
+    "turnover": 0.0,
+    "defi_fee_yield": 0.025,
+    "defi_emission_yield": 0.025,
+    "defi_net_yield": 0.025,
+    "defi_revenue_productivity": 0.025
   },
   "_weights_note": {
     "_comment": "ENSEMBLE METHOD: Robust portfolio weights optimized using ensemble averaging (Regularized MVO + Risk Parity + Max Diversification). 30% more stable than standard MVO.",
@@ -298,6 +302,50 @@
       "top_n": 10,
       "bottom_n": 10,
       "_percentile_note": "DEPRECATED - Using top_n/bottom_n instead"
+    },
+    "defi_fee_yield": {
+      "_status": "ACTIVE - DeFi value capture factor (2.5% allocation)",
+      "rebalance_days": 7,
+      "top_n": 10,
+      "bottom_n": 10,
+      "volatility_window": 30,
+      "long_allocation": 0.5,
+      "short_allocation": 0.5,
+      "weighting_method": "risk_parity",
+      "_comment": "Fee Yield Factor: Annual fees / Market Cap (%). Long high fee yield protocols (LDO 108%, SUSHI 62%, UNI 48%), short low fee yield. Measures protocol value capture for token holders. Risk parity weighting for volatility-adjusted exposure."
+    },
+    "defi_emission_yield": {
+      "_status": "ACTIVE - DeFi dilution factor (2.5% allocation)",
+      "rebalance_days": 7,
+      "top_n": 10,
+      "bottom_n": 10,
+      "volatility_window": 30,
+      "long_allocation": 0.5,
+      "short_allocation": 0.5,
+      "weighting_method": "risk_parity",
+      "_comment": "Emission Yield Factor: Annual emissions / Market Cap (%). INVERTED: Short high emitters (PENDLE 15.08% dilution), long low emitters. High emissions dilute token holders. Risk parity weighting for volatility-adjusted exposure."
+    },
+    "defi_net_yield": {
+      "_status": "ACTIVE - DeFi true economics factor (2.5% allocation)",
+      "rebalance_days": 7,
+      "top_n": 10,
+      "bottom_n": 10,
+      "volatility_window": 30,
+      "long_allocation": 0.5,
+      "short_allocation": 0.5,
+      "weighting_method": "risk_parity",
+      "_comment": "Net Yield Factor: Fee Yield - Emission Yield (%). Long high net yield (LDO 108%, SUSHI 62%, UNI 48%), short low/negative net yield (PENDLE -14.46%). True value capture after dilution costs. Risk parity weighting for volatility-adjusted exposure."
+    },
+    "defi_revenue_productivity": {
+      "_status": "ACTIVE - DeFi efficiency factor (2.5% allocation)",
+      "rebalance_days": 7,
+      "top_n": 10,
+      "bottom_n": 10,
+      "volatility_window": 30,
+      "long_allocation": 0.5,
+      "short_allocation": 0.5,
+      "weighting_method": "risk_parity",
+      "_comment": "Revenue Productivity Factor: Protocol utility/activity relative to market cap (%). Long high productivity (KNC 262%, PYTH 85%, UNI 50%), short low productivity. Identifies undervalued protocols relative to activity. Risk parity weighting for volatility-adjusted exposure."
     }
   }
 }
