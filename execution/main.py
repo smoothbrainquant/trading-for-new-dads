@@ -871,25 +871,8 @@ def load_signal_config(config_path):
             params = cfg.get("params", {}) or {}
             weights = _normalize_weights(weights)
             
-            # Apply strategy caps (safety measure)
-            # Cap Mean Reversion at 5% due to extreme volatility (76.9%) and regime dependence
-            # Cap Leverage Inverted at 5% (testing)
-            # Cap Dilution at 5% - testing new strategy
-            strategy_caps = {
-                "mean_reversion": 0.05,
-                "leverage_inverted": 0.05,  # testing
-                "dilution": 0.05,  # testing
-            }
-            
+            # Safety caps removed - using weights directly from config
             capped_strategies = []
-            for strategy_name, max_weight in strategy_caps.items():
-                if strategy_name in weights and weights[strategy_name] > max_weight:
-                    old_weight = weights[strategy_name]
-                    weights[strategy_name] = max_weight
-                    capped_strategies.append((strategy_name, old_weight, max_weight))
-            
-            # Renormalize after capping
-            weights = _normalize_weights(weights)
             
             print(f"\nLoaded signal blend config from: {config_path}")
             if capped_strategies:
