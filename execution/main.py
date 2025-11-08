@@ -25,6 +25,10 @@ Supported strategies:
 - trendline_breakout: Momentum continuation based on trendline analysis (daily rebalance)
 - leverage_inverted: Long low-leverage, short high-leverage (testing, capped at 5%)
 - dilution: Token dilution factor - Long low dilution, short high dilution (testing, capped at 5%)
+- defi_fee_yield: DeFi fee yield - Long high fee capture, short low fee capture (7d rebalance)
+- defi_emission_yield: DeFi emissions - Short high dilution, long low dilution (7d rebalance, INVERTED)
+- defi_net_yield: DeFi net economics - Long positive net yield, short negative net yield (7d rebalance)
+- defi_revenue_productivity: DeFi efficiency - Long high productivity, short low productivity (7d rebalance)
 
 Weights can be provided via an external JSON config file so the backtesting suite
 can update them without code changes. Example config structure:
@@ -96,6 +100,10 @@ from execution.strategies import (
     strategy_adf,
     strategy_leverage_inverted,  # testing
     strategy_dilution,  # testing
+    strategy_defi_fee_yield,
+    strategy_defi_emission_yield,
+    strategy_defi_net_yield,
+    strategy_defi_revenue_productivity,
 )
 
 # Import cache management
@@ -126,6 +134,10 @@ STRATEGY_REGISTRY = {
     "adf": strategy_adf,
     "leverage_inverted": strategy_leverage_inverted,  # testing
     "dilution": strategy_dilution,  # testing
+    "defi_fee_yield": strategy_defi_fee_yield,
+    "defi_emission_yield": strategy_defi_emission_yield,
+    "defi_net_yield": strategy_defi_net_yield,
+    "defi_revenue_productivity": strategy_defi_revenue_productivity,
 }
 
 
@@ -351,6 +363,78 @@ def _build_strategy_params(
             "volatility_window": volatility_window,
             "long_allocation": long_allocation,
             "short_allocation": short_allocation,
+        }
+
+    elif strategy_name == "defi_fee_yield":
+        rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
+        top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
+        bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
+        volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
+        long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            "rebalance_days": rebalance_days,
+            "top_n": top_n,
+            "bottom_n": bottom_n,
+            "volatility_window": volatility_window,
+            "long_allocation": long_allocation,
+            "short_allocation": short_allocation,
+            "weighting_method": weighting_method,
+        }
+
+    elif strategy_name == "defi_emission_yield":
+        rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
+        top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
+        bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
+        volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
+        long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            "rebalance_days": rebalance_days,
+            "top_n": top_n,
+            "bottom_n": bottom_n,
+            "volatility_window": volatility_window,
+            "long_allocation": long_allocation,
+            "short_allocation": short_allocation,
+            "weighting_method": weighting_method,
+        }
+
+    elif strategy_name == "defi_net_yield":
+        rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
+        top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
+        bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
+        volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
+        long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            "rebalance_days": rebalance_days,
+            "top_n": top_n,
+            "bottom_n": bottom_n,
+            "volatility_window": volatility_window,
+            "long_allocation": long_allocation,
+            "short_allocation": short_allocation,
+            "weighting_method": weighting_method,
+        }
+
+    elif strategy_name == "defi_revenue_productivity":
+        rebalance_days = int(p.get("rebalance_days", 7)) if isinstance(p, dict) else 7
+        top_n = int(p.get("top_n", 10)) if isinstance(p, dict) else 10
+        bottom_n = int(p.get("bottom_n", 10)) if isinstance(p, dict) else 10
+        volatility_window = int(p.get("volatility_window", 30)) if isinstance(p, dict) else 30
+        long_allocation = float(p.get("long_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        short_allocation = float(p.get("short_allocation", 0.5)) if isinstance(p, dict) else 0.5
+        weighting_method = p.get("weighting_method", "risk_parity") if isinstance(p, dict) else "risk_parity"
+        return (historical_data, list(historical_data.keys()), strategy_notional), {
+            "rebalance_days": rebalance_days,
+            "top_n": top_n,
+            "bottom_n": bottom_n,
+            "volatility_window": volatility_window,
+            "long_allocation": long_allocation,
+            "short_allocation": short_allocation,
+            "weighting_method": weighting_method,
         }
 
     else:

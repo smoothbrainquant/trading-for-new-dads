@@ -11,6 +11,10 @@ from .volatility import strategy_volatility
 from .adf import strategy_adf
 from .leverage_inverted import strategy_leverage_inverted
 from .dilution import strategy_dilution
+from .defi_fee_yield import strategy_defi_fee_yield
+from .defi_emission_yield import strategy_defi_emission_yield
+from .defi_net_yield import strategy_defi_net_yield
+from .defi_revenue_productivity import strategy_defi_revenue_productivity
 
 __all__ = [
     "strategy_days_from_high",
@@ -26,4 +30,8 @@ __all__ = [
     "strategy_adf",
     "strategy_leverage_inverted",
     "strategy_dilution",
+    "strategy_defi_fee_yield",
+    "strategy_defi_emission_yield",
+    "strategy_defi_net_yield",
+    "strategy_defi_revenue_productivity",
 ]
