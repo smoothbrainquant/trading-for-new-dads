@@ -1,12 +1,15 @@
 import ccxt
 from datetime import datetime, timedelta, timezone
 import pandas as pd
+import time
 
 
 def ccxt_fetch_hyperliquid_daily_data(
     symbols=["BTC/USDC:USDC", "ETH/USDC:USDC", "SOL/USDC:USDC"],
     days=5,
     drop_partial_daily: bool = True,
+    rate_limit_delay: float = 0.1,
+    max_retries: int = 3,
 ):
     """
     Fetch daily OHLCV data from Hyperliquid for specified symbols.
@@ -15,6 +18,9 @@ def ccxt_fetch_hyperliquid_daily_data(
         symbols: List of trading pairs to fetch
         days: Number of days of historical data to retrieve
         drop_partial_daily: If True, drop the current (potentially incomplete) UTC daily candle
+        rate_limit_delay: Delay in seconds between API calls (default 0.1s = 10 req/s)
+                         Hyperliquid limits: 1200 req/min, 20 req/sec
+        max_retries: Maximum number of retries for rate limit errors (default 3)
 
     Returns:
         DataFrame with columns: date, symbol, open, high, low, close, volume
@@ -33,44 +39,65 @@ def ccxt_fetch_hyperliquid_daily_data(
 
     all_data = []
 
-    for symbol in symbols:
-        try:
-            print(f"\nFetching data for {symbol}...")
+    for i, symbol in enumerate(symbols):
+        retry_count = 0
+        success = False
+        
+        while retry_count < max_retries and not success:
+            try:
+                print(f"\nFetching data for {symbol}...")
 
-            # Fetch OHLCV data (timeframe='1d' for daily)
-            ohlcv = exchange.fetch_ohlcv(
-                symbol=symbol,
-                timeframe="1d",
-                since=since,
-                # Fetch an extra bar in case we drop the partial day
-                limit=days + (1 if drop_partial_daily else 0),
-            )
+                # Fetch OHLCV data (timeframe='1d' for daily)
+                ohlcv = exchange.fetch_ohlcv(
+                    symbol=symbol,
+                    timeframe="1d",
+                    since=since,
+                    # Fetch an extra bar in case we drop the partial day
+                    limit=days + (1 if drop_partial_daily else 0),
+                )
 
-            # Convert to DataFrame
-            df = pd.DataFrame(
-                ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
-            )
+                # Convert to DataFrame
+                df = pd.DataFrame(
+                    ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"]
+                )
 
-            # Convert timestamp to UTC date (naive UTC) and add symbol column
-            df["date"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True).dt.tz_localize(None)
-            df["symbol"] = symbol
-            df = df[["date", "symbol", "open", "high", "low", "close", "volume"]]
+                # Convert timestamp to UTC date (naive UTC) and add symbol column
+                df["date"] = pd.to_datetime(df["timestamp"], unit="ms", utc=True).dt.tz_localize(None)
+                df["symbol"] = symbol
+                df = df[["date", "symbol", "open", "high", "low", "close", "volume"]]
 
-            # Drop potential partial current UTC daily candle
-            if drop_partial_daily and not df.empty:
-                today_utc = datetime.utcnow().date()
-                df = df[df["date"].dt.date != today_utc]
+                # Drop potential partial current UTC daily candle
+                if drop_partial_daily and not df.empty:
+                    today_utc = datetime.now(timezone.utc).date()
+                    df = df[df["date"].dt.date != today_utc]
 
-            all_data.append(df)
+                all_data.append(df)
 
-            print(f"\n{symbol} - Last {len(df)} days:")
-            print(df.to_string(index=False))
-            print(f"\nSummary for {symbol}:")
-            print(f"  Price Range: ${df['low'].min():.2f} - ${df['high'].max():.2f}")
-            print(f"  Average Volume: {df['volume'].mean():.2f}")
+                print(f"\n{symbol} - Last {len(df)} days:")
+                print(df.to_string(index=False))
+                print(f"\nSummary for {symbol}:")
+                print(f"  Price Range: ${df['low'].min():.2f} - ${df['high'].max():.2f}")
+                print(f"  Average Volume: {df['volume'].mean():.2f}")
+                
+                success = True
 
-        except Exception as e:
-            print(f"Error fetching data for {symbol}: {str(e)}")
+            except ccxt.RateLimitExceeded as e:
+                retry_count += 1
+                if retry_count < max_retries:
+                    # Exponential backoff: 2^retry_count seconds
+                    backoff_delay = 2 ** retry_count
+                    print(f"Rate limit exceeded for {symbol}. Retry {retry_count}/{max_retries} after {backoff_delay}s...")
+                    time.sleep(backoff_delay)
+                else:
+                    print(f"Rate limit exceeded for {symbol} after {max_retries} retries. Skipping.")
+                    
+            except Exception as e:
+                print(f"Error fetching data for {symbol}: {str(e)}")
+                break  # Don't retry on non-rate-limit errors
+        
+        # Add delay between API calls to respect rate limits (except for last symbol)
+        if i < len(symbols) - 1 and success:
+            time.sleep(rate_limit_delay)
 
     # Combine all data into a single DataFrame
     if all_data:

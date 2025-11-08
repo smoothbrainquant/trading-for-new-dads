@@ -90,6 +90,66 @@ class TestCCXTDataCollection(unittest.TestCase):
 
         self.assertIsInstance(result, pd.DataFrame)
 
+    @patch("ccxt.hyperliquid")
+    @patch("time.sleep")
+    def test_ccxt_fetch_respects_rate_limit_delay(self, mock_sleep, mock_exchange_class):
+        """Test that function adds delay between API calls"""
+        mock_exchange = MagicMock()
+        mock_exchange_class.return_value = mock_exchange
+        mock_exchange.parse8601.return_value = int(datetime.now().timestamp() * 1000)
+        
+        # Mock OHLCV data
+        mock_ohlcv = [
+            [int(datetime.now().timestamp() * 1000), 100, 110, 95, 105, 1000],
+        ]
+        mock_exchange.fetch_ohlcv.return_value = mock_ohlcv
+
+        # Call with multiple symbols and custom rate_limit_delay
+        result = ccxt_fetch_hyperliquid_daily_data(
+            symbols=["BTC/USDC:USDC", "ETH/USDC:USDC"], 
+            days=5,
+            rate_limit_delay=0.2
+        )
+
+        # Should have called sleep once (between 2 symbols)
+        self.assertEqual(mock_sleep.call_count, 1)
+        mock_sleep.assert_called_with(0.2)
+        self.assertIsInstance(result, pd.DataFrame)
+
+    @patch("ccxt.hyperliquid")
+    @patch("time.sleep")
+    def test_ccxt_fetch_retries_on_rate_limit(self, mock_sleep, mock_exchange_class):
+        """Test that function retries on rate limit errors with exponential backoff"""
+        import ccxt
+        
+        mock_exchange = MagicMock()
+        mock_exchange_class.return_value = mock_exchange
+        mock_exchange.parse8601.return_value = int(datetime.now().timestamp() * 1000)
+        
+        # First call raises RateLimitExceeded, second call succeeds
+        # Use a past date to avoid drop_partial_daily filtering
+        past_date = datetime.now() - timedelta(days=2)
+        mock_ohlcv = [
+            [int(past_date.timestamp() * 1000), 100, 110, 95, 105, 1000],
+        ]
+        mock_exchange.fetch_ohlcv.side_effect = [
+            ccxt.RateLimitExceeded("Rate limit exceeded"),
+            mock_ohlcv
+        ]
+
+        # Call function (disable drop_partial_daily to ensure we get the data)
+        result = ccxt_fetch_hyperliquid_daily_data(
+            symbols=["BTC/USDC:USDC"], 
+            days=5,
+            max_retries=3,
+            drop_partial_daily=False
+        )
+
+        # Should have retried once with 2 second backoff (2^1)
+        self.assertIn(unittest.mock.call(2), mock_sleep.call_args_list)
+        self.assertIsInstance(result, pd.DataFrame)
+        self.assertEqual(len(result), 1)
+
 
 class TestCoinalyzeClient(unittest.TestCase):
     """Test Coinalyze API client functions"""
