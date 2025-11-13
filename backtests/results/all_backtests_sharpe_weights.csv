@@ -1,12 +1,2 @@
 Strategy,Description,Sharpe Ratio,Weight,Weight_Pct
-Volatility Factor,Strategy: long_low_short_high (VECTORIZED),1.0804866855640243,0.19483842375358654,19.483842375358655
-Dilution Factor,"Long low dilution, Short high dilution, 7d rebal",1.034394448565923,0.1865268555279227,18.65268555279227
-Leverage Inverted,"LONG low leverage, SHORT high leverage, Risk Parity, 7d rebal",0.7948159800416938,0.1433249430969591,14.332494309695909
-Kurtosis Factor,"BEAR ONLY: Long low kurtosis, Short high kurtosis, 14d rebal (REGIME-FILTERED)",0.6172607975012078,0.11130736031905568,11.130736031905569
-Breakout Signal,"Entry: 50d, Exit: 70d (VECTORIZED)",0.38690107277401464,0.06976781498099621,6.976781498099621
-Beta Factor (BAB),"Strategy: BAB, Weighting: equal_weight, Rebal: 5d (VECTORIZED)",0.16537451729116823,0.0490391003869133,4.90391003869133
-Mean Reversion,"Z-score threshold: 1.0, 2d holding (VECTORIZED)",-0.161001842354836,0.0490391003869133,4.90391003869133
-Size Factor,"LONG small caps, SHORT large caps, risk parity weighting, 10d rebal (VECTORIZED)",-0.4131904742832302,0.0490391003869133,4.90391003869133
-Carry Factor,"Top 10 short, Bottom 10 long (VECTORIZED)",-0.029531469640765574,0.0490391003869133,4.90391003869133
-Days from High,Max 20 days from 200d high (VECTORIZED),-0.5048500120995021,0.0490391003869133,4.90391003869133
-ADF (Blended),"Mode: blended, ADF window: 60d, Regime-aware allocation (PARTIALLY VECTORIZED)",-0.03373564751649043,0.0490391003869133,4.90391003869133
+Turnover Factor,"Long high turnover, Short low turnover (30d rebalance)",-0.2798611285711325,1.0,100.0

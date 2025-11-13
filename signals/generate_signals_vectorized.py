@@ -141,7 +141,10 @@ def assign_quintiles_vectorized(
         df['quintile'] = df.groupby('date')[factor_column].transform(assign_quintile)
     else:
         # Reverse the factor for descending order
-        df['quintile'] = df.groupby('date')[-df[factor_column]].transform(assign_quintile)
+        # Create a temporary negated column
+        df['_temp_negated'] = -df[factor_column]
+        df['quintile'] = df.groupby('date')['_temp_negated'].transform(assign_quintile)
+        df = df.drop(columns=['_temp_negated'])
     
     return df
 
@@ -628,14 +631,16 @@ def calculate_portfolio_returns_vectorized(
     
     This is dramatically faster than looping through dates.
     
+    For rebalancing strategies: weights are forward-filled between rebalance dates.
+    
     Args:
-        weights_df: DataFrame with date, symbol, weight columns
-        returns_df: DataFrame with date, symbol, daily_return columns
+        weights_df: DataFrame with date, symbol, weight columns (on rebalance dates)
+        returns_df: DataFrame with date, symbol, daily_return columns (all trading days)
         symbol_col_weights: Name of symbol column in weights_df
         symbol_col_returns: Name of symbol column in returns_df
     
     Returns:
-        pd.DataFrame: DataFrame with date and portfolio_return columns
+        pd.DataFrame: DataFrame with date and portfolio_return columns (all trading days)
     """
     # Ensure symbol columns have same name for merge
     weights_to_merge = weights_df[['date', symbol_col_weights, 'weight']].copy()
@@ -644,9 +649,35 @@ def calculate_portfolio_returns_vectorized(
     returns_to_merge = returns_df[['date', symbol_col_returns, 'daily_return']].copy()
     returns_to_merge.columns = ['date', 'symbol', 'daily_return']
     
-    # Merge weights and returns on date and symbol
+    # Get all unique dates from returns (all trading days)
+    all_dates = sorted(returns_to_merge['date'].unique())
+    rebalance_dates = sorted(weights_to_merge['date'].unique())
+    
+    # Forward-fill weights: for each date, find the most recent rebalance date
+    date_to_rebalance = {}
+    current_rebalance = None
+    for date in all_dates:
+        # Find the most recent rebalance date <= current date
+        valid_rebalances = [d for d in rebalance_dates if d <= date]
+        if valid_rebalances:
+            current_rebalance = max(valid_rebalances)
+            date_to_rebalance[date] = current_rebalance
+    
+    # Create expanded weights DataFrame with weights for all dates
+    expanded_weights = []
+    for date, rebalance_date in date_to_rebalance.items():
+        date_weights = weights_to_merge[weights_to_merge['date'] == rebalance_date].copy()
+        date_weights['date'] = date  # Change rebalance date to actual date
+        expanded_weights.append(date_weights)
+    
+    if not expanded_weights:
+        return pd.DataFrame(columns=['date', 'portfolio_return'])
+    
+    expanded_weights_df = pd.concat(expanded_weights, ignore_index=True)
+    
+    # Merge expanded weights with returns
     merged = pd.merge(
-        weights_to_merge,
+        expanded_weights_df,
         returns_to_merge,
         on=['date', 'symbol'],
         how='inner'
@@ -1015,11 +1046,19 @@ def generate_turnover_signals_vectorized(
     Returns:
         pd.DataFrame: Signals with date, symbol, turnover_pct, percentile, quintile, signal columns
     """
-    # Merge price and market cap data
+    # Normalize symbols: extract base symbol from price data (e.g., 'BTC/USD' -> 'BTC')
+    price_df = price_data[['date', 'symbol', 'volume']].copy()
+    price_df['base_symbol'] = price_df['symbol'].apply(lambda x: x.split('/')[0] if '/' in str(x) else x)
+    
+    # Normalize market cap symbols
+    mcap_df = marketcap_data[['date', 'symbol', 'market_cap']].copy()
+    mcap_df['base_symbol'] = mcap_df['symbol'].apply(lambda x: x.split('/')[0] if '/' in str(x) else x)
+    
+    # Merge price and market cap data on base_symbol
     df = pd.merge(
-        price_data[['date', 'symbol', 'volume']],
-        marketcap_data[['date', 'symbol', 'market_cap']],
-        on=['date', 'symbol'],
+        price_df[['date', 'symbol', 'base_symbol', 'volume']],
+        mcap_df[['date', 'base_symbol', 'market_cap']],
+        on=['date', 'base_symbol'],
         how='inner'
     )
     
@@ -1042,6 +1081,13 @@ def generate_turnover_signals_vectorized(
         factor_column='turnover_pct',
         num_quintiles=num_quintiles,
         ascending=False  # High turnover = lower quintile number (better)
+    )
+    
+    # Also assign percentiles for signal generation
+    df = assign_percentiles_vectorized(
+        df,
+        factor_column='turnover_pct',
+        ascending=False  # High turnover = higher percentile (better)
     )
     
     # Generate signals based on strategy
