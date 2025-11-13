@@ -105,7 +105,7 @@ def calculate_volatility(price_df, symbol, end_date, lookback_days=90):
     return volatility
 
 
-def construct_risk_parity_portfolio(signals, price_df, rebal_date, top_n=10):
+def construct_risk_parity_portfolio(signals, price_df, rebal_date, top_n=10, vol_lookback=90):
     """Construct risk parity weighted long/short portfolio."""
     valid_signals = signals[signals['dilution_velocity'].notna()].copy()
     valid_signals = valid_signals.nsmallest(150, 'rank')
@@ -118,10 +118,10 @@ def construct_risk_parity_portfolio(signals, price_df, rebal_date, top_n=10):
     short_candidates = valid_signals.tail(top_n).copy()
     
     long_candidates['volatility'] = long_candidates['symbol'].apply(
-        lambda s: calculate_volatility(price_df, s, rebal_date)
+        lambda s: calculate_volatility(price_df, s, rebal_date, lookback_days=vol_lookback)
     )
     short_candidates['volatility'] = short_candidates['symbol'].apply(
-        lambda s: calculate_volatility(price_df, s, rebal_date)
+        lambda s: calculate_volatility(price_df, s, rebal_date, lookback_days=vol_lookback)
     )
     
     long_candidates = long_candidates[long_candidates['volatility'].notna()]

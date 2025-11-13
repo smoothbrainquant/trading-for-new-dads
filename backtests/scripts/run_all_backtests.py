@@ -1018,7 +1018,7 @@ def run_dilution_factor_backtest(price_data, **kwargs):
         
         # Backtest parameters
         rebalance_days = kwargs.get("rebalance_days", 7)  # Weekly
-        top_n = kwargs.get("top_n", 10)
+        top_n = kwargs.get("top_n", 5)  # 5 long + 5 short positions (user requested)
         transaction_cost = kwargs.get("transaction_cost", 0.001)
         
         # Create rebalance dates
@@ -1047,7 +1047,7 @@ def run_dilution_factor_backtest(price_data, **kwargs):
         for i, rebal_date in enumerate(rebalance_dates):
             date_signals = signals_df[signals_df['date'] == rebal_date].copy()
             new_portfolio = construct_risk_parity_portfolio(
-                date_signals, price_df, rebal_date, top_n=top_n
+                date_signals, price_df, rebal_date, top_n=top_n, vol_lookback=30
             )
             
             if len(new_portfolio) == 0:
@@ -1625,8 +1625,8 @@ def main():
     parser.add_argument(
         "--data-file",
         type=str,
-        default="data/raw/combined_coinbase_coinmarketcap_daily.csv",
-        help="Path to historical OHLCV data CSV file",
+        default="data/raw/coinbase_top200_daily_20200101_to_present_20251025_171900.csv",
+        help="Path to historical OHLCV data CSV file (max coverage: 207 coins)",
     )
     parser.add_argument(
         "--marketcap-file",
