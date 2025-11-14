@@ -1,28 +1,7 @@
 {
-  "timestamp": "2025-11-03T01:19:34.158104",
+  "timestamp": "2025-11-14T11:34:23.447168",
   "exchange_code": "aggregated",
   "data": [
-    {
-      "base": "MET",
-      "quote": "USDT",
-      "coinalyze_symbol": "METUSDT_PERP.A",
-      "funding_rate": 0.015146,
-      "funding_rate_pct": 1.5146
-    },
-    {
-      "base": "ARB",
-      "quote": "USDT",
-      "coinalyze_symbol": "ARBUSDT_PERP.A",
-      "funding_rate": 0.01,
-      "funding_rate_pct": 1.0
-    },
-    {
-      "base": "NEAR",
-      "quote": "USDT",
-      "coinalyze_symbol": "NEARUSDT_PERP.A",
-      "funding_rate": 0.01,
-      "funding_rate_pct": 1.0
-    },
     {
       "base": "ENS",
       "quote": "USDT",
@@ -31,58 +10,9 @@
       "funding_rate_pct": 1.0
     },
     {
-      "base": "APE",
+      "base": "IOTA",
       "quote": "USDT",
-      "coinalyze_symbol": "APEUSDT_PERP.A",
-      "funding_rate": 0.01,
-      "funding_rate_pct": 1.0
-    },
-    {
-      "base": "DYDX",
-      "quote": "USDT",
-      "coinalyze_symbol": "DYDXUSDT_PERP.A",
-      "funding_rate": 0.01,
-      "funding_rate_pct": 1.0
-    },
-    {
-      "base": "INJ",
-      "quote": "USDT",
-      "coinalyze_symbol": "INJUSDT_PERP.A",
-      "funding_rate": 0.01,
-      "funding_rate_pct": 1.0
-    },
-    {
-      "base": "CFX",
-      "quote": "USDT",
-      "coinalyze_symbol": "CFXUSDT_PERP.A",
-      "funding_rate": 0.01,
-      "funding_rate_pct": 1.0
-    },
-    {
-      "base": "AR",
-      "quote": "USDT",
-      "coinalyze_symbol": "ARUSDT_PERP.A",
-      "funding_rate": 0.01,
-      "funding_rate_pct": 1.0
-    },
-    {
-      "base": "NEO",
-      "quote": "USDT",
-      "coinalyze_symbol": "NEOUSDT_PERP.A",
-      "funding_rate": 0.01,
-      "funding_rate_pct": 1.0
-    },
-    {
-      "base": "PENDLE",
-      "quote": "USDT",
-      "coinalyze_symbol": "PENDLEUSDT_PERP.A",
-      "funding_rate": 0.01,
-      "funding_rate_pct": 1.0
-    },
-    {
-      "base": "RUNE",
-      "quote": "USDT",
-      "coinalyze_symbol": "RUNEUSDT_PERP.A",
+      "coinalyze_symbol": "IOTAUSDT_PERP.A",
       "funding_rate": 0.01,
       "funding_rate_pct": 1.0
     },
@@ -94,149 +24,142 @@
       "funding_rate_pct": 1.0
     },
     {
-      "base": "AAVE",
+      "base": "UNI",
       "quote": "USDT",
-      "coinalyze_symbol": "AAVEUSDT_PERP.A",
-      "funding_rate": 0.009629,
-      "funding_rate_pct": 0.9629000000000001
+      "coinalyze_symbol": "UNIUSDT_PERP.A",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0
     },
     {
-      "base": "LINK",
+      "base": "NEO",
       "quote": "USDT",
-      "coinalyze_symbol": "LINKUSDT_PERP.A",
-      "funding_rate": 0.009373,
-      "funding_rate_pct": 0.9372999999999999
+      "coinalyze_symbol": "NEOUSDT_PERP.A",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0
+    },
+    {
+      "base": "LTC",
+      "quote": "USDT",
+      "coinalyze_symbol": "LTCUSDT_PERP.A",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0
+    },
+    {
+      "base": "STX",
+      "quote": "USDT",
+      "coinalyze_symbol": "STXUSDT_PERP.A",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0
     },
     {
       "base": "CRV",
       "quote": "USDT",
       "coinalyze_symbol": "CRVUSDT_PERP.A",
-      "funding_rate": 0.009275,
-      "funding_rate_pct": 0.9275
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0
     },
     {
-      "base": "ETH",
+      "base": "DYDX",
       "quote": "USDT",
-      "coinalyze_symbol": "ETHUSDT_PERP.A",
-      "funding_rate": 0.008937,
-      "funding_rate_pct": 0.8937
+      "coinalyze_symbol": "DYDXUSDT_PERP.A",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0
     },
     {
-      "base": "DOGE",
+      "base": "PENDLE",
       "quote": "USDT",
-      "coinalyze_symbol": "DOGEUSDT_PERP.A",
-      "funding_rate": 0.00818,
-      "funding_rate_pct": 0.818
+      "coinalyze_symbol": "PENDLEUSDT_PERP.A",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0
     },
     {
-      "base": "UNI",
+      "base": "NEAR",
       "quote": "USDT",
-      "coinalyze_symbol": "UNIUSDT_PERP.A",
-      "funding_rate": 0.007324,
-      "funding_rate_pct": 0.7323999999999999
+      "coinalyze_symbol": "NEARUSDT_PERP.A",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0
+    },
+    {
+      "base": "ADA",
+      "quote": "USDT",
+      "coinalyze_symbol": "ADAUSDT_PERP.A",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0
+    },
+    {
+      "base": "ALGO",
+      "quote": "USDT",
+      "coinalyze_symbol": "ALGOUSDT_PERP.A",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0
+    },
+    {
+      "base": "ZEC",
+      "quote": "USDT",
+      "coinalyze_symbol": "ZECUSDT_PERP.A",
+      "funding_rate": 0.01,
+      "funding_rate_pct": 1.0
     },
     {
       "base": "BTC",
       "quote": "USDT",
       "coinalyze_symbol": "BTCUSDT_PERP.A",
-      "funding_rate": 0.006098,
-      "funding_rate_pct": 0.6098
+      "funding_rate": 0.009126,
+      "funding_rate_pct": 0.9126000000000001
     },
     {
-      "base": "SUI",
+      "base": "ARB",
       "quote": "USDT",
-      "coinalyze_symbol": "SUIUSDT_PERP.A",
-      "funding_rate": 0.005979,
-      "funding_rate_pct": 0.5979
+      "coinalyze_symbol": "ARBUSDT_PERP.A",
+      "funding_rate": 0.009084,
+      "funding_rate_pct": 0.9084
     },
     {
-      "base": "XLM",
+      "base": "FIL",
       "quote": "USDT",
-      "coinalyze_symbol": "XLMUSDT_PERP.A",
-      "funding_rate": 0.005954,
-      "funding_rate_pct": 0.5954
+      "coinalyze_symbol": "FILUSDT_PERP.A",
+      "funding_rate": 0.008169,
+      "funding_rate_pct": 0.8169
     },
     {
-      "base": "SAND",
+      "base": "MINA",
       "quote": "USDT",
-      "coinalyze_symbol": "SANDUSDT_PERP.A",
-      "funding_rate": 0.005899,
-      "funding_rate_pct": 0.5899
+      "coinalyze_symbol": "MINAUSDT_PERP.A",
+      "funding_rate": 0.007274,
+      "funding_rate_pct": 0.7274
     },
     {
-      "base": "S",
+      "base": "DOT",
       "quote": "USDT",
-      "coinalyze_symbol": "SUSDT_PERP.A",
-      "funding_rate": 0.005,
-      "funding_rate_pct": 0.5
+      "coinalyze_symbol": "DOTUSDT_PERP.A",
+      "funding_rate": 0.007272,
+      "funding_rate_pct": 0.7272
+    },
+    {
+      "base": "AAVE",
+      "quote": "USDT",
+      "coinalyze_symbol": "AAVEUSDT_PERP.A",
+      "funding_rate": 0.007235,
+      "funding_rate_pct": 0.7235
+    },
+    {
+      "base": "LINK",
+      "quote": "USDT",
+      "coinalyze_symbol": "LINKUSDT_PERP.A",
+      "funding_rate": 0.005706,
+      "funding_rate_pct": 0.5706
+    },
+    {
+      "base": "DOGE",
+      "quote": "USDT",
+      "coinalyze_symbol": "DOGEUSDT_PERP.A",
+      "funding_rate": 0.005129,
+      "funding_rate_pct": 0.5129
     },
     {
       "base": "WLFI",
       "quote": "USDT",
       "coinalyze_symbol": "WLFIUSDT_PERP.A",
-      "funding_rate": 0.005,
-      "funding_rate_pct": 0.5
-    },
-    {
-      "base": "MERL",
-      "quote": "USDT",
-      "coinalyze_symbol": "MERLUSDT_PERP.A",
-      "funding_rate": 0.005,
-      "funding_rate_pct": 0.5
-    },
-    {
-      "base": "LINEA",
-      "quote": "USDT",
-      "coinalyze_symbol": "LINEAUSDT_PERP.A",
-      "funding_rate": 0.005,
-      "funding_rate_pct": 0.5
-    },
-    {
-      "base": "TIA",
-      "quote": "USDT",
-      "coinalyze_symbol": "TIAUSDT_PERP.A",
-      "funding_rate": 0.005,
-      "funding_rate_pct": 0.5
-    },
-    {
-      "base": "HYPE",
-      "quote": "USDT",
-      "coinalyze_symbol": "HYPEUSDT_PERP.A",
-      "funding_rate": 0.005,
-      "funding_rate_pct": 0.5
-    },
-    {
-      "base": "BRETT",
-      "quote": "USDT",
-      "coinalyze_symbol": "BRETTUSDT_PERP.A",
-      "funding_rate": 0.005,
-      "funding_rate_pct": 0.5
-    },
-    {
-      "base": "FARTCOIN",
-      "quote": "USDT",
-      "coinalyze_symbol": "FARTCOINUSDT_PERP.A",
-      "funding_rate": 0.005,
-      "funding_rate_pct": 0.5
-    },
-    {
-      "base": "PENGU",
-      "quote": "USDT",
-      "coinalyze_symbol": "PENGUUSDT_PERP.A",
-      "funding_rate": 0.005,
-      "funding_rate_pct": 0.5
-    },
-    {
-      "base": "WIF",
-      "quote": "USDT",
-      "coinalyze_symbol": "WIFUSDT_PERP.A",
-      "funding_rate": 0.005,
-      "funding_rate_pct": 0.5
-    },
-    {
-      "base": "2Z",
-      "quote": "USDT",
-      "coinalyze_symbol": "2ZUSDT_PERP.A",
       "funding_rate": 0.005,
       "funding_rate_pct": 0.5
     },
@@ -248,23 +171,37 @@
       "funding_rate_pct": 0.5
     },
     {
-      "base": "KAS",
+      "base": "WIF",
       "quote": "USDT",
-      "coinalyze_symbol": "KASUSDT_PERP.A",
+      "coinalyze_symbol": "WIFUSDT_PERP.A",
       "funding_rate": 0.005,
       "funding_rate_pct": 0.5
     },
     {
-      "base": "POL",
+      "base": "TIA",
       "quote": "USDT",
-      "coinalyze_symbol": "POLUSDT_PERP.A",
+      "coinalyze_symbol": "TIAUSDT_PERP.A",
       "funding_rate": 0.005,
       "funding_rate_pct": 0.5
     },
     {
-      "base": "BERA",
+      "base": "FARTCOIN",
       "quote": "USDT",
-      "coinalyze_symbol": "BERAUSDT_PERP.A",
+      "coinalyze_symbol": "FARTCOINUSDT_PERP.A",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5
+    },
+    {
+      "base": "HYPE",
+      "quote": "USDT",
+      "coinalyze_symbol": "HYPEUSDT_PERP.A",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5
+    },
+    {
+      "base": "RENDER",
+      "quote": "USDT",
+      "coinalyze_symbol": "RENDERUSDT_PERP.A",
       "funding_rate": 0.005,
       "funding_rate_pct": 0.5
     },
@@ -276,144 +213,144 @@
       "funding_rate_pct": 0.5
     },
     {
-      "base": "LTC",
+      "base": "PUMP",
       "quote": "USDT",
-      "coinalyze_symbol": "LTCUSDT_PERP.A",
-      "funding_rate": 0.004957,
-      "funding_rate_pct": 0.4957
+      "coinalyze_symbol": "PUMPUSDT_PERP.A",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5
     },
     {
-      "base": "EIGEN",
+      "base": "S",
       "quote": "USDT",
-      "coinalyze_symbol": "EIGENUSDT_PERP.A",
-      "funding_rate": 0.004391,
-      "funding_rate_pct": 0.4391
-    },
-    {
-      "base": "OP",
-      "quote": "USDT",
-      "coinalyze_symbol": "OPUSDT_PERP.A",
-      "funding_rate": 0.003509,
-      "funding_rate_pct": 0.3509
-    },
-    {
-      "base": "LDO",
-      "quote": "USDT",
-      "coinalyze_symbol": "LDOUSDT_PERP.A",
-      "funding_rate": 0.003404,
-      "funding_rate_pct": 0.3404
-    },
-    {
-      "base": "ETC",
-      "quote": "USDT",
-      "coinalyze_symbol": "ETCUSDT_PERP.A",
-      "funding_rate": 0.003122,
-      "funding_rate_pct": 0.31220000000000003
-    },
-    {
-      "base": "SOL",
-      "quote": "USDT",
-      "coinalyze_symbol": "SOLUSDT_PERP.A",
-      "funding_rate": 0.002882,
-      "funding_rate_pct": 0.2882
-    },
-    {
-      "base": "TON",
-      "quote": "USDT",
-      "coinalyze_symbol": "TONUSDT_PERP.A",
-      "funding_rate": 0.002805,
-      "funding_rate_pct": 0.2805
-    },
-    {
-      "base": "SPX",
-      "quote": "USDT",
-      "coinalyze_symbol": "SPXUSDT_PERP.A",
-      "funding_rate": 0.002795,
-      "funding_rate_pct": 0.2795
-    },
-    {
-      "base": "SYRUP",
-      "quote": "USDT",
-      "coinalyze_symbol": "SYRUPUSDT_PERP.A",
-      "funding_rate": 0.002734,
-      "funding_rate_pct": 0.2734
+      "coinalyze_symbol": "SUSDT_PERP.A",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5
     },
     {
       "base": "TAO",
       "quote": "USDT",
       "coinalyze_symbol": "TAOUSDT_PERP.A",
-      "funding_rate": 0.002594,
-      "funding_rate_pct": 0.2594
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5
     },
     {
-      "base": "STX",
+      "base": "SPX",
       "quote": "USDT",
-      "coinalyze_symbol": "STXUSDT_PERP.A",
-      "funding_rate": 0.002355,
-      "funding_rate_pct": 0.2355
+      "coinalyze_symbol": "SPXUSDT_PERP.A",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5
     },
     {
-      "base": "RENDER",
+      "base": "STRK",
       "quote": "USDT",
-      "coinalyze_symbol": "RENDERUSDT_PERP.A",
-      "funding_rate": 0.001612,
-      "funding_rate_pct": 0.16119999999999998
+      "coinalyze_symbol": "STRKUSDT_PERP.A",
+      "funding_rate": 0.005,
+      "funding_rate_pct": 0.5
     },
     {
-      "base": "RSR",
+      "base": "SKY",
       "quote": "USDT",
-      "coinalyze_symbol": "RSRUSDT_PERP.A",
-      "funding_rate": 0.001354,
-      "funding_rate_pct": 0.1354
+      "coinalyze_symbol": "SKYUSDT_PERP.A",
+      "funding_rate": 0.004821,
+      "funding_rate_pct": 0.4821
     },
     {
-      "base": "PAXG",
+      "base": "OP",
       "quote": "USDT",
-      "coinalyze_symbol": "PAXGUSDT_PERP.A",
-      "funding_rate": 0.001234,
-      "funding_rate_pct": 0.12340000000000001
+      "coinalyze_symbol": "OPUSDT_PERP.A",
+      "funding_rate": 0.004483,
+      "funding_rate_pct": 0.4483
     },
     {
-      "base": "PUMP",
+      "base": "TON",
       "quote": "USDT",
-      "coinalyze_symbol": "PUMPUSDT_PERP.A",
-      "funding_rate": 0.001079,
-      "funding_rate_pct": 0.10790000000000001
+      "coinalyze_symbol": "TONUSDT_PERP.A",
+      "funding_rate": 0.004064,
+      "funding_rate_pct": 0.4064
+    },
+    {
+      "base": "SYRUP",
+      "quote": "USDT",
+      "coinalyze_symbol": "SYRUPUSDT_PERP.A",
+      "funding_rate": 0.003838,
+      "funding_rate_pct": 0.3838
+    },
+    {
+      "base": "PENGU",
+      "quote": "USDT",
+      "coinalyze_symbol": "PENGUUSDT_PERP.A",
+      "funding_rate": 0.003732,
+      "funding_rate_pct": 0.37320000000000003
     },
     {
       "base": "XRP",
       "quote": "USDT",
       "coinalyze_symbol": "XRPUSDT_PERP.A",
-      "funding_rate": 0.000917,
-      "funding_rate_pct": 0.09169999999999999
+      "funding_rate": 0.003623,
+      "funding_rate_pct": 0.3623
     },
     {
-      "base": "TRX",
+      "base": "XPL",
       "quote": "USDT",
-      "coinalyze_symbol": "TRXUSDT_PERP.A",
-      "funding_rate": 0.000388,
-      "funding_rate_pct": 0.0388
+      "coinalyze_symbol": "XPLUSDT_PERP.A",
+      "funding_rate": 0.003591,
+      "funding_rate_pct": 0.3591
     },
     {
-      "base": "ZK",
+      "base": "ETH",
       "quote": "USDT",
-      "coinalyze_symbol": "ZKUSDT_PERP.A",
-      "funding_rate": 0.000219,
-      "funding_rate_pct": 0.021900000000000003
+      "coinalyze_symbol": "ETHUSDT_PERP.A",
+      "funding_rate": 0.003573,
+      "funding_rate_pct": 0.35729999999999995
     },
     {
-      "base": "CAKE",
+      "base": "EIGEN",
       "quote": "USDT",
-      "coinalyze_symbol": "CAKEUSDT_PERP.A",
-      "funding_rate": 0.000206,
-      "funding_rate_pct": 0.0206
+      "coinalyze_symbol": "EIGENUSDT_PERP.A",
+      "funding_rate": 0.00356,
+      "funding_rate_pct": 0.356
     },
     {
-      "base": "PYTH",
+      "base": "SNX",
       "quote": "USDT",
-      "coinalyze_symbol": "PYTHUSDT_PERP.A",
-      "funding_rate": 0.000197,
-      "funding_rate_pct": 0.0197
+      "coinalyze_symbol": "SNXUSDT_PERP.A",
+      "funding_rate": 0.003057,
+      "funding_rate_pct": 0.30569999999999997
+    },
+    {
+      "base": "ATOM",
+      "quote": "USDT",
+      "coinalyze_symbol": "ATOMUSDT_PERP.A",
+      "funding_rate": 0.002671,
+      "funding_rate_pct": 0.2671
+    },
+    {
+      "base": "LDO",
+      "quote": "USDT",
+      "coinalyze_symbol": "LDOUSDT_PERP.A",
+      "funding_rate": 0.002345,
+      "funding_rate_pct": 0.2345
+    },
+    {
+      "base": "BCH",
+      "quote": "USDT",
+      "coinalyze_symbol": "BCHUSDT_PERP.A",
+      "funding_rate": 0.001946,
+      "funding_rate_pct": 0.1946
+    },
+    {
+      "base": "VIRTUAL",
+      "quote": "USDT",
+      "coinalyze_symbol": "VIRTUALUSDT_PERP.A",
+      "funding_rate": 0.001389,
+      "funding_rate_pct": 0.1389
+    },
+    {
+      "base": "JTO",
+      "quote": "USDT",
+      "coinalyze_symbol": "JTOUSDT_PERP.A",
+      "funding_rate": 5.1e-05,
+      "funding_rate_pct": 0.0051
     },
     {
       "base": "BNB",
@@ -423,235 +360,354 @@
       "funding_rate_pct": 0.0
     },
     {
-      "base": "JTO",
+      "base": "LINEA",
       "quote": "USDT",
-      "coinalyze_symbol": "JTOUSDT_PERP.A",
-      "funding_rate": -0.00103,
-      "funding_rate_pct": -0.10300000000000001
-    },
-    {
-      "base": "STRK",
-      "quote": "USDT",
-      "coinalyze_symbol": "STRKUSDT_PERP.A",
-      "funding_rate": -0.001198,
-      "funding_rate_pct": -0.1198
-    },
-    {
-      "base": "FIL",
-      "quote": "USDT",
-      "coinalyze_symbol": "FILUSDT_PERP.A",
-      "funding_rate": -0.002458,
-      "funding_rate_pct": -0.24580000000000002
-    },
-    {
-      "base": "IMX",
-      "quote": "USDT",
-      "coinalyze_symbol": "IMXUSDT_PERP.A",
-      "funding_rate": -0.002579,
-      "funding_rate_pct": -0.2579
+      "coinalyze_symbol": "LINEAUSDT_PERP.A",
+      "funding_rate": -0.000262,
+      "funding_rate_pct": -0.0262
     },
     {
       "base": "ONDO",
       "quote": "USDT",
       "coinalyze_symbol": "ONDOUSDT_PERP.A",
-      "funding_rate": -0.002677,
-      "funding_rate_pct": -0.2677
+      "funding_rate": -0.00028,
+      "funding_rate_pct": -0.027999999999999997
     },
     {
-      "base": "XPL",
+      "base": "SUI",
       "quote": "USDT",
-      "coinalyze_symbol": "XPLUSDT_PERP.A",
-      "funding_rate": -0.00279,
-      "funding_rate_pct": -0.27899999999999997
+      "coinalyze_symbol": "SUIUSDT_PERP.A",
+      "funding_rate": -0.000629,
+      "funding_rate_pct": -0.0629
     },
     {
-      "base": "HBAR",
+      "base": "PAXG",
       "quote": "USDT",
-      "coinalyze_symbol": "HBARUSDT_PERP.A",
-      "funding_rate": -0.002825,
-      "funding_rate_pct": -0.2825
+      "coinalyze_symbol": "PAXGUSDT_PERP.A",
+      "funding_rate": -0.000638,
+      "funding_rate_pct": -0.0638
     },
     {
-      "base": "MORPHO",
+      "base": "ICP",
       "quote": "USDT",
-      "coinalyze_symbol": "MORPHOUSDT_PERP.A",
-      "funding_rate": -0.003321,
-      "funding_rate_pct": -0.3321
+      "coinalyze_symbol": "ICPUSDT_PERP.A",
+      "funding_rate": -0.000695,
+      "funding_rate_pct": -0.06949999999999999
     },
     {
-      "base": "SUPER",
+      "base": "SOL",
       "quote": "USDT",
-      "coinalyze_symbol": "SUPERUSDT_PERP.A",
-      "funding_rate": -0.003351,
-      "funding_rate_pct": -0.33509999999999995
+      "coinalyze_symbol": "SOLUSDT_PERP.A",
+      "funding_rate": -0.000995,
+      "funding_rate_pct": -0.0995
     },
     {
-      "base": "ZORA",
+      "base": "SAND",
       "quote": "USDT",
-      "coinalyze_symbol": "ZORAUSDT_PERP.A",
-      "funding_rate": -0.003598,
-      "funding_rate_pct": -0.3598
+      "coinalyze_symbol": "SANDUSDT_PERP.A",
+      "funding_rate": -0.001064,
+      "funding_rate_pct": -0.10640000000000001
     },
     {
-      "base": "ALGO",
+      "base": "KAS",
       "quote": "USDT",
-      "coinalyze_symbol": "ALGOUSDT_PERP.A",
-      "funding_rate": -0.004028,
-      "funding_rate_pct": -0.40280000000000005
+      "coinalyze_symbol": "KASUSDT_PERP.A",
+      "funding_rate": -0.00119,
+      "funding_rate_pct": -0.11900000000000001
     },
     {
-      "base": "ETHFI",
+      "base": "ZK",
       "quote": "USDT",
-      "coinalyze_symbol": "ETHFIUSDT_PERP.A",
-      "funding_rate": -0.004128,
-      "funding_rate_pct": -0.41279999999999994
+      "coinalyze_symbol": "ZKUSDT_PERP.A",
+      "funding_rate": -0.00155,
+      "funding_rate_pct": -0.155
     },
     {
-      "base": "ADA",
+      "base": "CAKE",
       "quote": "USDT",
-      "coinalyze_symbol": "ADAUSDT_PERP.A",
-      "funding_rate": -0.004468,
-      "funding_rate_pct": -0.4468
+      "coinalyze_symbol": "CAKEUSDT_PERP.A",
+      "funding_rate": -0.001836,
+      "funding_rate_pct": -0.18359999999999999
     },
     {
-      "base": "VIRTUAL",
+      "base": "CFX",
       "quote": "USDT",
-      "coinalyze_symbol": "VIRTUALUSDT_PERP.A",
-      "funding_rate": -0.005367,
-      "funding_rate_pct": -0.5367000000000001
+      "coinalyze_symbol": "CFXUSDT_PERP.A",
+      "funding_rate": -0.002109,
+      "funding_rate_pct": -0.21090000000000003
     },
     {
-      "base": "SNX",
+      "base": "IMX",
       "quote": "USDT",
-      "coinalyze_symbol": "SNXUSDT_PERP.A",
-      "funding_rate": -0.005894,
-      "funding_rate_pct": -0.5894
+      "coinalyze_symbol": "IMXUSDT_PERP.A",
+      "funding_rate": -0.002806,
+      "funding_rate_pct": -0.2806
     },
     {
-      "base": "ZRO",
+      "base": "GALA",
       "quote": "USDT",
-      "coinalyze_symbol": "ZROUSDT_PERP.A",
-      "funding_rate": -0.007487,
-      "funding_rate_pct": -0.7486999999999999
+      "coinalyze_symbol": "GALAUSDT_PERP.A",
+      "funding_rate": -0.003039,
+      "funding_rate_pct": -0.3039
     },
     {
-      "base": "TRUMP",
+      "base": "TRX",
       "quote": "USDT",
-      "coinalyze_symbol": "TRUMPUSDT_PERP.A",
-      "funding_rate": -0.008502,
-      "funding_rate_pct": -0.8502
+      "coinalyze_symbol": "TRXUSDT_PERP.A",
+      "funding_rate": -0.003252,
+      "funding_rate_pct": -0.3252
     },
     {
-      "base": "DOT",
+      "base": "AR",
       "quote": "USDT",
-      "coinalyze_symbol": "DOTUSDT_PERP.A",
-      "funding_rate": -0.009151,
-      "funding_rate_pct": -0.9150999999999999
+      "coinalyze_symbol": "ARUSDT_PERP.A",
+      "funding_rate": -0.00327,
+      "funding_rate_pct": -0.327
     },
     {
-      "base": "JUP",
+      "base": "MERL",
       "quote": "USDT",
-      "coinalyze_symbol": "JUPUSDT_PERP.A",
-      "funding_rate": -0.012091,
-      "funding_rate_pct": -1.2090999999999998
+      "coinalyze_symbol": "MERLUSDT_PERP.A",
+      "funding_rate": -0.003564,
+      "funding_rate_pct": -0.3564
     },
     {
-      "base": "BSV",
+      "base": "ETC",
       "quote": "USDT",
-      "coinalyze_symbol": "BSVUSDT_PERP.A",
-      "funding_rate": -0.014104,
-      "funding_rate_pct": -1.4104
-    },
-    {
-      "base": "ATOM",
-      "quote": "USDT",
-      "coinalyze_symbol": "ATOMUSDT_PERP.A",
-      "funding_rate": -0.017386,
-      "funding_rate_pct": -1.7386
-    },
-    {
-      "base": "IP",
-      "quote": "USDT",
-      "coinalyze_symbol": "IPUSDT_PERP.A",
-      "funding_rate": -0.019655,
-      "funding_rate_pct": -1.9654999999999998
-    },
-    {
-      "base": "AVAX",
-      "quote": "USDT",
-      "coinalyze_symbol": "AVAXUSDT_PERP.A",
-      "funding_rate": -0.022845,
-      "funding_rate_pct": -2.2845
-    },
-    {
-      "base": "BCH",
-      "quote": "USDT",
-      "coinalyze_symbol": "BCHUSDT_PERP.A",
-      "funding_rate": -0.023544,
-      "funding_rate_pct": -2.3544
-    },
-    {
-      "base": "APT",
-      "quote": "USDT",
-      "coinalyze_symbol": "APTUSDT_PERP.A",
-      "funding_rate": -0.026148,
-      "funding_rate_pct": -2.6148000000000002
-    },
-    {
-      "base": "WLD",
-      "quote": "USDT",
-      "coinalyze_symbol": "WLDUSDT_PERP.A",
-      "funding_rate": -0.03314,
-      "funding_rate_pct": -3.314
-    },
-    {
-      "base": "ZEN",
-      "quote": "USDT",
-      "coinalyze_symbol": "ZENUSDT_PERP.A",
-      "funding_rate": -0.034478,
-      "funding_rate_pct": -3.4478
+      "coinalyze_symbol": "ETCUSDT_PERP.A",
+      "funding_rate": -0.003969,
+      "funding_rate_pct": -0.39690000000000003
     },
     {
       "base": "SEI",
       "quote": "USDT",
       "coinalyze_symbol": "SEIUSDT_PERP.A",
-      "funding_rate": -0.037558,
-      "funding_rate_pct": -3.7558000000000002
+      "funding_rate": -0.003977,
+      "funding_rate_pct": -0.39769999999999994
+    },
+    {
+      "base": "PYTH",
+      "quote": "USDT",
+      "coinalyze_symbol": "PYTHUSDT_PERP.A",
+      "funding_rate": -0.004674,
+      "funding_rate_pct": -0.46740000000000004
+    },
+    {
+      "base": "TRUMP",
+      "quote": "USDT",
+      "coinalyze_symbol": "TRUMPUSDT_PERP.A",
+      "funding_rate": -0.005475,
+      "funding_rate_pct": -0.5475
+    },
+    {
+      "base": "BSV",
+      "quote": "USDT",
+      "coinalyze_symbol": "BSVUSDT_PERP.A",
+      "funding_rate": -0.006748,
+      "funding_rate_pct": -0.6748
+    },
+    {
+      "base": "HBAR",
+      "quote": "USDT",
+      "coinalyze_symbol": "HBARUSDT_PERP.A",
+      "funding_rate": -0.007986,
+      "funding_rate_pct": -0.7986
+    },
+    {
+      "base": "COMP",
+      "quote": "USDT",
+      "coinalyze_symbol": "COMPUSDT_PERP.A",
+      "funding_rate": -0.00799,
+      "funding_rate_pct": -0.799
+    },
+    {
+      "base": "APE",
+      "quote": "USDT",
+      "coinalyze_symbol": "APEUSDT_PERP.A",
+      "funding_rate": -0.009023,
+      "funding_rate_pct": -0.9023
+    },
+    {
+      "base": "ZRO",
+      "quote": "USDT",
+      "coinalyze_symbol": "ZROUSDT_PERP.A",
+      "funding_rate": -0.00971,
+      "funding_rate_pct": -0.971
+    },
+    {
+      "base": "ZEN",
+      "quote": "USDT",
+      "coinalyze_symbol": "ZENUSDT_PERP.A",
+      "funding_rate": -0.01006,
+      "funding_rate_pct": -1.006
     },
     {
       "base": "ENA",
       "quote": "USDT",
       "coinalyze_symbol": "ENAUSDT_PERP.A",
-      "funding_rate": -0.038713,
-      "funding_rate_pct": -3.8712999999999997
+      "funding_rate": -0.01111,
+      "funding_rate_pct": -1.111
+    },
+    {
+      "base": "POL",
+      "quote": "USDT",
+      "coinalyze_symbol": "POLUSDT_PERP.A",
+      "funding_rate": -0.011408,
+      "funding_rate_pct": -1.1408
     },
     {
       "base": "0G",
       "quote": "USDT",
       "coinalyze_symbol": "0GUSDT_PERP.A",
-      "funding_rate": -0.050178,
-      "funding_rate_pct": -5.0178
+      "funding_rate": -0.012198,
+      "funding_rate_pct": -1.2198
+    },
+    {
+      "base": "AERO",
+      "quote": "USDT",
+      "coinalyze_symbol": "AEROUSDT_PERP.A",
+      "funding_rate": -0.012379,
+      "funding_rate_pct": -1.2379
+    },
+    {
+      "base": "APT",
+      "quote": "USDT",
+      "coinalyze_symbol": "APTUSDT_PERP.A",
+      "funding_rate": -0.013055,
+      "funding_rate_pct": -1.3055
+    },
+    {
+      "base": "BRETT",
+      "quote": "USDT",
+      "coinalyze_symbol": "BRETTUSDT_PERP.A",
+      "funding_rate": -0.013772,
+      "funding_rate_pct": -1.3772
+    },
+    {
+      "base": "INJ",
+      "quote": "USDT",
+      "coinalyze_symbol": "INJUSDT_PERP.A",
+      "funding_rate": -0.01412,
+      "funding_rate_pct": -1.4120000000000001
+    },
+    {
+      "base": "AVAX",
+      "quote": "USDT",
+      "coinalyze_symbol": "AVAXUSDT_PERP.A",
+      "funding_rate": -0.014474,
+      "funding_rate_pct": -1.4474
+    },
+    {
+      "base": "GAS",
+      "quote": "USDT",
+      "coinalyze_symbol": "GASUSDT_PERP.A",
+      "funding_rate": -0.014724,
+      "funding_rate_pct": -1.4724
+    },
+    {
+      "base": "2Z",
+      "quote": "USDT",
+      "coinalyze_symbol": "2ZUSDT_PERP.A",
+      "funding_rate": -0.015347,
+      "funding_rate_pct": -1.5347
     },
     {
       "base": "KAITO",
       "quote": "USDT",
       "coinalyze_symbol": "KAITOUSDT_PERP.A",
-      "funding_rate": -0.062531,
-      "funding_rate_pct": -6.2531
+      "funding_rate": -0.015605,
+      "funding_rate_pct": -1.5605
     },
     {
-      "base": "ZEC",
+      "base": "BERA",
       "quote": "USDT",
-      "coinalyze_symbol": "ZECUSDT_PERP.A",
-      "funding_rate": -0.230149,
-      "funding_rate_pct": -23.0149
+      "coinalyze_symbol": "BERAUSDT_PERP.A",
+      "funding_rate": -0.018845,
+      "funding_rate_pct": -1.8845
     },
     {
-      "base": "MINA",
+      "base": "RSR",
       "quote": "USDT",
-      "coinalyze_symbol": "MINAUSDT_PERP.A",
-      "funding_rate": -0.48891,
-      "funding_rate_pct": -48.891
+      "coinalyze_symbol": "RSRUSDT_PERP.A",
+      "funding_rate": -0.019588,
+      "funding_rate_pct": -1.9588
+    },
+    {
+      "base": "ETHFI",
+      "quote": "USDT",
+      "coinalyze_symbol": "ETHFIUSDT_PERP.A",
+      "funding_rate": -0.021409,
+      "funding_rate_pct": -2.1409000000000002
+    },
+    {
+      "base": "JUP",
+      "quote": "USDT",
+      "coinalyze_symbol": "JUPUSDT_PERP.A",
+      "funding_rate": -0.022233,
+      "funding_rate_pct": -2.2233
+    },
+    {
+      "base": "WLD",
+      "quote": "USDT",
+      "coinalyze_symbol": "WLDUSDT_PERP.A",
+      "funding_rate": -0.023312,
+      "funding_rate_pct": -2.3312
+    },
+    {
+      "base": "XLM",
+      "quote": "USDT",
+      "coinalyze_symbol": "XLMUSDT_PERP.A",
+      "funding_rate": -0.026649,
+      "funding_rate_pct": -2.6649
+    },
+    {
+      "base": "RUNE",
+      "quote": "USDT",
+      "coinalyze_symbol": "RUNEUSDT_PERP.A",
+      "funding_rate": -0.027016,
+      "funding_rate_pct": -2.7016
+    },
+    {
+      "base": "MORPHO",
+      "quote": "USDT",
+      "coinalyze_symbol": "MORPHOUSDT_PERP.A",
+      "funding_rate": -0.028314,
+      "funding_rate_pct": -2.8314
+    },
+    {
+      "base": "SUPER",
+      "quote": "USDT",
+      "coinalyze_symbol": "SUPERUSDT_PERP.A",
+      "funding_rate": -0.036508,
+      "funding_rate_pct": -3.6508
+    },
+    {
+      "base": "MET",
+      "quote": "USDT",
+      "coinalyze_symbol": "METUSDT_PERP.A",
+      "funding_rate": -0.040624,
+      "funding_rate_pct": -4.0624
+    },
+    {
+      "base": "CC",
+      "quote": "USDT",
+      "coinalyze_symbol": "CCUSDT_PERP.A",
+      "funding_rate": -0.042848,
+      "funding_rate_pct": -4.2848
+    },
+    {
+      "base": "ZORA",
+      "quote": "USDT",
+      "coinalyze_symbol": "ZORAUSDT_PERP.A",
+      "funding_rate": -0.196143,
+      "funding_rate_pct": -19.6143
+    },
+    {
+      "base": "IP",
+      "quote": "USDT",
+      "coinalyze_symbol": "IPUSDT_PERP.A",
+      "funding_rate": -0.261685,
+      "funding_rate_pct": -26.1685
     }
   ]
 }
