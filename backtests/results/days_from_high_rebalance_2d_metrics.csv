@@ -1,0 +1,2 @@
+rebalance_period,initial_capital,final_value,total_return,annualized_return,annualized_volatility,sharpe_ratio,max_drawdown,win_rate,total_trades,avg_positions,num_days,num_rebalances
+2,10000,8602.168922451232,-0.1397831077548768,-0.18428375681307385,0.48513437927014563,-0.37986126048274965,-0.26026680268537494,0.2899628252788104,270,1.9111111111111112,270,90
