@@ -1,0 +1,2 @@
+initial_capital,final_value,total_return,annualized_return,annualized_volatility,sharpe_ratio,sortino_ratio,max_drawdown,calmar_ratio,win_rate,avg_long_positions,avg_short_positions,avg_spread_long,avg_spread_short,total_rebalances,trading_days,strategy,window,rebalance_days,weighting_method
+10000,9962.551378953694,-0.0037448621046305562,-0.0032708125360271234,0.702684566806269,-0.004654737972819162,-0.007286610484446509,-0.29126495292486687,-0.011229681096821986,0.49640287769784175,2.212918660287081,0.0,35.31158894381761,0.0,59,418,long_high_spread,30,7,equal_weight
