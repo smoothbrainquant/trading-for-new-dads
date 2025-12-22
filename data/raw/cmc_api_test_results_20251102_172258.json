@@ -1,0 +1,1731 @@
+{
+  "cryptocurrency_info": {
+    "status": "success",
+    "data": {
+      "status": {
+        "timestamp": "2025-11-02T17:22:48.502Z",
+        "error_code": 0,
+        "error_message": null,
+        "elapsed": 127,
+        "credit_count": 1,
+        "notice": null
+      },
+      "data": {
+        "BTC": {
+          "id": 1,
+          "name": "Bitcoin",
+          "symbol": "BTC",
+          "category": "coin",
+          "description": "Bitcoin (BTC) is a cryptocurrency launched in 2010. Users are able to generate BTC through the process of mining. Bitcoin has a current supply of 19,943,493. The last known price of Bitcoin is 110,162.7174441 USD and is down -0.21 over the last 24 hours. It is currently trading on 12462 active market(s) with $32,964,195,246.59 traded over the last 24 hours. More information can be found at https://bitcoin.org/.",
+          "slug": "bitcoin",
+          "logo": "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png",
+          "subreddit": "bitcoin",
+          "notice": "",
+          "tags": [
+            "mineable",
+            "pow",
+            "sha-256",
+            "store-of-value",
+            "state-channel",
+            "coinbase-ventures-portfolio",
+            "three-arrows-capital-portfolio",
+            "polychain-capital-portfolio",
+            "binance-labs-portfolio",
+            "blockchain-capital-portfolio",
+            "boostvc-portfolio",
+            "cms-holdings-portfolio",
+            "dcg-portfolio",
+            "dragonfly-capital-portfolio",
+            "electric-capital-portfolio",
+            "fabric-ventures-portfolio",
+            "framework-ventures-portfolio",
+            "galaxy-digital-portfolio",
+            "huobi-capital-portfolio",
+            "alameda-research-portfolio",
+            "a16z-portfolio",
+            "1confirmation-portfolio",
+            "winklevoss-capital-portfolio",
+            "usv-portfolio",
+            "placeholder-ventures-portfolio",
+            "pantera-capital-portfolio",
+            "multicoin-capital-portfolio",
+            "paradigm-portfolio",
+            "bitcoin-ecosystem",
+            "layer-1",
+            "ftx-bankruptcy-estate",
+            "2017-2018-alt-season",
+            "us-strategic-crypto-reserve",
+            "binance-ecosystem",
+            "binance-listing"
+          ],
+          "tag-names": [
+            "Mineable",
+            "PoW",
+            "SHA-256",
+            "Store Of Value",
+            "State Channel",
+            "Coinbase Ventures Portfolio",
+            "Three Arrows Capital Portfolio",
+            "Polychain Capital Portfolio",
+            "YZi Labs Portfolio",
+            "Blockchain Capital Portfolio",
+            "BoostVC Portfolio",
+            "CMS Holdings Portfolio",
+            "DCG Portfolio",
+            "DragonFly Capital Portfolio",
+            "Electric Capital Portfolio",
+            "Fabric Ventures Portfolio",
+            "Framework Ventures Portfolio",
+            "Galaxy Digital Portfolio",
+            "Huobi Capital Portfolio",
+            "Alameda Research Portfolio",
+            "a16z Portfolio",
+            "1Confirmation Portfolio",
+            "Winklevoss Capital Portfolio",
+            "USV Portfolio",
+            "Placeholder Ventures Portfolio",
+            "Pantera Capital Portfolio",
+            "Multicoin Capital Portfolio",
+            "Paradigm Portfolio",
+            "Bitcoin Ecosystem",
+            "Layer 1",
+            "FTX Bankruptcy Estate ",
+            "2017/18 Alt season",
+            "US Strategic Crypto Reserve",
+            "Binance Ecosystem",
+            "Binance Listing"
+          ],
+          "tag-groups": [
+            "OTHERS",
+            "ALGORITHM",
+            "ALGORITHM",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "PLATFORM",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY"
+          ],
+          "urls": {
+            "website": [
+              "https://bitcoin.org/"
+            ],
+            "twitter": [],
+            "message_board": [
+              "https://bitcointalk.org"
+            ],
+            "chat": [],
+            "facebook": [],
+            "explorer": [
+              "https://blockchain.info/",
+              "https://live.blockcypher.com/btc/",
+              "https://blockchair.com/bitcoin",
+              "https://explorer.viabtc.com/btc",
+              "https://www.okx.com/web3/explorer/btc"
+            ],
+            "reddit": [
+              "https://reddit.com/r/bitcoin"
+            ],
+            "technical_doc": [
+              "https://bitcoin.org/bitcoin.pdf"
+            ],
+            "source_code": [
+              "https://github.com/bitcoin/bitcoin"
+            ],
+            "announcement": []
+          },
+          "platform": null,
+          "date_added": "2010-07-13T00:00:00.000Z",
+          "twitter_username": "",
+          "is_hidden": 0,
+          "date_launched": "2010-07-13T00:00:00.000Z",
+          "contract_address": [],
+          "self_reported_circulating_supply": null,
+          "self_reported_tags": null,
+          "self_reported_market_cap": null,
+          "infinite_supply": false
+        },
+        "ETH": {
+          "id": 1027,
+          "name": "Ethereum",
+          "symbol": "ETH",
+          "category": "coin",
+          "description": "Ethereum (ETH) is a cryptocurrency . Ethereum has a current supply of 120,697,906.07220622. The last known price of Ethereum is 3,859.19711728 USD and is down -0.62 over the last 24 hours. It is currently trading on 11007 active market(s) with $20,145,710,192.53 traded over the last 24 hours. More information can be found at https://www.ethereum.org/.",
+          "slug": "ethereum",
+          "logo": "https://s2.coinmarketcap.com/static/img/coins/64x64/1027.png",
+          "subreddit": "ethereum",
+          "notice": "",
+          "tags": [
+            "pos",
+            "smart-contracts",
+            "ethereum-ecosystem",
+            "coinbase-ventures-portfolio",
+            "three-arrows-capital-portfolio",
+            "polychain-capital-portfolio",
+            "binance-labs-portfolio",
+            "blockchain-capital-portfolio",
+            "boostvc-portfolio",
+            "cms-holdings-portfolio",
+            "dcg-portfolio",
+            "dragonfly-capital-portfolio",
+            "electric-capital-portfolio",
+            "fabric-ventures-portfolio",
+            "framework-ventures-portfolio",
+            "hashkey-capital-portfolio",
+            "kenetic-capital-portfolio",
+            "huobi-capital-portfolio",
+            "alameda-research-portfolio",
+            "a16z-portfolio",
+            "1confirmation-portfolio",
+            "winklevoss-capital-portfolio",
+            "usv-portfolio",
+            "placeholder-ventures-portfolio",
+            "pantera-capital-portfolio",
+            "multicoin-capital-portfolio",
+            "paradigm-portfolio",
+            "ethereum-pow-ecosystem",
+            "layer-1",
+            "ftx-bankruptcy-estate",
+            "sora-ecosystem",
+            "rsk-rbtc-ecosystem",
+            "world-liberty-financial-portfolio",
+            "us-strategic-crypto-reserve",
+            "binance-ecosystem",
+            "binance-listing",
+            "sophon-ecosystem"
+          ],
+          "tag-names": [
+            "PoS",
+            "Smart Contracts",
+            "Ethereum Ecosystem",
+            "Coinbase Ventures Portfolio",
+            "Three Arrows Capital Portfolio",
+            "Polychain Capital Portfolio",
+            "YZi Labs Portfolio",
+            "Blockchain Capital Portfolio",
+            "BoostVC Portfolio",
+            "CMS Holdings Portfolio",
+            "DCG Portfolio",
+            "DragonFly Capital Portfolio",
+            "Electric Capital Portfolio",
+            "Fabric Ventures Portfolio",
+            "Framework Ventures Portfolio",
+            "Hashkey Capital Portfolio",
+            "Kenetic Capital Portfolio",
+            "Huobi Capital Portfolio",
+            "Alameda Research Portfolio",
+            "a16z Portfolio",
+            "1Confirmation Portfolio",
+            "Winklevoss Capital Portfolio",
+            "USV Portfolio",
+            "Placeholder Ventures Portfolio",
+            "Pantera Capital Portfolio",
+            "Multicoin Capital Portfolio",
+            "Paradigm Portfolio",
+            "Ethereum PoW Ecosystem",
+            "Layer 1",
+            "FTX Bankruptcy Estate ",
+            "Sora Ecosystem",
+            "RSK RBTC Ecosystem",
+            "World Liberty Financial Portfolio",
+            "US Strategic Crypto Reserve",
+            "Binance Ecosystem",
+            "Binance Listing",
+            "Sophon Ecosystem"
+          ],
+          "tag-groups": [
+            "ALGORITHM",
+            "CATEGORY",
+            "PLATFORM",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "PLATFORM",
+            "CATEGORY",
+            "CATEGORY",
+            "PLATFORM",
+            "PLATFORM",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "PLATFORM"
+          ],
+          "urls": {
+            "website": [
+              "https://www.ethereum.org/",
+              "https://en.wikipedia.org/wiki/Ethereum"
+            ],
+            "twitter": [
+              "https://twitter.com/ethereum"
+            ],
+            "message_board": [
+              "https://forum.ethereum.org/",
+              "https://ethresear.ch/"
+            ],
+            "chat": [
+              "https://gitter.im/orgs/ethereum/rooms"
+            ],
+            "facebook": [],
+            "explorer": [
+              "https://etherscan.io/",
+              "https://app.nansen.ai/token-god-mode?chain=ethereum&tab=transactions&tokenAddress=0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "https://solscan.io/token/2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk",
+              "https://bscscan.com/token/0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+              "https://www.okx.com/web3/explorer/eth"
+            ],
+            "reddit": [
+              "https://reddit.com/r/ethereum"
+            ],
+            "technical_doc": [
+              "https://ethereum.org/en/whitepaper/"
+            ],
+            "source_code": [
+              "https://github.com/ethereum/go-ethereum"
+            ],
+            "announcement": [
+              "https://bitcointalk.org/index.php?topic=428589.0"
+            ]
+          },
+          "platform": null,
+          "date_added": "2015-08-07T00:00:00.000Z",
+          "twitter_username": "ethereum",
+          "is_hidden": 0,
+          "date_launched": null,
+          "contract_address": [
+            {
+              "contract_address": "0x2170ed0880ac9a755fd29b2688956bd959f933f8",
+              "platform": {
+                "name": "BNB Smart Chain (BEP20)",
+                "coin": {
+                  "id": "1839",
+                  "name": "BNB",
+                  "symbol": "BNB",
+                  "slug": "bnb"
+                }
+              }
+            },
+            {
+              "contract_address": "0x64ff637fb478863b7468bc97d30a5bf3a428a1fd",
+              "platform": {
+                "name": "HECO",
+                "coin": {
+                  "id": "2502",
+                  "name": "Huobi Token",
+                  "symbol": "HT",
+                  "slug": "htx-token"
+                }
+              }
+            },
+            {
+              "contract_address": "0xf20d962a6c8f70c731bd838a3a388d7d48fa6e15",
+              "platform": {
+                "name": "Avalanche C-Chain",
+                "coin": {
+                  "id": "5805",
+                  "name": "Avalanche",
+                  "symbol": "AVAX",
+                  "slug": "avalanche"
+                }
+              }
+            },
+            {
+              "contract_address": "0x2eaa73bd0db20c64f53febea7b5f5e5bccc7fb8b",
+              "platform": {
+                "name": "Viction",
+                "coin": {
+                  "id": "2570",
+                  "name": "Viction",
+                  "symbol": "VIC",
+                  "slug": "viction"
+                }
+              }
+            },
+            {
+              "contract_address": "0x0200070000000000000000000000000000000000000000000000000000000000",
+              "platform": {
+                "name": "Sora",
+                "coin": {
+                  "id": "5802",
+                  "name": "SORA",
+                  "symbol": "XOR",
+                  "slug": "sora"
+                }
+              }
+            },
+            {
+              "contract_address": "0x1D931Bf8656d795E50eF6D639562C5bD8Ac2B78f",
+              "platform": {
+                "name": "RSK RBTC",
+                "coin": {
+                  "id": "3626",
+                  "name": "Rootstock Bitcoin",
+                  "symbol": "rBTC",
+                  "slug": "rsk-smart-bitcoin"
+                }
+              }
+            },
+            {
+              "contract_address": "0x85219708c49aa701871ad330a94ea0f41dff24ca",
+              "platform": {
+                "name": "Velas",
+                "coin": {
+                  "id": "4747",
+                  "name": "Velas",
+                  "symbol": "VLX",
+                  "slug": "velas"
+                }
+              }
+            },
+            {
+              "contract_address": "2FPyTwcZLUg1MDrwsyoP4D6s1tM7hAkHYRjkNb5w6Pxk",
+              "platform": {
+                "name": "Solana",
+                "coin": {
+                  "id": "5426",
+                  "name": "Solana",
+                  "symbol": "SOL",
+                  "slug": "solana"
+                }
+              }
+            },
+            {
+              "contract_address": "0x34d21b1e550d73cee41151c77f3c73359527a396",
+              "platform": {
+                "name": "KAIA",
+                "coin": {
+                  "id": "32880",
+                  "name": "Kaia",
+                  "symbol": "KAIA",
+                  "slug": "kaia"
+                }
+              }
+            },
+            {
+              "contract_address": "aurora",
+              "platform": {
+                "name": "Near",
+                "coin": {
+                  "id": "6535",
+                  "name": "NEAR Protocol",
+                  "symbol": "NEAR",
+                  "slug": "near-protocol"
+                }
+              }
+            },
+            {
+              "contract_address": "KT19at7rQUvyjxnZ2fBv7D9zc8rkyG7gAoU8",
+              "platform": {
+                "name": "Tezos",
+                "coin": {
+                  "id": "2011",
+                  "name": "Tezos",
+                  "symbol": "XTZ",
+                  "slug": "tezos"
+                }
+              }
+            },
+            {
+              "contract_address": "0x34a9c05b638020a07bb153bf624c8763bf8b4a86",
+              "platform": {
+                "name": "EthereumPoW",
+                "coin": {
+                  "id": "21296",
+                  "name": "EthereumPoW",
+                  "symbol": "ETHW",
+                  "slug": "ethereum-pow"
+                }
+              }
+            },
+            {
+              "contract_address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "platform": {
+                "name": "Ethereum",
+                "coin": {
+                  "id": "1027",
+                  "name": "Ethereum",
+                  "symbol": "ETH",
+                  "slug": "ethereum"
+                }
+              }
+            },
+            {
+              "contract_address": "0x49d36570d4e46f48e99674bd3fcc84644ddd6b96f7c741b1562b82f9e004dc7",
+              "platform": {
+                "name": "Starknet",
+                "coin": {
+                  "id": "22691",
+                  "name": "Starknet",
+                  "symbol": "STRK",
+                  "slug": "starknet-token"
+                }
+              }
+            },
+            {
+              "contract_address": "ibc/EA1D43981D5C9A1C4AAEA9C23BB1D4FA126BA9BC7020A25E0AE4AA841EA25DC5",
+              "platform": {
+                "name": "Osmosis",
+                "coin": {
+                  "id": "12220",
+                  "name": "Osmosis",
+                  "symbol": "OSMO",
+                  "slug": "osmosis"
+                }
+              }
+            },
+            {
+              "contract_address": "0x000000000000000000000000000000000000800A",
+              "platform": {
+                "name": "zkSync Era",
+                "coin": {
+                  "id": "24091",
+                  "name": "ZKsync",
+                  "symbol": "ZK",
+                  "slug": "zksync"
+                }
+              }
+            },
+            {
+              "contract_address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "platform": {
+                "name": "Arbitrum",
+                "coin": {
+                  "id": "11841",
+                  "name": "Arbitrum",
+                  "symbol": "ARB",
+                  "slug": "arbitrum"
+                }
+              }
+            },
+            {
+              "contract_address": "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+              "platform": {
+                "name": "Base",
+                "coin": {
+                  "id": "27716",
+                  "name": "Base",
+                  "symbol": "-",
+                  "slug": "base"
+                }
+              }
+            },
+            {
+              "contract_address": "0x72af9f169b619d85a47dfa8fefbcd39de55c567d",
+              "platform": {
+                "name": "Sophon",
+                "coin": {
+                  "id": "32087",
+                  "name": "Sophon",
+                  "symbol": "SOPH",
+                  "slug": "sophon"
+                }
+              }
+            },
+            {
+              "contract_address": "0xf8f8b6283d7fa5b672b530cbb84fcccb4ff8dc40f8176ef4544ddb1f1952ad07",
+              "platform": {
+                "name": "Fuel Network",
+                "coin": {
+                  "id": "24087",
+                  "name": "Fuel Network",
+                  "symbol": "FUEL",
+                  "slug": "fuel-network"
+                }
+              }
+            }
+          ],
+          "self_reported_circulating_supply": null,
+          "self_reported_tags": null,
+          "self_reported_market_cap": null,
+          "infinite_supply": true
+        },
+        "SOL": {
+          "id": 5426,
+          "name": "Solana",
+          "symbol": "SOL",
+          "category": "coin",
+          "description": "Solana (SOL) is a cryptocurrency launched in 2020. Solana has a current supply of 613,125,817.95101595 with 552,494,750.99386382 in circulation. The last known price of Solana is 184.480621 USD and is down -0.87 over the last 24 hours. It is currently trading on 1044 active market(s) with $3,093,067,076.33 traded over the last 24 hours. More information can be found at https://solana.com.",
+          "slug": "solana",
+          "logo": "https://s2.coinmarketcap.com/static/img/coins/64x64/5426.png",
+          "subreddit": "solana",
+          "notice": "",
+          "tags": [
+            "pos",
+            "platform",
+            "solana-ecosystem",
+            "cms-holdings-portfolio",
+            "kenetic-capital-portfolio",
+            "alameda-research-portfolio",
+            "multicoin-capital-portfolio",
+            "okx-ventures-portfolio",
+            "layer-1",
+            "ftx-bankruptcy-estate",
+            "alleged-sec-securities",
+            "cmc-crypto-awards-2024",
+            "made-in-america",
+            "us-strategic-crypto-reserve",
+            "binance-ecosystem",
+            "binance-listing"
+          ],
+          "tag-names": [
+            "PoS",
+            "Platform",
+            "Solana Ecosystem",
+            "CMS Holdings Portfolio",
+            "Kenetic Capital Portfolio",
+            "Alameda Research Portfolio",
+            "Multicoin Capital Portfolio",
+            "OKX Ventures Portfolio",
+            "Layer 1",
+            "FTX Bankruptcy Estate ",
+            "Alleged SEC Securities",
+            "CMC Crypto Awards 2024",
+            "Made in America",
+            "US Strategic Crypto Reserve",
+            "Binance Ecosystem",
+            "Binance Listing"
+          ],
+          "tag-groups": [
+            "ALGORITHM",
+            "CATEGORY",
+            "PLATFORM",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY",
+            "CATEGORY"
+          ],
+          "urls": {
+            "website": [
+              "https://solana.com"
+            ],
+            "twitter": [
+              "https://twitter.com/solana"
+            ],
+            "message_board": [
+              "https://solana.com/news",
+              "https://forums.solana.com"
+            ],
+            "chat": [
+              "https://solana.com/discord",
+              "https://t.me/solana"
+            ],
+            "facebook": [],
+            "explorer": [
+              "https://solscan.io/token/So11111111111111111111111111111111111111111",
+              "https://app.nansen.ai/token-god-mode?chain=solana&tab=transactions&tokenAddress=So11111111111111111111111111111111111111112",
+              "https://explorer.solana.com",
+              "https://solana.fm/",
+              "https://solscan.io/"
+            ],
+            "reddit": [
+              "https://reddit.com/r/solana"
+            ],
+            "technical_doc": [
+              "https://solana.com/solana-whitepaper.pdf"
+            ],
+            "source_code": [
+              "https://github.com/solana-labs"
+            ],
+            "announcement": [
+              "https://coinmarketcap.com/community/profile/Solana/"
+            ]
+          },
+          "platform": {
+            "id": "5426",
+            "name": "Solana",
+            "slug": "solana",
+            "symbol": "SOL",
+            "token_address": "So11111111111111111111111111111111111111111"
+          },
+          "date_added": "2020-04-10T00:00:00.000Z",
+          "twitter_username": "solana",
+          "is_hidden": 0,
+          "date_launched": "2020-03-16T00:00:00.000Z",
+          "contract_address": [
+            {
+              "contract_address": "So11111111111111111111111111111111111111111",
+              "platform": {
+                "name": "Solana",
+                "coin": {
+                  "id": "5426",
+                  "name": "Solana",
+                  "symbol": "SOL",
+                  "slug": "solana"
+                }
+              }
+            }
+          ],
+          "self_reported_circulating_supply": 525236893.3,
+          "self_reported_tags": null,
+          "self_reported_market_cap": 96759806182.22377,
+          "infinite_supply": true
+        }
+      }
+    }
+  },
+  "cryptocurrency_metadata_v2": {
+    "status": "success",
+    "data": {
+      "status": {
+        "timestamp": "2025-11-02T17:22:50.852Z",
+        "error_code": 0,
+        "error_message": null,
+        "elapsed": 416,
+        "credit_count": 1,
+        "notice": null
+      },
+      "data": {
+        "BTC": [
+          {
+            "id": 1,
+            "name": "Bitcoin",
+            "symbol": "BTC",
+            "category": "coin",
+            "description": "Bitcoin (BTC) is a cryptocurrency launched in 2010. Users are able to generate BTC through the process of mining. Bitcoin has a current supply of 19,943,493. The last known price of Bitcoin is 110,162.7174441 USD and is down -0.21 over the last 24 hours. It is currently trading on 12462 active market(s) with $32,964,195,246.59 traded over the last 24 hours. More information can be found at https://bitcoin.org/.",
+            "slug": "bitcoin",
+            "logo": "https://s2.coinmarketcap.com/static/img/coins/64x64/1.png",
+            "subreddit": "bitcoin",
+            "notice": "",
+            "tags": [
+              "mineable",
+              "pow",
+              "sha-256",
+              "store-of-value",
+              "state-channel",
+              "coinbase-ventures-portfolio",
+              "three-arrows-capital-portfolio",
+              "polychain-capital-portfolio",
+              "binance-labs-portfolio",
+              "blockchain-capital-portfolio",
+              "boostvc-portfolio",
+              "cms-holdings-portfolio",
+              "dcg-portfolio",
+              "dragonfly-capital-portfolio",
+              "electric-capital-portfolio",
+              "fabric-ventures-portfolio",
+              "framework-ventures-portfolio",
+              "galaxy-digital-portfolio",
+              "huobi-capital-portfolio",
+              "alameda-research-portfolio",
+              "a16z-portfolio",
+              "1confirmation-portfolio",
+              "winklevoss-capital-portfolio",
+              "usv-portfolio",
+              "placeholder-ventures-portfolio",
+              "pantera-capital-portfolio",
+              "multicoin-capital-portfolio",
+              "paradigm-portfolio",
+              "bitcoin-ecosystem",
+              "layer-1",
+              "ftx-bankruptcy-estate",
+              "2017-2018-alt-season",
+              "us-strategic-crypto-reserve",
+              "binance-ecosystem",
+              "binance-listing"
+            ],
+            "tag-names": [
+              "Mineable",
+              "PoW",
+              "SHA-256",
+              "Store Of Value",
+              "State Channel",
+              "Coinbase Ventures Portfolio",
+              "Three Arrows Capital Portfolio",
+              "Polychain Capital Portfolio",
+              "YZi Labs Portfolio",
+              "Blockchain Capital Portfolio",
+              "BoostVC Portfolio",
+              "CMS Holdings Portfolio",
+              "DCG Portfolio",
+              "DragonFly Capital Portfolio",
+              "Electric Capital Portfolio",
+              "Fabric Ventures Portfolio",
+              "Framework Ventures Portfolio",
+              "Galaxy Digital Portfolio",
+              "Huobi Capital Portfolio",
+              "Alameda Research Portfolio",
+              "a16z Portfolio",
+              "1Confirmation Portfolio",
+              "Winklevoss Capital Portfolio",
+              "USV Portfolio",
+              "Placeholder Ventures Portfolio",
+              "Pantera Capital Portfolio",
+              "Multicoin Capital Portfolio",
+              "Paradigm Portfolio",
+              "Bitcoin Ecosystem",
+              "Layer 1",
+              "FTX Bankruptcy Estate ",
+              "2017/18 Alt season",
+              "US Strategic Crypto Reserve",
+              "Binance Ecosystem",
+              "Binance Listing"
+            ],
+            "tag-groups": [
+              "OTHERS",
+              "ALGORITHM",
+              "ALGORITHM",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "PLATFORM",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY",
+              "CATEGORY"
+            ],
+            "urls": {
+              "website": [
+                "https://bitcoin.org/"
+              ],
+              "twitter": [],
+              "message_board": [
+                "https://bitcointalk.org"
+              ],
+              "chat": [],
+              "facebook": [],
+              "explorer": [
+                "https://blockchain.info/",
+                "https://live.blockcypher.com/btc/",
+                "https://blockchair.com/bitcoin",
+                "https://explorer.viabtc.com/btc",
+                "https://www.okx.com/web3/explorer/btc"
+              ],
+              "reddit": [
+                "https://reddit.com/r/bitcoin"
+              ],
+              "technical_doc": [
+                "https://bitcoin.org/bitcoin.pdf"
+              ],
+              "source_code": [
+                "https://github.com/bitcoin/bitcoin"
+              ],
+              "announcement": []
+            },
+            "platform": null,
+            "date_added": "2010-07-13T00:00:00.000Z",
+            "twitter_username": "",
+            "is_hidden": 0,
+            "date_launched": "2010-07-13T00:00:00.000Z",
+            "contract_address": [],
+            "self_reported_circulating_supply": null,
+            "self_reported_tags": null,
+            "self_reported_market_cap": null,
+            "infinite_supply": false
+          },
+          {
+            "id": 38692,
+            "name": "Bitcoin Second Chance",
+            "symbol": "BTC",
+            "category": "token",
+            "description": "Bitcoin Second Chance (BTC) is a cryptocurrency launched in 2025and operates on the BNB Smart Chain (BEP20) platform. Bitcoin Second Chance has a current supply of 21,000,000 with 20,997,243 in circulation. The last known price of Bitcoin Second Chance is 0.03914141 USD and is down -0.89 over the last 24 hours. It is currently trading on 1 active market(s) with $1,006.54 traded over the last 24 hours. More information can be found at https://tokensecondchance.xyz/.",
+            "slug": "bitcoin-second-chance",
+            "logo": "https://s2.coinmarketcap.com/static/img/coins/64x64/38692.png",
+            "subreddit": "",
+            "notice": "",
+            "tags": [
+              "memes",
+              "bnb-chain-ecosystem"
+            ],
+            "tag-names": [
+              "Memes",
+              "BNB Chain Ecosystem"
+            ],
+            "tag-groups": [
+              "INDUSTRY",
+              "PLATFORM"
+            ],
+            "urls": {
+              "website": [
+                "https://tokensecondchance.xyz/"
+              ],
+              "twitter": [
+                "https://twitter.com/bitcoin_second"
+              ],
+              "message_board": [],
+              "chat": [
+                "https://t.me/bitcoinsecondchance1"
+              ],
+              "facebook": [],
+              "explorer": [
+                "https://bscscan.com/token/0x0afcb0065362ec8bc94902479b9d37e3fa49eda6",
+                "https://app.nansen.ai/token-god-mode?chain=bnb&tab=transactions&tokenAddress=0x0afcb0065362ec8bc94902479b9d37e3fa49eda6"
+              ],
+              "reddit": [],
+              "technical_doc": [],
+              "source_code": [],
+              "announcement": []
+            },
+            "platform": {
+              "id": "1839",
+              "name": "BNB",
+              "slug": "bnb",
+              "symbol": "BNB",
+              "token_address": "0x0afcb0065362ec8bc94902479b9d37e3fa49eda6"
+            },
+            "date_added": "2025-10-15T09:54:01.000Z",
+            "twitter_username": "bitcoin_second",
+            "is_hidden": 0,
+            "date_launched": "2025-10-12T00:00:00.000Z",
+            "contract_address": [
+              {
+                "contract_address": "0x0afcb0065362ec8bc94902479b9d37e3fa49eda6",
+                "platform": {
+                  "name": "BNB Smart Chain (BEP20)",
+                  "coin": {
+                    "id": "1839",
+                    "name": "BNB",
+                    "symbol": "BNB",
+                    "slug": "bnb"
+                  }
+                }
+              }
+            ],
+            "self_reported_circulating_supply": 21000000,
+            "self_reported_tags": null,
+            "self_reported_market_cap": 821969.6113112649,
+            "infinite_supply": false
+          },
+          {
+            "id": 38133,
+            "name": "Bitcoin AI",
+            "symbol": "BTC",
+            "category": "token",
+            "description": "Bitcoin AI (BTC) is a cryptocurrency launched in 2025and operates on the BNB Smart Chain (BEP20) platform. Bitcoin AI has a current supply of 21,000,000 with 20,982,018 in circulation. The last known price of Bitcoin AI is 0.00483554 USD and is down -6.32 over the last 24 hours. It is currently trading on 1 active market(s) with $5,364.15 traded over the last 24 hours. More information can be found at https://btctokenoff.xyz.",
+            "slug": "bitcoin-ai",
+            "logo": "https://s2.coinmarketcap.com/static/img/coins/64x64/38133.png",
+            "subreddit": "",
+            "notice": "",
+            "tags": [
+              "memes",
+              "bnb-chain-ecosystem"
+            ],
+            "tag-names": [
+              "Memes",
+              "BNB Chain Ecosystem"
+            ],
+            "tag-groups": [
+              "INDUSTRY",
+              "PLATFORM"
+            ],
+            "urls": {
+              "website": [
+                "https://btctokenoff.xyz"
+              ],
+              "twitter": [
+                "https://twitter.com/Bitcoin_ai_off"
+              ],
+              "message_board": [],
+              "chat": [
+                "https://t.me/bitcoinaitoken1"
+              ],
+              "facebook": [],
+              "explorer": [
+                "https://bscscan.com/token/0xf22aac87E08d7FC60aA89eb21110ddfE59c20854",
+                "https://app.nansen.ai/token-god-mode?chain=bnb&tab=transactions&tokenAddress=0xf22aac87E08d7FC60aA89eb21110ddfE59c20854"
+              ],
+              "reddit": [],
+              "technical_doc": [
+                "https://bitcoin-ai.gitbook.io/bitcoin-ai-docs"
+              ],
+              "source_code": [],
+              "announcement": []
+            },
+            "platform": {
+              "id": "1839",
+              "name": "BNB",
+              "slug": "bnb",
+              "symbol": "BNB",
+              "token_address": "0xf22aac87E08d7FC60aA89eb21110ddfE59c20854"
+            },
+            "date_added": "2025-08-19T09:38:10.000Z",
+            "twitter_username": "Bitcoin_ai_off",
+            "is_hidden": 0,
+            "date_launched": "2025-08-17T00:00:00.000Z",
+            "contract_address": [
+              {
+                "contract_address": "0xf22aac87E08d7FC60aA89eb21110ddfE59c20854",
+                "platform": {
+                  "name": "BNB Smart Chain (BEP20)",
+                  "coin": {
+                    "id": "1839",
+                    "name": "BNB",
+                    "symbol": "BNB",
+                    "slug": "bnb"
+                  }
+                }
+              }
+            ],
+            "self_reported_circulating_supply": 21000000,
+            "self_reported_tags": [
+              "DeFi",
+              "Memes",
+              "Binance Chain",
+              "BNB Chain Ecosystem",
+              "AI Memes"
+            ],
+            "self_reported_market_cap": 101546.34954541679,
+            "infinite_supply": false
+          },
+          {
+            "id": 38601,
+            "name": "Bitcoin X (tokenxoff.xyz)",
+            "symbol": "BTC",
+            "category": "token",
+            "description": "Bitcoin X (tokenxoff.xyz) (BTC) is a cryptocurrency launched in 2025and operates on the BNB Smart Chain (BEP20) platform. Bitcoin X (tokenxoff.xyz) has a current supply of 21,000,000 with 0 in circulation. The last known price of Bitcoin X (tokenxoff.xyz) is 0.00018833 USD and is up 2.58 over the last 24 hours. It is currently trading on 1 active market(s) with $101.94 traded over the last 24 hours. More information can be found at https://tokenxoff.xyz.",
+            "slug": "bitcoin-x-tokenxoff-xyz",
+            "logo": "https://s2.coinmarketcap.com/static/img/coins/64x64/38601.png",
+            "subreddit": "",
+            "notice": "",
+            "tags": [
+              "bnb-chain-ecosystem"
+            ],
+            "tag-names": [
+              "BNB Chain Ecosystem"
+            ],
+            "tag-groups": [
+              "PLATFORM"
+            ],
+            "urls": {
+              "website": [
+                "https://tokenxoff.xyz"
+              ],
+              "twitter": [
+                "https://twitter.com/BitcoinX_off"
+              ],
+              "message_board": [],
+              "chat": [
+                "https://t.me/bitcoinxoff"
+              ],
+              "facebook": [],
+              "explorer": [
+                "https://bscscan.com/token/0x5c1b89F02CDae86EDe019d6b2AE071E456f4f804",
+                "https://app.nansen.ai/token-god-mode?chain=bnb&tab=transactions&tokenAddress=0x5c1b89F02CDae86EDe019d6b2AE071E456f4f804"
+              ],
+              "reddit": [],
+              "technical_doc": [],
+              "source_code": [],
+              "announcement": []
+            },
+            "platform": {
+              "id": "1839",
+              "name": "BNB",
+              "slug": "bnb",
+              "symbol": "BNB",
+              "token_address": "0x5c1b89F02CDae86EDe019d6b2AE071E456f4f804"
+            },
+            "date_added": "2025-10-07T07:49:31.000Z",
+            "twitter_username": "BitcoinX_off",
+            "is_hidden": 0,
+            "date_launched": "2025-10-04T00:00:00.000Z",
+            "contract_address": [
+              {
+                "contract_address": "0x5c1b89F02CDae86EDe019d6b2AE071E456f4f804",
+                "platform": {
+                  "name": "BNB Smart Chain (BEP20)",
+                  "coin": {
+                    "id": "1839",
+                    "name": "BNB",
+                    "symbol": "BNB",
+                    "slug": "bnb"
+                  }
+                }
+              }
+            ],
+            "self_reported_circulating_supply": 21000000,
+            "self_reported_tags": null,
+            "self_reported_market_cap": 3954.8452904041646,
+            "infinite_supply": false
+          },
+          {
+            "id": 31652,
+            "name": "batcat",
+            "symbol": "BTC",
+            "category": "token",
+            "description": "batcat (BTC) is a cryptocurrency launched in 2024and operates on the Solana platform. batcat has a current supply of 1,000,000,000 with 0 in circulation. The last known price of batcat is 0.00004035 USD and is up 0.00 over the last 24 hours. It is currently trading on 4 active market(s) with $0.00 traded over the last 24 hours. More information can be found at https://www.batcat.lol/.",
+            "slug": "batcat",
+            "logo": "https://s2.coinmarketcap.com/static/img/coins/64x64/31652.png",
+            "subreddit": "",
+            "notice": "",
+            "tags": [
+              "memes",
+              "solana-ecosystem"
+            ],
+            "tag-names": [
+              "Memes",
+              "Solana Ecosystem"
+            ],
+            "tag-groups": [
+              "INDUSTRY",
+              "PLATFORM"
+            ],
+            "urls": {
+              "website": [
+                "https://www.batcat.lol/"
+              ],
+              "twitter": [
+                "https://twitter.com/BatCatonsolana"
+              ],
+              "message_board": [],
+              "chat": [
+                "https://t.me/TheBatCatPortal"
+              ],
+              "facebook": [],
+              "explorer": [
+                "https://solscan.io/token/EtBc6gkCvsB9c6f5wSbwG8wPjRqXMB5euptK6bqG1R4X",
+                "https://app.nansen.ai/token-god-mode?chain=solana&tab=transactions&tokenAddress=EtBc6gkCvsB9c6f5wSbwG8wPjRqXMB5euptK6bqG1R4X"
+              ],
+              "reddit": [],
+              "technical_doc": [],
+              "source_code": [],
+              "announcement": []
+            },
+            "platform": {
+              "id": "5426",
+              "name": "Solana",
+              "slug": "solana",
+              "symbol": "SOL",
+              "token_address": "EtBc6gkCvsB9c6f5wSbwG8wPjRqXMB5euptK6bqG1R4X"
+            },
+            "date_added": "2024-06-06T09:25:57.000Z",
+            "twitter_username": "BatCatonsolana",
+            "is_hidden": 0,
+            "date_launched": "2024-03-27T00:00:00.000Z",
+            "contract_address": [
+              {
+                "contract_address": "EtBc6gkCvsB9c6f5wSbwG8wPjRqXMB5euptK6bqG1R4X",
+                "platform": {
+                  "name": "Solana",
+                  "coin": {
+                    "id": "5426",
+                    "name": "Solana",
+                    "symbol": "SOL",
+                    "slug": "solana"
+                  }
+                }
+              }
+            ],
+            "self_reported_circulating_supply": 999939377,
+            "self_reported_tags": null,
+            "self_reported_market_cap": 40343.76332365761,
+            "infinite_supply": false
+          },
+          {
+            "id": 32295,
+            "name": "Bullish Trump Coin",
+            "symbol": "BTC",
+            "category": "token",
+            "description": "Bullish Trump Coin (BTC) is a cryptocurrency launched in 2024and operates on the Ethereum platform. Bullish Trump Coin has a current supply of 420,690,000,000 with 0 in circulation. The last known price of Bullish Trump Coin is 0.00000006 USD and is down -2.20 over the last 24 hours. It is currently trading on 1 active market(s) with $0.00 traded over the last 24 hours. More information can be found at https://bullishtrumpcoin.io/.",
+            "slug": "bullish-trump-coin",
+            "logo": "https://s2.coinmarketcap.com/static/img/coins/64x64/32295.png",
+            "subreddit": "",
+            "notice": "",
+            "tags": [
+              "memes",
+              "ethereum-ecosystem",
+              "political-memes"
+            ],
+            "tag-names": [
+              "Memes",
+              "Ethereum Ecosystem",
+              "Political Memes"
+            ],
+            "tag-groups": [
+              "INDUSTRY",
+              "PLATFORM",
+              "CATEGORY"
+            ],
+            "urls": {
+              "website": [
+                "https://bullishtrumpcoin.io/"
+              ],
+              "twitter": [
+                "https://twitter.com/bullishtrumpERC"
+              ],
+              "message_board": [],
+              "chat": [
+                "https://t.me/BullishTrumpCoinERC20"
+              ],
+              "facebook": [],
+              "explorer": [
+                "https://etherscan.io/token/0x43fd9de06bb69ad771556e171f960a91c42d2955",
+                "https://app.nansen.ai/token-god-mode?chain=ethereum&tab=transactions&tokenAddress=0x43FD9De06bb69aD771556E171f960A91c42D2955"
+              ],
+              "reddit": [],
+              "technical_doc": [],
+              "source_code": [],
+              "announcement": []
+            },
+            "platform": {
+              "id": "1027",
+              "name": "Ethereum",
+              "slug": "ethereum",
+              "symbol": "ETH",
+              "token_address": "0x43FD9De06bb69aD771556E171f960A91c42D2955"
+            },
+            "date_added": "2024-07-19T09:39:13.000Z",
+            "twitter_username": "bullishtrumpERC",
+            "is_hidden": 0,
+            "date_launched": "2024-07-17T00:00:00.000Z",
+            "contract_address": [
+              {
+                "contract_address": "0x43FD9De06bb69aD771556E171f960A91c42D2955",
+                "platform": {
+                  "name": "Ethereum",
+                  "coin": {
+                    "id": "1027",
+                    "name": "Ethereum",
+                    "symbol": "ETH",
+                    "slug": "ethereum"
+                  }
+                }
+              }
+            ],
+            "self_reported_circulating_supply": 420690000000,
+            "self_reported_tags": null,
+            "self_reported_market_cap": 26628.578707544908,
+            "infinite_supply": false
+          },
+          {
+            "id": 38552,
+            "name": "Bitcoin Base",
+            "symbol": "BTC",
+            "category": "token",
+            "description": "Bitcoin Base (BTC) is a cryptocurrency launched in 2025and operates on the Base platform. Bitcoin Base has a current supply of 21,000,000 with 0 in circulation. The last known price of Bitcoin Base is 0.00139403 USD and is up 5.07 over the last 24 hours. It is currently trading on 1 active market(s) with $0.00 traded over the last 24 hours. More information can be found at https://baseoff.xyz.",
+            "slug": "bitcoin-base",
+            "logo": "https://s2.coinmarketcap.com/static/img/coins/64x64/38552.png",
+            "subreddit": "",
+            "notice": "",
+            "tags": [
+              "base-ecosystem"
+            ],
+            "tag-names": [
+              "Base Ecosystem"
+            ],
+            "tag-groups": [
+              "PLATFORM"
+            ],
+            "urls": {
+              "website": [
+                "https://baseoff.xyz"
+              ],
+              "twitter": [
+                "https://twitter.com/bitcoin_base1"
+              ],
+              "message_board": [],
+              "chat": [
+                "https://t.me/bitcoinbaseoff"
+              ],
+              "facebook": [],
+              "explorer": [
+                "https://basescan.org/token/0xfaf1c31f6855e91b1a905761c81a79e4966e4709",
+                "https://app.nansen.ai/token-god-mode?chain=base&tab=transactions&tokenAddress=0xFaF1C31F6855E91B1a905761C81A79e4966e4709"
+              ],
+              "reddit": [],
+              "technical_doc": [],
+              "source_code": [],
+              "announcement": []
+            },
+            "platform": {
+              "id": "27716",
+              "name": "Base",
+              "slug": "base",
+              "symbol": "-",
+              "token_address": "0xFaF1C31F6855E91B1a905761C81A79e4966e4709"
+            },
+            "date_added": "2025-10-02T08:10:36.000Z",
+            "twitter_username": "bitcoin_base1",
+            "is_hidden": 0,
+            "date_launched": "2025-09-29T00:00:00.000Z",
+            "contract_address": [
+              {
+                "contract_address": "0xFaF1C31F6855E91B1a905761C81A79e4966e4709",
+                "platform": {
+                  "name": "Base",
+                  "coin": {
+                    "id": "27716",
+                    "name": "Base",
+                    "symbol": "-",
+                    "slug": "base"
+                  }
+                }
+              }
+            ],
+            "self_reported_circulating_supply": 21000000,
+            "self_reported_tags": null,
+            "self_reported_market_cap": 29274.669670774623,
+            "infinite_supply": false
+          },
+          {
+            "id": 38650,
+            "name": "Bitcoin Inu (tokeninu.xyz)",
+            "symbol": "BTC",
+            "category": "token",
+            "description": "Bitcoin Inu (tokeninu.xyz) (BTC) is a cryptocurrency launched in 2025and operates on the BNB Smart Chain (BEP20) platform. Bitcoin Inu (tokeninu.xyz) has a current supply of 21,000,000 with 0 in circulation. The last known price of Bitcoin Inu (tokeninu.xyz) is 0.00018735 USD and is up 1.81 over the last 24 hours. It is currently trading on 1 active market(s) with $0.00 traded over the last 24 hours. More information can be found at https://tokeninu.xyz.",
+            "slug": "bitcoin-inu-tokeninu-xyz",
+            "logo": "https://s2.coinmarketcap.com/static/img/coins/64x64/38650.png",
+            "subreddit": "",
+            "notice": "",
+            "tags": [
+              "memes",
+              "bnb-chain-ecosystem"
+            ],
+            "tag-names": [
+              "Memes",
+              "BNB Chain Ecosystem"
+            ],
+            "tag-groups": [
+              "INDUSTRY",
+              "PLATFORM"
+            ],
+            "urls": {
+              "website": [
+                "https://tokeninu.xyz"
+              ],
+              "twitter": [
+                "https://twitter.com/Bitcoin_inu_off"
+              ],
+              "message_board": [],
+              "chat": [
+                "https://t.me/bitcoininuoff"
+              ],
+              "facebook": [],
+              "explorer": [
+                "https://bscscan.com/token/0xe993278fF97C505098dEC831Afb9f4afF2526698",
+                "https://app.nansen.ai/token-god-mode?chain=bnb&tab=transactions&tokenAddress=0xe993278fF97C505098dEC831Afb9f4afF2526698"
+              ],
+              "reddit": [],
+              "technical_doc": [],
+              "source_code": [],
+              "announcement": []
+            },
+            "platform": {
+              "id": "1839",
+              "name": "BNB",
+              "slug": "bnb",
+              "symbol": "BNB",
+              "token_address": "0xe993278fF97C505098dEC831Afb9f4afF2526698"
+            },
+            "date_added": "2025-10-10T06:57:15.000Z",
+            "twitter_username": "Bitcoin_inu_off",
+            "is_hidden": 0,
+            "date_launched": "2025-10-06T00:00:00.000Z",
+            "contract_address": [
+              {
+                "contract_address": "0xe993278fF97C505098dEC831Afb9f4afF2526698",
+                "platform": {
+                  "name": "BNB Smart Chain (BEP20)",
+                  "coin": {
+                    "id": "1839",
+                    "name": "BNB",
+                    "symbol": "BNB",
+                    "slug": "bnb"
+                  }
+                }
+              }
+            ],
+            "self_reported_circulating_supply": 21000000,
+            "self_reported_tags": [
+              "Memes"
+            ],
+            "self_reported_market_cap": 3884.718112406191,
+            "infinite_supply": false
+          },
+          {
+            "id": 30938,
+            "name": "Satoshi Pumpomoto",
+            "symbol": "BTC",
+            "category": "token",
+            "description": "Satoshi Pumpomoto (BTC) is a cryptocurrency launched in 2024and operates on the Solana platform. Satoshi Pumpomoto has a current supply of 21,000,000 with 0 in circulation. The last known price of Satoshi Pumpomoto is 0.00021094 USD and is up 0.00 over the last 24 hours. More information can be found at https://pumpomoto.com/.",
+            "slug": "satoshi-pumpomoto",
+            "logo": "https://s2.coinmarketcap.com/static/img/coins/64x64/30938.png",
+            "subreddit": "",
+            "notice": "",
+            "tags": null,
+            "tag-names": null,
+            "tag-groups": null,
+            "urls": {
+              "website": [
+                "https://pumpomoto.com/"
+              ],
+              "twitter": [
+                "https://twitter.com/pumpomoto"
+              ],
+              "message_board": [],
+              "chat": [
+                "https://t.me/pumpomoto"
+              ],
+              "facebook": [],
+              "explorer": [
+                "https://solscan.io/token/6AGNtEgBE2jph1bWFdyaqsXJ762emaP9RE17kKxEsfiV",
+                "https://app.nansen.ai/token-god-mode?chain=solana&tab=transactions&tokenAddress=6AGNtEgBE2jph1bWFdyaqsXJ762emaP9RE17kKxEsfiV"
+              ],
+              "reddit": [],
+              "technical_doc": [],
+              "source_code": [],
+              "announcement": []
+            },
+            "platform": {
+              "id": "5426",
+              "name": "Solana",
+              "slug": "solana",
+              "symbol": "SOL",
+              "token_address": "6AGNtEgBE2jph1bWFdyaqsXJ762emaP9RE17kKxEsfiV"
+            },
+            "date_added": "2024-04-26T06:54:08.000Z",
+            "twitter_username": "pumpomoto",
+            "is_hidden": 0,
+            "date_launched": "2024-04-24T00:00:00.000Z",
+            "contract_address": [
+              {
+                "contract_address": "6AGNtEgBE2jph1bWFdyaqsXJ762emaP9RE17kKxEsfiV",
+                "platform": {
+                  "name": "Solana",
+                  "coin": {
+                    "id": "5426",
+                    "name": "Solana",
+                    "symbol": "SOL",
+                    "slug": "solana"
+                  }
+                }
+              }
+            ],
+            "self_reported_circulating_supply": 21000000,
+            "self_reported_tags": [
+              "Memes"
+            ],
+            "self_reported_market_cap": 0,
+            "infinite_supply": false
+          },
+          {
+            "id": 31469,
+            "name": "Boost Trump Campaign",
+            "symbol": "BTC",
+            "category": "token",
+            "description": "Boost Trump Campaign (BTC) is a cryptocurrency launched in 2024and operates on the Ethereum platform. Boost Trump Campaign has a current supply of 420,690,000,000 with 0 in circulation. The last known price of Boost Trump Campaign is 0.00000005 USD and is up 0.00 over the last 24 hours. More information can be found at https://boosttrumpcampaign.com/.",
+            "slug": "boost-trump-campaign",
+            "logo": "https://s2.coinmarketcap.com/static/img/coins/64x64/31469.png",
+            "subreddit": "",
+            "notice": "",
+            "tags": null,
+            "tag-names": null,
+            "tag-groups": null,
+            "urls": {
+              "website": [
+                "https://boosttrumpcampaign.com/"
+              ],
+              "twitter": [
+                "https://twitter.com/TrumpBTCoin"
+              ],
+              "message_board": [],
+              "chat": [
+                "https://t.me/btctrumpcoin"
+              ],
+              "facebook": [],
+              "explorer": [
+                "https://etherscan.io/token/0x300e0d87f8c95d90cfe4b809baa3a6c90e83b850",
+                "https://app.nansen.ai/token-god-mode?chain=ethereum&tab=transactions&tokenAddress=0x300e0d87f8c95d90cfe4b809baa3a6c90e83b850"
+              ],
+              "reddit": [],
+              "technical_doc": [],
+              "source_code": [],
+              "announcement": []
+            },
+            "platform": {
+              "id": "1027",
+              "name": "Ethereum",
+              "slug": "ethereum",
+              "symbol": "ETH",
+              "token_address": "0x300e0d87f8c95d90cfe4b809baa3a6c90e83b850"
+            },
+            "date_added": "2024-05-27T11:52:59.000Z",
+            "twitter_username": "TrumpBTCoin",
+            "is_hidden": 0,
+            "date_launched": "2024-05-25T00:00:00.000Z",
+            "contract_address": [
+              {
+                "contract_address": "0x300e0d87f8c95d90cfe4b809baa3a6c90e83b850",
+                "platform": {
+                  "name": "Ethereum",
+                  "coin": {
+                    "id": "1027",
+                    "name": "Ethereum",
+                    "symbol": "ETH",
+                    "slug": "ethereum"
+                  }
+                }
+              }
+            ],
+            "self_reported_circulating_supply": 420690000000,
+            "self_reported_tags": [
+              "Political Memes"
+            ],
+            "self_reported_market_cap": 0,
+            "infinite_supply": false
+          },
+          {
+            "id": 34316,
+            "name": "HarryPotterTrumpSonic100Inu",
+            "symbol": "BTC",
+            "category": "token",
+            "description": "HarryPotterTrumpSonic100Inu (BTC) is a cryptocurrency launched in 2024and operates on the Ethereum platform. HarryPotterTrumpSonic100Inu has a current supply of 1,000,420,069 with 0 in circulation. The last known price of HarryPotterTrumpSonic100Inu is 0.00002052 USD and is up 0.00 over the last 24 hours. More information can be found at https://hpts100i.com/.",
+            "slug": "harrypottertrumpsonic100inu",
+            "logo": "https://s2.coinmarketcap.com/static/img/coins/64x64/34316.png",
+            "subreddit": "",
+            "notice": "",
+            "tags": [
+              "memes"
+            ],
+            "tag-names": [
+              "Memes"
+            ],
+            "tag-groups": [
+              "INDUSTRY"
+            ],
+            "urls": {
+              "website": [
+                "https://hpts100i.com/"
+              ],
+              "twitter": [
+                "https://twitter.com/realhpts100i"
+              ],
+              "message_board": [],
+              "chat": [
+                "https://t.me/hpts100inu"
+              ],
+              "facebook": [],
+              "explorer": [
+                "https://etherscan.io/token/0x7099ab9e42fa7327a6b15e0a0c120c3e50d11bec",
+                "https://app.nansen.ai/token-god-mode?chain=ethereum&tab=transactions&tokenAddress=0x7099aB9E42Fa7327a6b15E0a0c120c3e50d11BeC"
+              ],
+              "reddit": [],
+              "technical_doc": [],
+              "source_code": [],
+              "announcement": []
+            },
+            "platform": {
+              "id": "1027",
+              "name": "Ethereum",
+              "slug": "ethereum",
+              "symbol": "ETH",
+              "token_address": "0x7099aB9E42Fa7327a6b15E0a0c120c3e50d11BeC"
+            },
+            "date_added": "2024-11-29T10:04:10.000Z",
+            "twitter_username": "realhpts100i",
+            "is_hidden": 0,
+            "date_launched": "2024-11-27T00:00:00.000Z",
+            "contract_address": [
+              {
+                "contract_address": "0x7099aB9E42Fa7327a6b15E0a0c120c3e50d11BeC",
+                "platform": {
+                  "name": "Ethereum",
+                  "coin": {
+                    "id": "1027",
+                    "name": "Ethereum",
+                    "symbol": "ETH",
+                    "slug": "ethereum"
+                  }
+                }
+              }
+            ],
+            "self_reported_circulating_supply": 1000420069,
+            "self_reported_tags": null,
+            "self_reported_market_cap": 0,
+            "infinite_supply": false
+          }
+        ]
+      }
+    }
+  },
+  "exchange_listings": {
+    "status": "failed",
+    "error": "{\n    \"status\": {\n        \"timestamp\": \"2025-11-02T17:22:51.649Z\",\n        \"error_code\": 1006,\n        \"error_message\": \"Your API Key subscription plan doesn't support this endpoint.\",\n        \"elapsed\": 0,\n        \"credit_count\": 0\n    }\n}"
+  },
+  "market_pairs": {
+    "status": "failed",
+    "error": "{\n    \"status\": {\n        \"timestamp\": \"2025-11-02T17:22:52.283Z\",\n        \"error_code\": 1006,\n        \"error_message\": \"Your API Key subscription plan doesn't support this endpoint.\",\n        \"elapsed\": 0,\n        \"credit_count\": 0\n    }\n}"
+  },
+  "ohlcv_historical": {
+    "status": "failed",
+    "error": "{\n    \"status\": {\n        \"timestamp\": \"2025-11-02T17:22:52.980Z\",\n        \"error_code\": 1006,\n        \"error_message\": \"Your API Key subscription plan doesn't support this endpoint.\",\n        \"elapsed\": 0,\n        \"credit_count\": 0\n    }\n}"
+  },
+  "global_metrics": {
+    "status": "success",
+    "data": {
+      "status": {
+        "timestamp": "2025-11-02T17:22:53.631Z",
+        "error_code": 0,
+        "error_message": null,
+        "elapsed": 15,
+        "credit_count": 1,
+        "notice": null
+      },
+      "data": {
+        "active_cryptocurrencies": 9349,
+        "total_cryptocurrencies": 36450,
+        "active_market_pairs": 115318,
+        "active_exchanges": 888,
+        "total_exchanges": 11391,
+        "eth_dominance": 12.582782713523,
+        "btc_dominance": 59.407810899643,
+        "eth_dominance_yesterday": 12.60011365,
+        "btc_dominance_yesterday": 59.25768305,
+        "eth_dominance_24h_percentage_change": -0.017330936477,
+        "btc_dominance_24h_percentage_change": 0.150127849643,
+        "defi_volume_24h": 16589955924.045362,
+        "defi_volume_24h_reported": 57052648564.73589,
+        "defi_market_cap": 94814808435.56018,
+        "defi_24h_percentage_change": 8.313886080695,
+        "stablecoin_volume_24h": 96758054518.34875,
+        "stablecoin_volume_24h_reported": 458384366584.7906,
+        "stablecoin_market_cap": 283175399278.1226,
+        "stablecoin_24h_percentage_change": -4.872584059007,
+        "derivatives_volume_24h": 901265829754.0569,
+        "derivatives_volume_24h_reported": 901265829754.0569,
+        "derivatives_24h_percentage_change": -3.06852206435,
+        "total_crypto_dex_currencies": 26449166,
+        "today_incremental_crypto_number": 0,
+        "past_24h_incremental_crypto_number": 80629,
+        "past_7d_incremental_crypto_number": 463093,
+        "past_30d_incremental_crypto_number": 1675559,
+        "today_change_percent": 4.9150912e-05,
+        "tracked_yearly_number": {
+          "maxIncrementalNumber": 184087,
+          "minIncrementalNumber": 13,
+          "maxIncrementalDate": "2025-04-17T00:00:00.000Z",
+          "minIncrementalDate": "2025-11-02T00:00:00.000Z"
+        },
+        "quote": {
+          "USD": {
+            "total_market_cap": 3698041256549.465,
+            "total_volume_24h": 100260329556.18,
+            "total_volume_24h_reported": 468969862347.63,
+            "altcoin_volume_24h": 67300045788.2457,
+            "altcoin_volume_24h_reported": 332126518252.4157,
+            "altcoin_market_cap": 1501115899867.7913,
+            "defi_volume_24h": 16589955924.045362,
+            "defi_volume_24h_reported": 57052648564.73589,
+            "defi_24h_percentage_change": 8.313886080695,
+            "defi_market_cap": 94814808435.56018,
+            "stablecoin_volume_24h": 96758054518.34875,
+            "stablecoin_volume_24h_reported": 458384366584.7906,
+            "stablecoin_24h_percentage_change": -4.872584059007,
+            "stablecoin_market_cap": 283175399278.1226,
+            "derivatives_volume_24h": 901265829754.0569,
+            "derivatives_volume_24h_reported": 901265829754.0569,
+            "derivatives_24h_percentage_change": -3.06852206435,
+            "total_market_cap_yesterday": 3713008585758.651,
+            "total_volume_24h_yesterday": 103002635214.75,
+            "total_market_cap_yesterday_percentage_change": -0.4031051602356541,
+            "total_volume_24h_yesterday_percentage_change": -2.662364562666369,
+            "last_updated": "2025-11-02T17:21:59.999Z"
+          }
+        },
+        "last_updated": "2025-11-02T17:21:59.999Z"
+      }
+    }
+  },
+  "price_performance": {
+    "status": "failed",
+    "error": "{\n    \"status\": {\n        \"timestamp\": \"2025-11-02T17:22:54.342Z\",\n        \"error_code\": 1006,\n        \"error_message\": \"Your API Key subscription plan doesn't support this endpoint.\",\n        \"elapsed\": 0,\n        \"credit_count\": 0\n    }\n}"
+  },
+  "trending": {
+    "status": "failed",
+    "error": "{\n    \"status\": {\n        \"timestamp\": \"2025-11-02T17:22:54.974Z\",\n        \"error_code\": 1006,\n        \"error_message\": \"Your API Key subscription plan doesn't support this endpoint.\",\n        \"elapsed\": 0,\n        \"credit_count\": 0\n    }\n}"
+  },
+  "gainers_losers": {
+    "status": "failed",
+    "error": "{\n    \"status\": {\n        \"timestamp\": \"2025-11-02T17:22:55.619Z\",\n        \"error_code\": 1006,\n        \"error_message\": \"Your API Key subscription plan doesn't support this endpoint.\",\n        \"elapsed\": 0,\n        \"credit_count\": 0\n    }\n}"
+  },
+  "most_visited": {
+    "status": "failed",
+    "error": "{\n    \"status\": {\n        \"timestamp\": \"2025-11-02T17:22:56.277Z\",\n        \"error_code\": 1006,\n        \"error_message\": \"Your API Key subscription plan doesn't support this endpoint.\",\n        \"elapsed\": 0,\n        \"credit_count\": 0\n    }\n}"
+  },
+  "recently_added": {
+    "status": "failed",
+    "error": "{\n    \"status\": {\n        \"timestamp\": \"2025-11-02T17:22:56.954Z\",\n        \"error_code\": 1006,\n        \"error_message\": \"Your API Key subscription plan doesn't support this endpoint.\",\n        \"elapsed\": 0,\n        \"credit_count\": 0\n    }\n}"
+  },
+  "airdrops": {
+    "status": "failed",
+    "error": "{\n    \"status\": {\n        \"timestamp\": \"2025-11-02T17:22:57.608Z\",\n        \"error_code\": 1006,\n        \"error_message\": \"Your API Key subscription plan doesn't support this endpoint.\",\n        \"elapsed\": 0,\n        \"credit_count\": 0\n    }\n}"
+  }
+}
